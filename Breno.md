@@ -45,7 +45,29 @@
 
 ---
 
-### 🚀 Próximos Passos (Ação Imediata)
-1. **Inicialização do Projeto:** Rodar o comando para criar o projeto Next.js, já que o repositório atual possui apenas os arquivos HTML (`npx create-next-app`).
-2. **Setup do TailwindCSS e Componentes:** Como os arquivos HTML de exemplo provavelmente usam um framework de CSS (ex: Tailwind), precisamos configurar isso no Next.js.
-3. **Mão na Massa:** Iniciar a Fase 1 configurando as chaves de API e inicializando os clientes na aplicação.
+---
+
+## 📝 Explicação Detalhada do que foi Feito (Entregas da Pessoa 1)
+
+Como **Pessoa 1**, montei toda a fundação do projeto, que serve como o pilar de sustentação para os demais membros do grupo começarem a trabalhar. Abaixo está o detalhamento técnico e prático de tudo o que foi entregue:
+
+### 1. Inicialização e Estrutura do Next.js
+*   **Next.js (App Router) + TypeScript + Tailwind CSS:** Criei toda a estrutura base do projeto na raiz do repositório de forma limpa, garantindo a configuração de compilação sem lints ou erros de tipo.
+*   **Padrão de Variáveis de Ambiente:** Configurei o `.env.local` na raiz para garantir o tráfego seguro de credenciais das APIs externas.
+
+### 2. Integração Híbrida de Serviços (BaaS)
+*   **Firebase Authentication (`src/lib/firebase.ts`):** Inicializei e integrei o Firebase Auth no código para controlar exclusivamente a validação de credenciais de login, cadastro rápido e gerenciamento de estado de usuário logado de forma super segura.
+*   **Supabase Database (`src/lib/supabase.ts`):** Inicializei a comunicação com o banco PostgreSQL. Desenvolvi o script SQL para estruturar a tabela `perfis`, garantindo os campos obrigatórios profissionais como **CPF** e **CRECI**, além do cargo (**role**), desabilitando as regras de RLS para possibilitar o registro híbrido direto pelo front-end de forma fluida.
+
+### 3. Gerenciamento de Estado Global e Hooks
+*   **AuthContext (`src/contexts/AuthContext.tsx`):** Desenvolvi o Context Provider global. Ele gerencia o estado da sessão do Firebase em tempo real e, de forma reativa, busca a linha correspondente de informações profissionais na tabela `perfis` do Supabase usando o UID como chave estrangeira.
+*   **Hook Customizado (`src/hooks/useAuth.ts`):** Criei um atalho universal para extrair os dados do usuário atual e o seu nível de acesso de forma simples em qualquer parte da aplicação.
+
+### 4. Segurança e Roteamento
+*   **Componente de Rotas Protegidas (`src/components/ProtectedRoute.tsx`):** Criei um componente de proteção. Se qualquer usuário deslogado tentar acessar o dashboard (`/`) ou qualquer página interna, ele é redirecionado imediatamente para a tela de `/login`.
+*   **Navbar Global Responsiva (`src/components/Navbar.tsx`):** Criei uma barra de navegação responsiva e estilizada que se oculta automaticamente nas telas de login/cadastro. Ela possui os links simulados de todas as páginas privadas do projeto, além de exibir o nome do corretor e fornecer o botão de logout integrado.
+
+### 5. Interfaces de Usuário Modernas (Tailwind CSS)
+*   **Tela de Login (`src/app/login/page.tsx`):** Design moderno em estilo *dark mode* e *glassmorphism* contendo tratamento robusto de erros para e-mails inválidos ou senhas incorretas.
+*   **Tela de Cadastro (`src/app/cadastro/page.tsx`):** Formulário completo que cria a conta no Firebase Auth, armazena no mesmo instante os dados complementares no Supabase e previne a criação de contas com e-mails duplicados ou senhas fracas.
+
