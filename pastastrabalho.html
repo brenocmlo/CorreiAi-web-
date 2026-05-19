@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estrutura de Pastas</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    /* Reset básico para não ter margens brancas ao redor do app */
+    body {
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    const pessoas = {
+      1: { cor: "#6366f1", label: "P1" },
+      2: { cor: "#10b981", label: "P2" },
+      3: { cor: "#f59e0b", label: "P3" },
+      4: { cor: "#ef4444", label: "P4" },
+    };
+
+    const tree = [
+      {
+        name: "src/", type: "folder", open: true, children: [
+          {
+            name: "lib/", type: "folder", desc: "Configurações globais", children: [
+              { name: "supabaseClient.js", type: "file", pessoa: 1, req: "RF01.2", desc: "Instância do Supabase (URL + ANON KEY)" },
+            ]
+          },
+          {
+            name: "contexts/", type: "folder", desc: "Contextos React", children: [
+              { name: "AuthContext.jsx", type: "file", pessoa: 1, req: "RF01–RF02", desc: "Contexto global de autenticação" },
+            ]
+          },
+          {
+            name: "routes/", type: "folder", desc: "Roteamento", children: [
+              { name: "AppRoutes.jsx", type: "file", pessoa: 1, req: "RF03", desc: "Definição de todas as rotas" },
+              { name: "PrivateRoute.jsx", type: "file", pessoa: 1, req: "RF03.1", desc: "HOC que protege rotas autenticadas" },
+            ]
+          },
+          {
+            name: "pages/", type: "folder", desc: "Páginas da aplicação", children: [
+              { name: "Login.jsx", type: "file", pessoa: 1, req: "RF01", desc: "Tela de login" },
+              { name: "Cadastro.jsx", type: "file", pessoa: 1, req: "RF02", desc: "Tela de cadastro de usuário" },
+              { name: "Imoveis.jsx", type: "file", pessoa: 2, req: "RF04", desc: "Listagem de imóveis" },
+              { name: "ImovelDetalhe.jsx", type: "file", pessoa: 2, req: "RF04.1", desc: "Detalhamento de imóvel" },
+              { name: "ImovelForm.jsx", type: "file", pessoa: 2, req: "RF05", desc: "Cadastro e edição de imóvel" },
+              { name: "Leads.jsx", type: "file", pessoa: 3, req: "RF06", desc: "Listagem de leads" },
+              { name: "LeadForm.jsx", type: "file", pessoa: 3, req: "RF06", desc: "Cadastro e edição de lead" },
+              { name: "Funil.jsx", type: "file", pessoa: 3, req: "RF08", desc: "Kanban de funil de vendas" },
+              { name: "Dashboard.jsx", type: "file", pessoa: 4, req: "RF10", desc: "Métricas: leads, conversão, faturamento" },
+              { name: "Chat.jsx", type: "file", pessoa: 4, req: "RF07.1", desc: "Chatbot com Gemini" },
+              { name: "Recomendacoes.jsx", type: "file", pessoa: 4, req: "RF09", desc: "IA cruzando leads x imóveis" },
+              { name: "Admin.jsx", type: "file", pessoa: 4, req: "RF11", desc: "Painel admin de corretores" },
+            ]
+          },
+          {
+            name: "components/", type: "folder", desc: "Componentes reutilizáveis", children: [
+              { name: "Navbar.jsx", type: "file", pessoa: 1, req: "RF03", desc: "Menu de navegação global" },
+              { name: "ImovelCard.jsx", type: "file", pessoa: 2, req: "RF04", desc: "Card de imóvel na listagem" },
+              { name: "LeadCard.jsx", type: "file", pessoa: 3, req: "RF06.1", desc: "Card de lead na listagem" },
+              { name: "KanbanColuna.jsx", type: "file", pessoa: 3, req: "RF08", desc: "Coluna do Kanban" },
+              { name: "ChatBubble.jsx", type: "file", pessoa: 4, req: "RF07.1", desc: "Bolha de mensagem do chat" },
+              { name: "MetricCard.jsx", type: "file", pessoa: 4, req: "RF10", desc: "Card de métrica do dashboard" },
+              { name: "ConfirmModal.jsx", type: "file", pessoa: 2, req: "RF05.3", desc: "Modal de confirmação de exclusão (compartilhado P2/P3)" },
+            ]
+          },
+          {
+            name: "hooks/", type: "folder", desc: "Hooks customizados", children: [
+              { name: "useAuth.js", type: "file", pessoa: 1, req: "RF01–RF02", desc: "Hook para acessar contexto de auth" },
+              { name: "useImoveis.js", type: "file", pessoa: 2, req: "RF05", desc: "CRUD de imóveis via Supabase" },
+              { name: "useLeads.js", type: "file", pessoa: 3, req: "RF06", desc: "CRUD de leads via Supabase" },
+              { name: "useMetricas.js", type: "file", pessoa: 4, req: "RF10", desc: "Cálculo de métricas do dashboard" },
+            ]
+          },
+          {
+            name: "services/", type: "folder", desc: "Integrações externas", children: [
+              { name: "gemini.js", type: "file", pessoa: 4, req: "RF07", desc: "Configuração e chamadas à Gemini API" },
+              { name: "recomendacao.js", type: "file", pessoa: 4, req: "RF09", desc: "Lógica de cruzamento lead x imóvel + prompt" },
+            ]
+          },
+          { name: "App.jsx", type: "file", pessoa: 1, req: "RF03", desc: "Root da aplicação + providers" },
+          { name: "main.jsx", type: "file", pessoa: 1, req: "—", desc: "Entry point do Vite" },
+        ]
+      },
+      { name: ".env", type: "file", pessoa: 1, req: "—", desc: "VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_GEMINI_KEY" },
+      { name: "index.html", type: "file", pessoa: 1, req: "—", desc: "HTML base do Vite" },
+      { name: "package.json", type: "file", pessoa: 1, req: "—", desc: "Dependências do projeto" },
+    ];
+
+    function FileIcon({ type }) {
+      if (type === "folder") return <span style={{ fontSize: 14 }}>📁</span>;
+      return <span style={{ fontSize: 14 }}>📄</span>;
+    }
+
+    function PessoaBadge({ pessoa }) {
+      if (!pessoa) return null;
+      const p = pessoas[pessoa];
+      return (
+        <span style={{
+          background: p.cor + "22", color: p.cor, border: `1px solid ${p.cor}55`,
+          borderRadius: 99, padding: "1px 8px", fontSize: 10, fontWeight: 700, marginLeft: 6
+        }}>{p.label}</span>
+      );
+    }
+
+    function ReqBadge({ req }) {
+      if (!req) return null;
+      return (
+        <span style={{
+          background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0",
+          borderRadius: 99, padding: "1px 8px", fontSize: 10, marginLeft: 4
+        }}>{req}</span>
+      );
+    }
+
+    function TreeNode({ node, depth = 0 }) {
+      const [open, setOpen] = useState(node.open !== false);
+      const isFolder = node.type === "folder";
+      const indent = depth * 18;
+
+      return (
+        <div>
+          <div
+            onClick={() => isFolder && setOpen(o => !o)}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "5px 10px", borderRadius: 8, marginLeft: indent,
+              cursor: isFolder ? "pointer" : "default",
+              background: isFolder ? "transparent" : "transparent",
+              transition: "background 0.15s",
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+          >
+            {isFolder && (
+              <span style={{ fontSize: 10, color: "#94a3b8", width: 10 }}>{open ? "▼" : "▶"}</span>
+            )}
+            {!isFolder && <span style={{ width: 10 }} />}
+            <FileIcon type={node.type} />
+            <span style={{
+              fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+              fontSize: 13,
+              fontWeight: isFolder ? 700 : 400,
+              color: isFolder ? "#1e293b" : "#334155"
+            }}>{node.name}</span>
+            {node.pessoa && <PessoaBadge pessoa={node.pessoa} />}
+            {node.req && <ReqBadge req={node.req} />}
+            {node.desc && (
+              <span style={{ fontSize: 11, color: "#94a3b8", marginLeft: 6 }}>— {node.desc}</span>
+            )}
+          </div>
+          {isFolder && open && node.children && (
+            <div style={{ borderLeft: "1.5px solid #e2e8f0", marginLeft: indent + 18 }}>
+              {node.children.map((child, i) => (
+                <TreeNode key={i} node={child} depth={depth + 1} />
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function App() {
+      const [filtro, setFiltro] = useState(0);
+
+      const filterTree = (nodes, pessoaId) => {
+        if (!pessoaId) return nodes;
+        return nodes.map(node => {
+          if (node.type === "file") {
+            return node.pessoa === pessoaId ? node : null;
+          }
+          const filtered = filterTree(node.children || [], pessoaId).filter(Boolean);
+          return filtered.length ? { ...node, children: filtered, open: true } : null;
+        }).filter(Boolean);
+      };
+
+      const displayed = filtro ? filterTree(tree, filtro) : tree;
+
+      return (
+        <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: "#f8fafc", minHeight: "100vh", padding: "24px 16px" }}>
+          <div style={{ maxWidth: 860, margin: "0 auto" }}>
+
+            <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", margin: "0 0 4px" }}>
+              🗂 Estrutura de Pastas
+            </h1>
+            <p style={{ color: "#64748b", fontSize: 13, marginBottom: 20 }}>
+              React + Vite + Supabase · Clique nas pastas para expandir/recolher
+            </p>
+
+            {/* Legenda + Filtro */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+              <button onClick={() => setFiltro(0)} style={{
+                padding: "5px 14px", borderRadius: 99, border: "1.5px solid",
+                borderColor: filtro === 0 ? "#0f172a" : "#e2e8f0",
+                background: filtro === 0 ? "#0f172a" : "white",
+                color: filtro === 0 ? "white" : "#64748b",
+                fontSize: 12, fontWeight: 600, cursor: "pointer"
+              }}>Todos</button>
+              {Object.entries(pessoas).map(([id, p]) => (
+                <button key={id} onClick={() => setFiltro(Number(id))} style={{
+                  padding: "5px 14px", borderRadius: 99, border: "1.5px solid",
+                  borderColor: filtro === Number(id) ? p.cor : "#e2e8f0",
+                  background: filtro === Number(id) ? p.cor : "white",
+                  color: filtro === Number(id) ? "white" : p.cor,
+                  fontSize: 12, fontWeight: 600, cursor: "pointer"
+                }}>Pessoa {id}</button>
+              ))}
+            </div>
+
+            {/* Legenda de pessoas */}
+            <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+              {Object.entries(pessoas).map(([id, p]) => (
+                <div key={id} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: p.cor, display: "inline-block" }} />
+                  <span style={{ color: "#64748b" }}>P{id} = Pessoa {id}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Tree */}
+            <div style={{ background: "white", borderRadius: 14, border: "1.5px solid #e2e8f0", padding: "16px 12px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+              {displayed.map((node, i) => (
+                <TreeNode key={i} node={node} depth={0} />
+              ))}
+            </div>
+
+            {/* Deps */}
+            <div style={{ marginTop: 16, background: "#fffbeb", border: "1.5px solid #fde047", borderRadius: 12, padding: 14, fontSize: 12, color: "#92400e" }}>
+              <strong>Dependências críticas:</strong> P1 entrega <code>supabaseClient.js</code> e <code>AuthContext.jsx</code> antes de qualquer outra pessoa começar. P4 só finaliza <code>recomendacao.js</code> depois que P2 e P3 tiverem os hooks prontos.
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Inicialização do App React
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

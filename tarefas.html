@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapa de Requisitos — Grupo</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    const pessoas = [
+      {
+        id: 1,
+        nome: "Pessoa 1",
+        foco: "Base & Autenticação",
+        cor: "#6366f1",
+        bg: "#eef2ff",
+        obs: "⚠️ Caminho crítico — todos dependem dela",
+        requisitos: [
+          { id: "RF01", titulo: "Página de Login", desc: "Campos e-mail/senha, botões Entrar, Esqueceu senha, Cadastre-se" },
+          { id: "RF01.1", titulo: "Validação de credenciais", desc: "Exibir erro caso credenciais estejam incorretas" },
+          { id: "RF01.2", titulo: "Firebase Authentication", desc: "Usar Firebase Auth para gerenciar autenticação" },
+          { id: "RF02", titulo: "Página de Cadastro", desc: "Campos nome completo, e-mail e senha" },
+          { id: "RF02.1", titulo: "Persistência de usuário", desc: "Armazenar dados no Firebase Realtime Database" },
+          { id: "RF02.2", titulo: "Validação de e-mail duplicado", desc: "Verificar se e-mail já existe e exibir aviso" },
+          { id: "RF03", titulo: "React Router", desc: "Navegação entre páginas com rotas definidas" },
+          { id: "RF03.1", titulo: "Rotas protegidas", desc: "Redirecionar para login se não autenticado" },
+        ],
+      },
+      {
+        id: 2,
+        nome: "Pessoa 2",
+        foco: "CRUD de Imóveis",
+        cor: "#10b981",
+        bg: "#ecfdf5",
+        obs: "✅ Mais acessível do grupo",
+        requisitos: [
+          { id: "RF04", titulo: "Listagem de Imóveis", desc: "Exibir registros recuperados do Firebase" },
+          { id: "RF04.1", titulo: "Navegação para detalhes", desc: "Clicar no item abre página de detalhamento" },
+          { id: "RF05", titulo: "Cadastro de Imóvel", desc: "Campos: tipo, endereço, bairro, valor, metragem, quartos, vagas, status" },
+          { id: "RF05.1", titulo: "Listagem com ações", desc: "Exibir todos com opções de editar e excluir" },
+          { id: "RF05.2", titulo: "Edição de Imóvel", desc: "Permitir editar dados de imóvel existente" },
+          { id: "RF05.3", titulo: "Exclusão com confirmação", desc: "Confirmar antes de excluir o registro" },
+          { id: "RF05.4", titulo: "Persistência Firebase", desc: "Todos os dados salvos no Realtime Database" },
+        ],
+      },
+      {
+        id: 3,
+        nome: "Pessoa 3",
+        foco: "CRUD de Leads + Kanban",
+        cor: "#f59e0b",
+        bg: "#fffbeb",
+        obs: "📌 Kanban exige atenção ao estado da UI",
+        requisitos: [
+          { id: "RF06", titulo: "Cadastro de Lead", desc: "Campos: nome, telefone, e-mail, orçamento, tipo de imóvel desejado" },
+          { id: "RF06.1", titulo: "Listagem com ações", desc: "Exibir todos os leads com editar e excluir" },
+          { id: "RF06.2", titulo: "Edição de Lead", desc: "Permitir editar dados do lead" },
+          { id: "RF06.3", titulo: "Exclusão com confirmação", desc: "Confirmar antes de excluir o lead" },
+          { id: "RF06.4", titulo: "Persistência Firebase", desc: "Todos os dados salvos no Realtime Database" },
+          { id: "RF08", titulo: "Painel Kanban (Funil)", desc: "Mover leads entre: Novo → Em atendimento → Visita agendada → Proposta → Fechado" },
+        ],
+      },
+      {
+        id: 4,
+        nome: "Pessoa 4",
+        foco: "IA + Dashboard + Admin",
+        cor: "#ef4444",
+        bg: "#fef2f2",
+        obs: "🤖 Depende de RF05 e RF06 estarem prontos",
+        requisitos: [
+          { id: "RF07", titulo: "Integração Gemini API", desc: "Conectar serviço de IA ao sistema" },
+          { id: "RF07.1", titulo: "Chatbot assistente", desc: "Qualificar leads, responder dúvidas, agendar visitas" },
+          { id: "RF09", titulo: "Recomendação inteligente", desc: "Cruzar preferências do lead com portfólio de imóveis" },
+          { id: "RF10", titulo: "Dashboard com métricas", desc: "Total de leads, taxa de conversão, faturamento estimado por período" },
+          { id: "RF11", titulo: "Painel Admin de Corretores", desc: "Listar usuários, monitorar status, gerenciar permissões" },
+        ],
+      },
+    ];
+
+    const statusOpcoes = ["Pendente", "Em progresso", "Concluído"];
+    const statusCores = {
+      "Pendente": { bg: "#f1f5f9", text: "#64748b", border: "#cbd5e1" },
+      "Em progresso": { bg: "#fef9c3", text: "#854d0e", border: "#fde047" },
+      "Concluído": { bg: "#dcfce7", text: "#166534", border: "#86efac" },
+    };
+
+    function App() {
+      const [statuses, setStatuses] = useState(() => {
+        const init = {};
+        pessoas.forEach(p => p.requisitos.forEach(r => { init[r.id] = "Pendente"; }));
+        return init;
+      });
+      const [expanded, setExpanded] = useState({});
+      const [activeTab, setActiveTab] = useState("board");
+
+      const toggleExpand = (pessoaId) => {
+        setExpanded(prev => ({ ...prev, [pessoaId]: !prev[pessoaId] }));
+      };
+
+      const nextStatus = (id) => {
+        setStatuses(prev => {
+          const idx = statusOpcoes.indexOf(prev[id]);
+          return { ...prev, [id]: statusOpcoes[(idx + 1) % statusOpcoes.length] };
+        });
+      };
+
+      const totalPorStatus = (pessoa) => {
+        const counts = { "Pendente": 0, "Em progresso": 0, "Concluído": 0 };
+        pessoa.requisitos.forEach(r => counts[statuses[r.id]]++);
+        return counts;
+      };
+
+      const progressoPct = (pessoa) => {
+        const total = pessoa.requisitos.length;
+        const feitos = pessoa.requisitos.filter(r => statuses[r.id] === "Concluído").length;
+        return Math.round((feitos / total) * 100);
+      };
+
+      const totalGeral = Object.values(statuses);
+      const concluidosGeral = totalGeral.filter(s => s === "Concluído").length;
+      const progressoGeral = Math.round((concluidosGeral / totalGeral.length) * 100);
+
+      return (
+        <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: "#f8fafc", minHeight: "100vh", padding: "24px 16px" }}>
+          <div style={{ maxWidth: 900, margin: "0 auto" }}>
+
+            {/* Header */}
+            <div style={{ marginBottom: 24 }}>
+              <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", margin: 0 }}>
+                📋 Mapa de Requisitos — Grupo
+              </h1>
+              <p style={{ color: "#64748b", fontSize: 14, marginTop: 4 }}>
+                Sistema Imobiliário · {totalGeral.length} requisitos · {concluidosGeral} concluídos
+              </p>
+
+              {/* Progresso geral */}
+              <div style={{ marginTop: 12, background: "#e2e8f0", borderRadius: 99, height: 8, overflow: "hidden" }}>
+                <div style={{ width: `${progressoGeral}%`, background: "#6366f1", height: "100%", borderRadius: 99, transition: "width 0.4s" }} />
+              </div>
+              <p style={{ fontSize: 12, color: "#6366f1", marginTop: 4, fontWeight: 600 }}>{progressoGeral}% concluído</p>
+            </div>
+
+            {/* Tabs */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+              {["board", "overview"].map(tab => (
+                <button key={tab} onClick={() => setActiveTab(tab)}
+                  style={{
+                    padding: "6px 16px", borderRadius: 8, border: "1.5px solid",
+                    borderColor: activeTab === tab ? "#6366f1" : "#e2e8f0",
+                    background: activeTab === tab ? "#6366f1" : "white",
+                    color: activeTab === tab ? "white" : "#64748b",
+                    fontWeight: 600, fontSize: 13, cursor: "pointer"
+                  }}>
+                  {tab === "board" ? "🗂 Board" : "📊 Visão Geral"}
+                </button>
+              ))}
+            </div>
+
+            {/* BOARD VIEW */}
+            {activeTab === "board" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {pessoas.map(pessoa => {
+                  const pct = progressoPct(pessoa);
+                  const counts = totalPorStatus(pessoa);
+                  const isOpen = expanded[pessoa.id] !== false;
+
+                  return (
+                    <div key={pessoa.id} style={{
+                      background: "white", borderRadius: 14, border: `2px solid ${pessoa.cor}22`,
+                      overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)"
+                    }}>
+                      {/* Cabeçalho da pessoa */}
+                      <div
+                        onClick={() => toggleExpand(pessoa.id)}
+                        style={{
+                          background: pessoa.bg, padding: "14px 18px",
+                          display: "flex", alignItems: "center", justifyContent: "space-between",
+                          cursor: "pointer", borderBottom: `2px solid ${pessoa.cor}22`
+                        }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <div style={{
+                            width: 36, height: 36, borderRadius: "50%",
+                            background: pessoa.cor, display: "flex", alignItems: "center",
+                            justifyContent: "center", color: "white", fontWeight: 700, fontSize: 16
+                          }}>{pessoa.id}</div>
+                          <div>
+                            <div style={{ fontWeight: 700, color: "#0f172a", fontSize: 15 }}>{pessoa.nome}</div>
+                            <div style={{ fontSize: 12, color: "#64748b" }}>{pessoa.foco}</div>
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <div style={{ textAlign: "right" }}>
+                            <div style={{ fontSize: 11, color: "#64748b" }}>
+                              ✅ {counts["Concluído"]} &nbsp; 🔄 {counts["Em progresso"]} &nbsp; ⏳ {counts["Pendente"]}
+                            </div>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: pessoa.cor }}>{pct}%</div>
+                          </div>
+                          <div style={{ fontSize: 18, color: pessoa.cor }}>{isOpen ? "▲" : "▼"}</div>
+                        </div>
+                      </div>
+
+                      {/* Obs - Removida a informação de dificuldade */}
+                      <div style={{ padding: "8px 18px", background: `${pessoa.cor}11`, fontSize: 12, color: "#374151", borderBottom: `1px solid ${pessoa.cor}22` }}>
+                        {pessoa.obs}
+                      </div>
+
+                      {/* Barra de progresso */}
+                      <div style={{ height: 4, background: "#f1f5f9" }}>
+                        <div style={{ width: `${pct}%`, background: pessoa.cor, height: "100%", transition: "width 0.4s" }} />
+                      </div>
+
+                      {/* Requisitos */}
+                      {isOpen && (
+                        <div style={{ padding: "12px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
+                          {pessoa.requisitos.map(req => {
+                            const status = statuses[req.id];
+                            const sc = statusCores[status];
+                            return (
+                              <div key={req.id} style={{
+                                display: "flex", alignItems: "center", gap: 12,
+                                padding: "10px 14px", borderRadius: 10,
+                                border: `1.5px solid ${sc.border}`,
+                                background: sc.bg
+                              }}>
+                                <div style={{
+                                  minWidth: 64, fontSize: 11, fontWeight: 700,
+                                  color: pessoa.cor, background: `${pessoa.cor}18`,
+                                  borderRadius: 6, padding: "2px 8px", textAlign: "center"
+                                }}>{req.id}</div>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontWeight: 600, fontSize: 13, color: "#1e293b" }}>{req.titulo}</div>
+                                  <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>{req.desc}</div>
+                                </div>
+                                <button onClick={() => nextStatus(req.id)} style={{
+                                  padding: "4px 12px", borderRadius: 20, border: `1.5px solid ${sc.border}`,
+                                  background: "white", color: sc.text, fontWeight: 600, fontSize: 11,
+                                  cursor: "pointer", whiteSpace: "nowrap"
+                                }}>{status}</button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* OVERVIEW VIEW */}
+            {activeTab === "overview" && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                {pessoas.map(pessoa => {
+                  const pct = progressoPct(pessoa);
+                  const counts = totalPorStatus(pessoa);
+                  return (
+                    <div key={pessoa.id} style={{
+                      background: "white", borderRadius: 14, padding: 20,
+                      border: `2px solid ${pessoa.cor}33`, boxShadow: "0 1px 4px rgba(0,0,0,0.06)"
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                        <div style={{
+                          width: 32, height: 32, borderRadius: "50%", background: pessoa.cor,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          color: "white", fontWeight: 700
+                        }}>{pessoa.id}</div>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a" }}>{pessoa.nome}</div>
+                          <div style={{ fontSize: 11, color: "#64748b" }}>{pessoa.foco}</div>
+                        </div>
+                      </div>
+                      <div style={{ background: "#f1f5f9", borderRadius: 99, height: 8, marginBottom: 6, overflow: "hidden" }}>
+                        <div style={{ width: `${pct}%`, background: pessoa.cor, height: "100%", borderRadius: 99, transition: "width 0.4s" }} />
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#64748b", marginBottom: 12 }}>
+                        <span>{pct}% concluído</span>
+                        <span>{pessoa.requisitos.length} requisitos</span>
+                      </div>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        {[["Concluído", "#dcfce7", "#166534"], ["Em progresso", "#fef9c3", "#854d0e"], ["Pendente", "#f1f5f9", "#64748b"]].map(([label, bg, color]) => (
+                          <div key={label} style={{
+                            flex: 1, textAlign: "center", padding: "6px 4px", borderRadius: 8,
+                            background: bg, color, fontSize: 11, fontWeight: 600
+                          }}>
+                            {counts[label]}<br /><span style={{ fontWeight: 400, fontSize: 10 }}>{label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+                {/* Legenda de dependências */}
+                <div style={{
+                  gridColumn: "1 / -1", background: "#fffbeb", border: "1.5px solid #fde047",
+                  borderRadius: 12, padding: 16, fontSize: 13, color: "#78350f"
+                }}>
+                  <strong>⚠️ Ordem de execução recomendada</strong><br />
+                  <span style={{ color: "#92400e" }}>
+                    Pessoa 1 primeiro → desbloqueia Pessoa 2 e 3 → Pessoa 4 pode começar RF07/RF10/RF11 em paralelo, mas RF09 depende de RF05 e RF06 prontos.
+                  </span>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
