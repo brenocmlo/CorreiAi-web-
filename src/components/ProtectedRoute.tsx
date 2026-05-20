@@ -1,18 +1,12 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 
+// A proteção real é feita pelo middleware server-side (src/middleware.ts).
+// Este componente apenas renderiza um loading enquanto o AuthContext hidrata.
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.replace('/login');
-    }
-  }, [user, loading, router]);
+  const { loading } = useAuth();
 
   if (loading) {
     return (
@@ -23,10 +17,6 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
         </div>
       </div>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   return <>{children}</>;

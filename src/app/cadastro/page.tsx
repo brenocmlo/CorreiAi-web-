@@ -3,9 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function Cadastro() {
@@ -50,48 +47,23 @@ export default function Cadastro() {
     setCarregando(true);
 
     try {
-      // 1. Criar usuário no Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
-      const firebaseUser = userCredential.user;
-
-      // 2. Atualizar o nome de exibição no Firebase Auth
-      await updateProfile(firebaseUser, {
-        displayName: nomeCompleto
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome_completo: nomeCompleto, email, cpf, creci, senha }),
       });
 
-      // 3. Salvar os dados complementares no Supabase DB
-      // Note que definimos role: 'corretor' como padrão para quem se cadastra por aqui.
-      const { error: dbError } = await supabase
-        .from('perfis')
-        .insert([
-          {
-            id: firebaseUser.uid,
-            nome_completo: nomeCompleto,
-            email: email,
-            cpf: cpf,
-            creci: creci,
-            role: 'corretor'
-          }
-        ]);
+      const data = await res.json();
 
-      if (dbError) {
-        console.error('Erro ao registrar no Supabase:', dbError.message);
-        setErro('Sua conta foi criada, mas houve um erro ao registrar os dados do perfil. Entre em contato com o suporte.');
-      } else {
-        setSucesso(true);
-        router.replace('/');
+      if (!res.ok) {
+        setErro(data.error ?? 'Ocorreu um erro ao criar a conta. Tente novamente.');
+        return;
       }
-    } catch (error: any) {
-      console.error(error);
-      if (error.code === 'auth/email-already-in-use') {
-        setErro('Este e-mail já está sendo utilizado por outra conta.');
-      } else if (error.code === 'auth/invalid-email') {
-        setErro('O formato de e-mail inserido é inválido.');
-      } else if (error.code === 'auth/weak-password') {
-        setErro('A senha inserida é muito fraca. Digite uma senha mais forte.');
-      } else {
-        setErro('Ocorreu um erro ao criar a conta. Tente novamente.');
-      }
+
+      setSucesso(true);
+      router.replace('/');
+    } catch {
+      setErro('Ocorreu um erro ao criar a conta. Tente novamente.');
     } finally {
       setCarregando(false);
     }

@@ -21,7 +21,7 @@ export default function Navbar() {
     return null;
   }
 
-  const nomeExibicao = profile?.nome_completo || user?.displayName || 'Corretor';
+  const nomeExibicao = profile?.nome_completo || 'Corretor';
   
   const navLinks = [
     { href: '/', label: 'Dashboard' },
