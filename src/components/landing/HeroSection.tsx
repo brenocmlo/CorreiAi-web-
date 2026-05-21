@@ -72,7 +72,7 @@ export function HeroSection() {
           transition={{ duration: 0.6 }}
           className="font-[family-name:var(--font-instrument-serif)] text-3xl leading-[1.1] text-white sm:text-5xl lg:text-[48px]"
         >
-          Corretagem no ritmo do mercado
+          O imóvel certo, no seu ritmo
         </motion.p>
 
         <motion.h1
@@ -81,7 +81,7 @@ export function HeroSection() {
           transition={{ delay: 0.2, duration: 0.6 }}
           className="bg-gradient-to-b from-white via-white to-[#b4c0ff] bg-clip-text font-[family-name:var(--font-instrument-sans)] text-6xl font-semibold tracking-tighter text-transparent sm:text-8xl lg:text-[136px] leading-[0.9]"
         >
-          Feche Mais
+          Seu Lar Ideal
         </motion.h1>
 
         <motion.p
@@ -90,8 +90,9 @@ export function HeroSection() {
           transition={{ delay: 0.4, duration: 0.6 }}
           className="max-w-xl font-[family-name:var(--font-instrument-sans)] text-lg leading-[1.65] text-white sm:text-[20px]"
         >
-          A CorreAi une CRM imobiliário, funil de vendas e inteligência artificial para
-          corretores fecharem negócios com mais agilidade e menos atrito.
+          Chega de perder horas em anúncios que não combinam com você. A CorreAi aprende
+          seu estilo, filtra o que importa e te guia até o imóvel certo — simples, rápido e
+          feito sob medida.
         </motion.p>
 
         <motion.div
@@ -101,11 +102,11 @@ export function HeroSection() {
           className="flex flex-col items-center gap-6 sm:flex-row"
         >
           <Link
-            href="/cadastro"
+            href="/cadastro/lead"
             className="group flex items-center rounded-full bg-white py-2 pl-6 pr-2 transition hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]"
           >
             <span className="font-[family-name:var(--font-instrument-sans)] text-lg font-medium text-[#0a0400]">
-              Começar Grátis
+              Encontrar Meu Imóvel
             </span>
             <span className="ml-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#3054ff] transition-colors group-hover:bg-[#2040e0]">
               <ArrowRight className="h-5 w-5 text-white" strokeWidth={2} />
@@ -116,7 +117,7 @@ export function HeroSection() {
             href="/login"
             className="group flex items-center gap-2 rounded-lg px-4 py-2 font-[family-name:var(--font-instrument-sans)] text-white/70 backdrop-blur-sm transition hover:bg-white/5 hover:text-white"
           >
-            Ver a Plataforma
+            Já tenho conta
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
         </motion.div>

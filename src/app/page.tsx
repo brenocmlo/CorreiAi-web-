@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { LandingNavbar } from '@/components/landing/LandingNavbar';
 import { HeroSection } from '@/components/landing/HeroSection';
+import { CinematicFooter } from '@/components/landing/CinematicFooter';
 
 export default function LandingPage() {
   const { user, loading } = useAuth();
@@ -25,9 +26,10 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="bg-black text-white">
       <LandingNavbar />
       <HeroSection />
+      <CinematicFooter />
     </div>
   );
 }
