@@ -3,8 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function Login() {
@@ -17,7 +15,7 @@ export default function Login() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace('/'); // Vai para a raiz se já estiver logado
+      router.replace('/');
     }
   }, [user, loading, router]);
 
@@ -27,22 +25,22 @@ export default function Login() {
     setCarregando(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, senha);
-      router.replace('/');
-    } catch (error: any) {
-      console.error(error);
-      // RF01.1 — Tratar erros de credenciais
-      if (
-        error.code === 'auth/user-not-found' ||
-        error.code === 'auth/wrong-password' ||
-        error.code === 'auth/invalid-credential'
-      ) {
-        setErro('E-mail ou senha incorretos. Por favor, tente novamente.');
-      } else if (error.code === 'auth/invalid-email') {
-        setErro('Por favor, insira um e-mail válido.');
-      } else {
-        setErro('Ocorreu um erro ao fazer login. Tente novamente mais tarde.');
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, senha }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErro(data.error ?? 'Ocorreu um erro ao fazer login. Tente novamente mais tarde.');
+        return;
       }
+
+      router.replace('/');
+    } catch {
+      setErro('Ocorreu um erro ao fazer login. Tente novamente mais tarde.');
     } finally {
       setCarregando(false);
     }

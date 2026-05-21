@@ -12,8 +12,8 @@ export default function Home() {
   };
 
  
-  const nomeExibicao = profile?.nome_completo || user?.displayName || 'Corretor';
-  const emailExibicao = profile?.email || user?.email || '';
+  const nomeExibicao = profile?.nome_completo || 'Corretor';
+  const emailExibicao = profile?.email || '';
 
   return (
     <ProtectedRoute>
@@ -30,13 +30,13 @@ export default function Home() {
               Olá, <span className="bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">{nomeExibicao}</span>!
             </h2>
             <p className="text-sm text-slate-400 mt-2 max-w-xl">
-              Bem-vindo à fundação do CorreIA. A autenticação híbrida via Firebase Auth e a sincronização de perfis no Supabase PostgreSQL estão operando perfeitamente.
+              Bem-vindo ao CorreIA. Autenticação JWT + Supabase PostgreSQL operando perfeitamente.
             </p>
             
             <div className="mt-6 flex flex-wrap gap-3">
               <div className="flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl px-4 py-2 text-xs text-indigo-400 font-semibold">
                 <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
-                Auth: Firebase
+                Auth: JWT
               </div>
               <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-2 text-xs text-emerald-400 font-semibold">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -86,7 +86,7 @@ export default function Home() {
               <div className="space-y-3 text-xs">
                 <div className="flex items-center gap-2 text-slate-300">
                   <span className="text-emerald-400 font-bold">✓</span>
-                  <span>RF01 — Login Firebase Auth</span>
+                  <span>RF01 — Login JWT</span>
                 </div>
                 <div className="flex items-center gap-2 text-slate-300">
                   <span className="text-emerald-400 font-bold">✓</span>

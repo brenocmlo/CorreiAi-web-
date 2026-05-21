@@ -1,9 +1,6 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, signOut, User } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { supabase } from '@/lib/supabase';
 
 interface Profile {
   id: string;
@@ -16,7 +13,7 @@ interface Profile {
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: Profile | null;
   profile: Profile | null;
   loading: boolean;
   logout: () => Promise<void>;
@@ -26,58 +23,36 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  
-  const fetchProfile = async (uid: string) => {
+  const fetchMe = async () => {
     try {
-      const { data, error } = await supabase
-        .from('perfis')
-        .select('*')
-        .eq('id', uid)
-        .maybeSingle();
-
-      if (error) {
-        console.warn('Aviso ao buscar perfil:', error.message);
-        setProfile(null);
+      const res = await fetch('/api/auth/me');
+      if (res.ok) {
+        const { perfil } = await res.json();
+        setProfile(perfil as Profile);
       } else {
-        setProfile(data as Profile);
+        setProfile(null);
       }
-    } catch (err) {
-      console.error('Erro inesperado ao buscar perfil:', err);
+    } catch {
       setProfile(null);
     }
   };
 
   const refreshProfile = async () => {
-    if (user) {
-      await fetchProfile(user.uid);
-    }
+    await fetchMe();
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      
-      if (currentUser) {
-        
-        await fetchProfile(currentUser.uid);
-      } else {
-        setProfile(null);
-      }
-      
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+    fetchMe().finally(() => setLoading(false));
   }, []);
 
   const logout = async () => {
     setLoading(true);
     try {
-      await signOut(auth);
+      await fetch('/api/auth/logout', { method: 'POST' });
+      setProfile(null);
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
     } finally {
@@ -86,7 +61,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, logout, refreshProfile }}>
+    // user e profile apontam para o mesmo objeto — mantendo compatibilidade com código existente
+    <AuthContext.Provider value={{ user: profile, profile, loading, logout, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
