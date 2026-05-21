@@ -10,12 +10,12 @@ export default function Login() {
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
   const [carregando, setCarregando] = useState(false);
-  const { user, loading } = useAuth();
+  const { user, loading, refreshProfile } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace('/');
+      router.replace('/dashboard');
     }
   }, [user, loading, router]);
 
@@ -38,7 +38,8 @@ export default function Login() {
         return;
       }
 
-      router.replace('/');
+      await refreshProfile();
+      router.replace('/dashboard');
     } catch {
       setErro('Ocorreu um erro ao fazer login. Tente novamente mais tarde.');
     } finally {

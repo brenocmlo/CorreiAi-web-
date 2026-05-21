@@ -6,7 +6,7 @@ const JWT_EXPIRES_IN = '8h';
 export interface JwtPayload {
   uid: string;
   email: string;
-  role: 'corretor' | 'admin_corretora' | 'super_admin';
+  role: 'corretor' | 'lead' | 'admin_corretora' | 'super_admin';
   nome_completo: string;
 }
 

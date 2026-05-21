@@ -1,13 +1,23 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import KanbanBoard from '@/components/leads/KanbanBoard';
+import { useAuth } from '@/hooks/useAuth';
 import { useLeads } from '@/hooks/useLeads';
 
 export default function FunilPage() {
+  const { profile } = useAuth();
+  const router = useRouter();
   const { leads, loading, erro, recarregar } = useLeads();
+
+  useEffect(() => {
+    if (profile?.role === 'lead') {
+      router.replace('/dashboard');
+    }
+  }, [profile?.role, router]);
 
   return (
     <ProtectedRoute>
@@ -22,20 +32,12 @@ export default function FunilPage() {
                 RF08 — Kanban: Novo → Em atendimento → Visita agendada → Proposta → Fechado
               </p>
             </div>
-            <div className="flex gap-3">
-              <Link
-                href="/leads"
-                className="px-4 py-2.5 rounded-xl border border-slate-700 text-sm font-medium text-slate-300 hover:bg-slate-800 transition"
-              >
-                Listagem de leads
-              </Link>
-              <Link
-                href="/leads/novo"
-                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold text-white transition"
-              >
-                + Novo lead
-              </Link>
-            </div>
+            <Link
+              href="/leads"
+              className="px-4 py-2.5 rounded-xl border border-slate-700 text-sm font-medium text-slate-300 hover:bg-slate-800 transition"
+            >
+              Listagem de leads
+            </Link>
           </div>
 
           {erro && (

@@ -1,16 +1,26 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import LeadCard from '@/components/leads/LeadCard';
 import ConfirmDialog from '@/components/leads/ConfirmDialog';
+import { useAuth } from '@/hooks/useAuth';
 import { useLeads } from '@/hooks/useLeads';
 import { deleteLead } from '@/lib/leads';
 import type { Lead } from '@/types/lead';
 
 export default function LeadsPage() {
+  const { profile } = useAuth();
+  const router = useRouter();
   const { leads, loading, erro, recarregar } = useLeads();
+
+  useEffect(() => {
+    if (profile?.role === 'lead') {
+      router.replace('/dashboard');
+    }
+  }, [profile?.role, router]);
   const [leadExcluir, setLeadExcluir] = useState<Lead | null>(null);
   const [excluindo, setExcluindo] = useState(false);
   const [erroExclusao, setErroExclusao] = useState('');
@@ -43,20 +53,12 @@ export default function LeadsPage() {
                 RF06.1 — Listagem com opções de editar e excluir cada registro
               </p>
             </div>
-            <div className="flex gap-3">
-              <Link
-                href="/funil"
-                className="px-4 py-2.5 rounded-xl border border-slate-700 text-sm font-medium text-slate-300 hover:bg-slate-800 transition"
-              >
-                Ver funil (Kanban)
-              </Link>
-              <Link
-                href="/leads/novo"
-                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold text-white transition shadow-lg shadow-indigo-600/20"
-              >
-                + Novo lead
-              </Link>
-            </div>
+            <Link
+              href="/funil"
+              className="px-4 py-2.5 rounded-xl border border-slate-700 text-sm font-medium text-slate-300 hover:bg-slate-800 transition"
+            >
+              Ver funil (Kanban)
+            </Link>
           </div>
 
           {erro && (
@@ -77,13 +79,7 @@ export default function LeadsPage() {
             </div>
           ) : leads.length === 0 ? (
             <div className="text-center py-16 bg-slate-900/40 border border-slate-800 rounded-2xl">
-              <p className="text-slate-400 mb-4">Nenhum lead cadastrado ainda.</p>
-              <Link
-                href="/leads/novo"
-                className="inline-block text-indigo-400 font-semibold hover:underline"
-              >
-                Cadastrar primeiro lead
-              </Link>
+              <p className="text-slate-400">Nenhum lead cadastrado ainda.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

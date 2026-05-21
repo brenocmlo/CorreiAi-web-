@@ -8,7 +8,7 @@ interface Profile {
   email: string;
   cpf?: string;
   creci?: string;
-  role: 'corretor' | 'admin_corretora' | 'super_admin';
+  role: 'corretor' | 'lead' | 'admin_corretora' | 'super_admin';
   criado_em: string;
 }
 
