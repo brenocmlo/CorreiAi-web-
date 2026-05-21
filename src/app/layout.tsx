@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CorreIA — CRM Imobiliário Inteligente",
-  description: "Gerenciamento inteligente de imóveis, leads e recomendações automatizadas com IA.",
+  title: "CorreAi — Corretagem Inteligente",
+  description: "CRM imobiliário com IA para corretores organizarem leads, funil de vendas e fecharem mais negócios.",
 };
 
 export default function RootLayout({
