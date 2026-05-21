@@ -7,9 +7,10 @@ import { updateLead } from '@/lib/leads';
 
 interface KanbanBoardProps {
   leads: Lead[];
+  onLeadUpdated?: () => void;
 }
 
-export default function KanbanBoard({ leads }: KanbanBoardProps) {
+export default function KanbanBoard({ leads, onLeadUpdated }: KanbanBoardProps) {
   const [movendo, setMovendo] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -21,6 +22,7 @@ export default function KanbanBoard({ leads }: KanbanBoardProps) {
     setErro(null);
     try {
       await updateLead(leadId, { etapa });
+      onLeadUpdated?.();
     } catch {
       setErro('Não foi possível mover o lead. Tente novamente.');
     } finally {

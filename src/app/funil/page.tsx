@@ -7,7 +7,7 @@ import KanbanBoard from '@/components/leads/KanbanBoard';
 import { useLeads } from '@/hooks/useLeads';
 
 export default function FunilPage() {
-  const { leads, loading, erro } = useLeads();
+  const { leads, loading, erro, recarregar } = useLeads();
 
   return (
     <ProtectedRoute>
@@ -49,7 +49,7 @@ export default function FunilPage() {
               <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
             </div>
           ) : (
-            <KanbanBoard leads={leads} />
+            <KanbanBoard leads={leads} onLeadUpdated={recarregar} />
           )}
         </main>
       </div>

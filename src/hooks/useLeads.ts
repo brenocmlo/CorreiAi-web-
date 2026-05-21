@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { subscribeLeads } from '@/lib/leads';
+import { useCallback, useEffect, useState } from 'react';
+import { fetchLeads } from '@/lib/leads';
 import type { Lead } from '@/types/lead';
 
 export function useLeads() {
@@ -9,25 +9,26 @@ export function useLeads() {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  useEffect(() => {
-    setLoading(true);
+  const recarregar = useCallback(async () => {
     setErro(null);
     try {
-      const unsubscribe = subscribeLeads((data) => {
-        setLeads(data);
-        setLoading(false);
-      });
-      return unsubscribe;
-    } catch {
-      setErro('Não foi possível conectar ao Firebase Realtime Database.');
+      const data = await fetchLeads();
+      setLeads(data);
+    } catch (e) {
+      setErro(
+        e instanceof Error
+          ? e.message
+          : 'Não foi possível carregar os leads. Verifique o Supabase e a tabela leads.'
+      );
+    } finally {
       setLoading(false);
-      return undefined;
     }
   }, []);
 
-  const recarregar = useCallback(() => {
+  useEffect(() => {
     setLoading(true);
-  }, []);
+    recarregar();
+  }, [recarregar]);
 
   return { leads, loading, erro, recarregar };
 }

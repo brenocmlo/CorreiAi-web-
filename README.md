@@ -62,15 +62,6 @@ src/
 Crie um arquivo `.env.local` na raiz do projeto com os seguintes valores:
 
 ```env
-# Firebase Auth Config
-NEXT_PUBLIC_FIREBASE_API_KEY=SUA_API_KEY_DO_FIREBASE
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=SEU_AUTH_DOMAIN.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=SEU_PROJECT_ID
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=SEU_STORAGE_BUCKET.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=SEU_MESSAGING_SENDER_ID
-NEXT_PUBLIC_FIREBASE_APP_ID=SEU_APP_ID
-# Firebase Realtime Database (RF06 / RF08 — Leads e Funil)
-NEXT_PUBLIC_FIREBASE_DATABASE_URL=https://SEU_PROJECT_ID-default-rtdb.firebaseio.com
 # JWT — NUNCA adicionar NEXT_PUBLIC_ aqui (server-only)
 JWT_SECRET=<gerar com: openssl rand -base64 64>
 
@@ -105,9 +96,27 @@ CREATE TABLE perfis (
 
 -- RLS desativado — acesso controlado via service_role nas API Routes
 ALTER TABLE perfis DISABLE ROW LEVEL SECURITY;
+
+-- Tabela de leads (RF06 / RF08 — Pessoa 3)
+CREATE TABLE leads (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  nome            text NOT NULL,
+  telefone        text NOT NULL,
+  email           text NOT NULL,
+  faixa_orcamento text NOT NULL,
+  tipo_imovel     text NOT NULL,
+  etapa           text NOT NULL DEFAULT 'novo',
+  corretor_id     uuid REFERENCES perfis(id),
+  criado_em       timestamptz DEFAULT timezone('utc', now()) NOT NULL,
+  atualizado_em   timestamptz DEFAULT timezone('utc', now()) NOT NULL
+);
+
+ALTER TABLE leads DISABLE ROW LEVEL SECURITY;
 ```
 
 > **💡 Dica de Admin:** O formulário público sempre cria contas com `role = 'corretor'`. Para elevar para `admin_corretora` ou `super_admin`, edite a coluna `role` diretamente no Table Editor do Supabase.
+
+> **Pessoa 3:** Os leads são acessados via API Routes (`/api/leads`) com JWT. Execute o SQL da tabela `leads` acima no Supabase antes de testar.
 
 ---
 
@@ -134,25 +143,23 @@ export default function MeuComponente() {
 }
 ```
 
-### 2. Como usar o Firebase Realtime Database (Leads — Pessoa 3):
-Os leads e o funil Kanban são persistidos no **Firebase Realtime Database** (`src/lib/leads.ts`). No Firebase Console, ative o Realtime Database e configure as regras de leitura/escrita para usuários autenticados. Exemplo mínimo de regras:
+### 2. Leads e Funil Kanban (Pessoa 3)
 
-```json
-{
-  "rules": {
-    "leads": {
-      ".read": "auth != null",
-      ".write": "auth != null"
-    }
-  }
-}
-```
+CRUD via API Routes autenticadas por cookie JWT:
 
-### 3. Como usar o Banco de Dados do Supabase:
-Para realizar queries e inserções em tabelas que vocês criarem (ex: `imoveis` ou `leads`), importem a instância global do Supabase:
+| Método | Rota | Ação |
+|--------|------|------|
+| GET | `/api/leads` | Listar leads |
+| POST | `/api/leads` | Criar lead |
+| GET | `/api/leads/[id]` | Detalhe |
+| PATCH | `/api/leads/[id]` | Editar / mover etapa no funil |
+| DELETE | `/api/leads/[id]` | Excluir |
+
+No client, use `src/lib/leads.ts` (`fetchLeads`, `createLead`, etc.).
+
+### 3. Como usar o Banco de Dados do Supabase (client-side)
+
 > `user` e `profile` apontam para o mesmo objeto `Profile`. Use `profile` para dados do usuário.
-
-### 2. Como usar o Banco de Dados do Supabase (client-side)
 
 Para queries em tabelas que vocês criarem (ex: `imoveis`, `leads`):
 

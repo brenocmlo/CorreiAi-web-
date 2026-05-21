@@ -3,7 +3,7 @@ import { verifyToken } from '@/lib/jwt';
 
 // Rotas que exigem autenticação
 export const config = {
-  matcher: ['/', '/dashboard/:path*'],
+  matcher: ['/', '/dashboard/:path*', '/leads/:path*', '/funil'],
 };
 
 export function proxy(request: NextRequest) {

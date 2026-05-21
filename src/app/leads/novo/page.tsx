@@ -34,7 +34,7 @@ export default function NovoLeadPage() {
       const id = await createLead(valores);
       router.push(`/leads/${id}`);
     } catch {
-      setErro('Não foi possível cadastrar o lead. Verifique o Firebase Realtime Database.');
+      setErro('Não foi possível cadastrar o lead. Verifique o Supabase e a tabela leads.');
     } finally {
       setCarregando(false);
     }

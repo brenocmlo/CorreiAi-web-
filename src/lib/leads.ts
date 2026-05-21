@@ -1,69 +1,57 @@
-import {
-  ref,
-  push,
-  set,
-  update,
-  remove,
-  onValue,
-  off,
-  get,
-  type DataSnapshot,
-} from 'firebase/database';
-import { database } from '@/lib/firebase';
 import type { EtapaFunil, Lead, LeadInput } from '@/types/lead';
 
-const LEADS_PATH = 'leads';
+async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(url, {
+    ...options,
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    },
+  });
 
-type LeadRecord = Omit<Lead, 'id'>;
+  const data = await res.json().catch(() => ({}));
 
-function parseLeadsSnapshot(val: Record<string, LeadRecord> | null): Lead[] {
-  if (!val) return [];
-  return Object.entries(val)
-    .map(([id, data]) => ({ id, ...data }))
-    .sort((a, b) => b.criadoEm - a.criadoEm);
+  if (!res.ok) {
+    throw new Error((data as { error?: string }).error ?? 'Erro na requisição.');
+  }
+
+  return data as T;
+}
+
+export async function fetchLeads(): Promise<Lead[]> {
+  const { leads } = await apiRequest<{ leads: Lead[] }>('/api/leads');
+  return leads;
 }
 
 export async function createLead(data: LeadInput): Promise<string> {
-  const leadsRef = ref(database, LEADS_PATH);
-  const newRef = push(leadsRef);
-  const now = Date.now();
-  await set(newRef, {
-    nome: data.nome,
-    telefone: data.telefone,
-    email: data.email,
-    faixaOrcamento: data.faixaOrcamento,
-    tipoImovel: data.tipoImovel,
-    etapa: data.etapa ?? 'novo',
-    criadoEm: now,
-    atualizadoEm: now,
+  const { lead } = await apiRequest<{ lead: Lead }>('/api/leads', {
+    method: 'POST',
+    body: JSON.stringify(data),
   });
-  if (!newRef.key) throw new Error('Falha ao gerar ID do lead.');
-  return newRef.key;
+  return lead.id;
 }
 
 export async function getLead(id: string): Promise<Lead | null> {
-  const snapshot = await get(ref(database, `${LEADS_PATH}/${id}`));
-  if (!snapshot.exists()) return null;
-  return { id, ...(snapshot.val() as LeadRecord) };
+  try {
+    const { lead } = await apiRequest<{ lead: Lead }>(`/api/leads/${id}`);
+    return lead;
+  } catch (e) {
+    if (e instanceof Error && e.message.includes('não encontrado')) return null;
+    throw e;
+  }
 }
 
 export async function updateLead(
   id: string,
   data: Partial<LeadInput> & { etapa?: EtapaFunil }
 ): Promise<void> {
-  const leadRef = ref(database, `${LEADS_PATH}/${id}`);
-  await update(leadRef, { ...data, atualizadoEm: Date.now() });
+  await apiRequest(`/api/leads/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
 }
 
 export async function deleteLead(id: string): Promise<void> {
-  await remove(ref(database, `${LEADS_PATH}/${id}`));
-}
-
-export function subscribeLeads(callback: (leads: Lead[]) => void): () => void {
-  const leadsRef = ref(database, LEADS_PATH);
-  const handler = (snapshot: DataSnapshot) => {
-    callback(parseLeadsSnapshot(snapshot.val() as Record<string, LeadRecord> | null));
-  };
-  onValue(leadsRef, handler);
-  return () => off(leadsRef, 'value', handler);
+  await apiRequest(`/api/leads/${id}`, { method: 'DELETE' });
 }

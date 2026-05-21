@@ -10,7 +10,7 @@ import { deleteLead } from '@/lib/leads';
 import type { Lead } from '@/types/lead';
 
 export default function LeadsPage() {
-  const { leads, loading, erro } = useLeads();
+  const { leads, loading, erro, recarregar } = useLeads();
   const [leadExcluir, setLeadExcluir] = useState<Lead | null>(null);
   const [excluindo, setExcluindo] = useState(false);
   const [erroExclusao, setErroExclusao] = useState('');
@@ -22,6 +22,7 @@ export default function LeadsPage() {
     try {
       await deleteLead(leadExcluir.id);
       setLeadExcluir(null);
+      await recarregar();
     } catch {
       setErroExclusao('Erro ao excluir o lead. Tente novamente.');
     } finally {
