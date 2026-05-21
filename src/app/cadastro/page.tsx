@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
 import { ArrowRight, Circle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { BackToHomeButton } from '@/components/auth/BackToHomeButton';
 
 type TipoPerfil = 'corretor' | 'lead';
 
@@ -119,7 +120,8 @@ export default function Cadastro() {
   }
 
   return (
-    <main className="flex min-h-screen w-full bg-black selection:bg-brand-primary/30 p-2 transition-all duration-500 lg:h-screen lg:overflow-hidden lg:p-4">
+    <main className="relative flex min-h-screen w-full bg-black selection:bg-brand-primary/30 p-2 transition-all duration-500 lg:h-screen lg:overflow-hidden lg:p-4">
+      <BackToHomeButton />
       {/* Coluna esquerda — Hero */}
       <section className="relative hidden lg:flex w-[52%] flex-col items-center justify-end pb-32 px-12 rounded-3xl overflow-hidden shadow-2xl h-full">
         <video

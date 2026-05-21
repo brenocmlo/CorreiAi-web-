@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
 import { ArrowRight, Circle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { BackToHomeButton } from '@/components/auth/BackToHomeButton';
 
 const VIDEO_SRC =
   'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260506_081238_406ed0e3-5d83-436e-a512-0bbff7ec5b95.mp4';
@@ -75,7 +76,8 @@ export default function Login() {
   }
 
   return (
-    <main className="flex min-h-screen w-full bg-black selection:bg-brand-primary/30 p-2 transition-all duration-500 lg:h-screen lg:overflow-hidden lg:p-4">
+    <main className="relative flex min-h-screen w-full bg-black selection:bg-brand-primary/30 p-2 transition-all duration-500 lg:h-screen lg:overflow-hidden lg:p-4">
+      <BackToHomeButton />
       {/* Coluna esquerda — Hero */}
       <section className="relative hidden lg:flex w-[52%] flex-col items-center justify-end pb-32 px-12 rounded-3xl overflow-hidden shadow-2xl h-full">
         <video
