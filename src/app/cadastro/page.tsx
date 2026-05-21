@@ -3,18 +3,37 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { motion } from 'motion/react';
+import { Circle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 type TipoPerfil = 'corretor' | 'lead';
 
+const VIDEO_SRC =
+  'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260506_081238_406ed0e3-5d83-436e-a512-0bbff7ec5b95.mp4';
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.15, delayChildren: 0.2 },
+  },
+};
+
+const fadeSlideUp = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
+
 export default function Cadastro() {
   const [tipoPerfil, setTipoPerfil] = useState<TipoPerfil | null>(null);
-  const [nomeCompleto, setNomeCompleto] = useState('');
+  const [primeiroNome, setPrimeiroNome] = useState('');
+  const [sobrenome, setSobrenome] = useState('');
   const [email, setEmail] = useState('');
   const [cpf, setCpf] = useState('');
   const [creci, setCreci] = useState('');
   const [senha, setSenha] = useState('');
-  const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState(false);
   const [carregando, setCarregando] = useState(false);
@@ -37,13 +56,14 @@ export default function Cadastro() {
       return;
     }
 
-    if (senha !== confirmarSenha) {
-      setErro('As senhas não coincidem.');
+    const nomeCompleto = `${primeiroNome.trim()} ${sobrenome.trim()}`.trim();
+    if (!primeiroNome.trim() || !sobrenome.trim()) {
+      setErro('Preencha nome e sobrenome.');
       return;
     }
 
-    if (senha.length < 6) {
-      setErro('A senha deve ter no mínimo 6 caracteres.');
+    if (senha.length < 8) {
+      setErro('A senha deve ter no mínimo 8 caracteres.');
       return;
     }
 
@@ -92,200 +112,316 @@ export default function Cadastro() {
 
   if (loading || user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950">
-        <div className="relative w-16 h-16">
-          <div className="absolute top-0 left-0 w-full h-full border-4 border-indigo-500/20 rounded-full"></div>
-          <div className="absolute top-0 left-0 w-full h-full border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black p-4 relative overflow-hidden">
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl -z-10 animate-pulse"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl -z-10 animate-pulse delay-75"></div>
+    <main className="flex min-h-screen w-full bg-black selection:bg-white/30 p-2 transition-all duration-500 lg:h-screen lg:overflow-hidden lg:p-4">
+      {/* Coluna esquerda — Hero */}
+      <section className="relative hidden lg:flex w-[52%] flex-col items-center justify-end pb-32 px-12 rounded-3xl overflow-hidden shadow-2xl h-full">
+        <video
+          className="absolute inset-0 w-full h-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+        >
+          <source src={VIDEO_SRC} type="video/mp4" />
+        </video>
 
-      <div className="w-full max-w-lg bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-8 shadow-2xl relative">
-        <div className="absolute -top-[1px] left-10 right-10 h-[1px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent"></div>
+        <motion.div
+          className="relative z-10 w-full max-w-xs space-y-8"
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+        >
+          <motion.div variants={fadeSlideUp} className="flex items-center gap-2">
+            <Circle className="h-6 w-6 fill-white text-white" />
+            <span className="text-xl font-semibold tracking-tight">CorreAI</span>
+          </motion.div>
 
-        <div className="text-center mb-6">
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-emerald-400 via-teal-400 to-indigo-400 bg-clip-text text-transparent">
-            Crie sua conta
-          </h1>
-          <p className="text-sm text-slate-400 mt-2">Escolha como deseja usar a plataforma</p>
-        </div>
+          <motion.div variants={fadeSlideUp} className="space-y-3 text-center">
+            <h1 className="text-4xl font-medium tracking-tight whitespace-nowrap">
+              Junte-se à CorreAI
+            </h1>
+            <p className="text-white/60 text-sm leading-relaxed px-4">
+              Siga estas 2 etapas rápidas para ativar seu espaço.
+            </p>
+          </motion.div>
 
-        {erro && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400 flex items-start gap-2">
-            <span className="text-base mt-[2px]">⚠️</span>
-            <span>{erro}</span>
+          <motion.div variants={fadeSlideUp} className="space-y-3">
+            <StepItem number={1} text="Cadastre sua identidade" active />
+            <StepItem number={2} text="Finalize seu perfil" />
+          </motion.div>
+        </motion.div>
+      </section>
+
+      {/* Coluna direita — Formulário */}
+      <section className="flex-1 flex flex-col items-center justify-center py-12 lg:py-6 px-4 sm:px-12 lg:px-16 xl:px-24 overflow-y-auto lg:overflow-hidden">
+        <motion.div
+          className="w-full max-w-xl space-y-8 lg:space-y-6 sm:space-y-10"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+        >
+          <div className="space-y-2">
+            <h2 className="text-3xl font-medium tracking-tight">Criar novo perfil</h2>
+            <p className="text-white/40 text-sm">
+              Informe seus dados básicos para começar a jornada.
+            </p>
           </div>
-        )}
 
-        {sucesso && (
-          <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-sm text-emerald-400 flex items-start gap-2">
-            <span className="text-base mt-[2px]">✓</span>
-            <span>Conta criada com sucesso! Redirecionando...</span>
+          <SocialButton icon={<GoogleIcon />} label="Continuar com Google" />
+
+          <div className="relative flex items-center">
+            <div className="flex-grow border-t border-white/10" />
+            <span className="mx-4 bg-black px-4 text-xs font-medium text-white/40 uppercase tracking-widest">
+              Ou
+            </span>
+            <div className="flex-grow border-t border-white/10" />
           </div>
-        )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-              Tipo de perfil
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setTipoPerfil('lead')}
-                className={`p-4 rounded-xl border text-left transition ${
-                  tipoPerfil === 'lead'
-                    ? 'border-emerald-500 bg-emerald-500/10'
-                    : 'border-slate-800 hover:border-slate-600 bg-slate-950'
-                }`}
-              >
-                <span className="block font-semibold text-slate-200 text-sm">Lead</span>
-                <span className="block text-xs text-slate-500 mt-1">
-                  Cliente em busca de imóveis
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setTipoPerfil('corretor')}
-                className={`p-4 rounded-xl border text-left transition ${
-                  tipoPerfil === 'corretor'
-                    ? 'border-indigo-500 bg-indigo-500/10'
-                    : 'border-slate-800 hover:border-slate-600 bg-slate-950'
-                }`}
-              >
-                <span className="block font-semibold text-slate-200 text-sm">Corretor</span>
-                <span className="block text-xs text-slate-500 mt-1">
-                  Profissional CRECI
-                </span>
-              </button>
+          {erro && (
+            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">
+              {erro}
             </div>
-          </div>
-
-          {tipoPerfil && (
-            <>
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  Nome Completo
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={nomeCompleto}
-                  onChange={(e) => setNomeCompleto(e.target.value)}
-                  placeholder="Digite seu nome completo"
-                  className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-emerald-500 rounded-xl px-4 py-3 text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition duration-200"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  E-mail
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="exemplo@email.com"
-                  className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-emerald-500 rounded-xl px-4 py-3 text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition duration-200"
-                />
-              </div>
-
-              <div className={tipoPerfil === 'corretor' ? 'grid grid-cols-2 gap-4' : ''}>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                    CPF
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={cpf}
-                    onChange={(e) => setCpf(e.target.value)}
-                    placeholder="000.000.000-00"
-                    className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-emerald-500 rounded-xl px-4 py-3 text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition duration-200"
-                  />
-                </div>
-
-                {tipoPerfil === 'corretor' && (
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                      CRECI
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={creci}
-                      onChange={(e) => setCreci(e.target.value)}
-                      placeholder="Ex: 12345-F"
-                      className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-emerald-500 rounded-xl px-4 py-3 text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition duration-200"
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                    Senha
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={senha}
-                    onChange={(e) => setSenha(e.target.value)}
-                    placeholder="Mín. 6 caracteres"
-                    className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-emerald-500 rounded-xl px-4 py-3 text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition duration-200"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                    Confirmar Senha
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={confirmarSenha}
-                    onChange={(e) => setConfirmarSenha(e.target.value)}
-                    placeholder="Confirme"
-                    className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-emerald-500 rounded-xl px-4 py-3 text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition duration-200"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={carregando || sucesso}
-                className="w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-semibold py-3 px-4 rounded-xl transition duration-200 shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
-              >
-                {carregando ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                    Criando conta...
-                  </>
-                ) : (
-                  'Criar conta'
-                )}
-              </button>
-            </>
           )}
-        </form>
 
-        <div className="mt-6 text-center border-t border-slate-800/80 pt-4">
-          <p className="text-sm text-slate-500">
-            Já possui uma conta?{' '}
-            <Link href="/login" className="text-emerald-400 font-semibold hover:underline">
-              Fazer login
+          {sucesso && (
+            <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-sm text-emerald-400">
+              Conta criada com sucesso! Redirecionando...
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Tipo de perfil
+              </label>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setTipoPerfil('lead')}
+                  className={`h-11 rounded-xl text-sm font-medium transition ${
+                    tipoPerfil === 'lead'
+                      ? 'bg-white text-black'
+                      : 'bg-brand-gray text-white hover:bg-white/5'
+                  }`}
+                >
+                  Lead
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTipoPerfil('corretor')}
+                  className={`h-11 rounded-xl text-sm font-medium transition ${
+                    tipoPerfil === 'corretor'
+                      ? 'bg-white text-black'
+                      : 'bg-brand-gray text-white hover:bg-white/5'
+                  }`}
+                >
+                  Corretor
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <InputGroup
+                label="Nome"
+                placeholder="João"
+                value={primeiroNome}
+                onChange={setPrimeiroNome}
+                required
+              />
+              <InputGroup
+                label="Sobrenome"
+                placeholder="Silva"
+                value={sobrenome}
+                onChange={setSobrenome}
+                required
+              />
+            </div>
+
+            <InputGroup
+              label="E-mail"
+              placeholder="voce@email.com"
+              type="email"
+              value={email}
+              onChange={setEmail}
+              required
+            />
+
+            <InputGroup
+              label="CPF"
+              placeholder="000.000.000-00"
+              value={cpf}
+              onChange={setCpf}
+              required
+            />
+
+            {tipoPerfil === 'corretor' && (
+              <InputGroup
+                label="CRECI"
+                placeholder="Ex: 12345-F"
+                value={creci}
+                onChange={setCreci}
+                required
+              />
+            )}
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-white">Senha</label>
+              <div className="relative">
+                <input
+                  type={mostrarSenha ? 'text' : 'password'}
+                  required
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-brand-gray border-none rounded-xl h-11 px-4 pr-11 text-white placeholder:text-white/20 focus:ring-2 focus:ring-white/20 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarSenha((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition"
+                  aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                >
+                  {mostrarSenha ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+              <p className="text-xs text-white/30">Requer no mínimo 8 caracteres.</p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={carregando || sucesso}
+              className="w-full h-14 bg-white text-black font-semibold rounded-xl hover:bg-white/90 active:scale-[0.98] mt-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {carregando ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                  Criando conta...
+                </>
+              ) : (
+                'Criar conta'
+              )}
+            </button>
+          </form>
+
+          <p className="text-sm text-white/40 text-center">
+            Já faz parte da equipe?{' '}
+            <Link href="/login" className="text-white font-medium hover:underline">
+              Entrar
             </Link>
           </p>
-        </div>
-      </div>
+        </motion.div>
+      </section>
+    </main>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden>
+      <path
+        fill="#4285F4"
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+      />
+    </svg>
+  );
+}
+
+function StepItem({
+  number,
+  text,
+  active = false,
+}: {
+  number: number;
+  text: string;
+  active?: boolean;
+}) {
+  return (
+    <div
+      className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition ${
+        active
+          ? 'bg-white text-black border border-white'
+          : 'bg-brand-gray text-white border-none'
+      }`}
+    >
+      <span
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+          active ? 'bg-black text-white' : 'bg-white/10 text-white/40'
+        }`}
+      >
+        {number}
+      </span>
+      <span className="text-sm font-medium">{text}</span>
+    </div>
+  );
+}
+
+function SocialButton({
+  icon,
+  label,
+}: {
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      className="w-full flex items-center justify-center gap-3 bg-black border border-white/10 rounded-xl h-11 hover:bg-white/5 transition"
+    >
+      {icon}
+      <span className="text-sm font-medium text-white">{label}</span>
+    </button>
+  );
+}
+
+function InputGroup({
+  label,
+  placeholder,
+  type = 'text',
+  value,
+  onChange,
+  required = false,
+}: {
+  label: string;
+  placeholder: string;
+  type?: string;
+  value: string;
+  onChange: (value: string) => void;
+  required?: boolean;
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-white">{label}</label>
+      <input
+        type={type}
+        required={required}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full bg-brand-gray border-none rounded-xl h-11 px-4 text-white placeholder:text-white/20 focus:ring-2 focus:ring-white/20 focus:outline-none"
+      />
     </div>
   );
 }
