@@ -40,11 +40,15 @@ export async function POST(request: NextRequest) {
     // Hash da senha
     const senha_hash = await bcrypt.hash(senha, 12);
 
+    // Gerar ID único (a coluna 'id' não tem DEFAULT no banco legado)
+    const id = crypto.randomUUID();
+
     // Inserir perfil no Supabase
     const { data: novoPerfil, error: dbError } = await supabaseServer
       .from('perfis')
       .insert([
         {
+          id,
           nome_completo,
           email,
           cpf,
