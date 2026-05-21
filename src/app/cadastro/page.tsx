@@ -47,7 +47,7 @@ export default function Cadastro() {
     setCarregando(true);
 
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await fetch('/api/auth/cadastro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nome_completo: nomeCompleto, email, cpf, creci, senha }),

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     const payload = verifyToken(token);
 
-    // Buscar dados frescos do perfil no banco
+  
     const supabaseServer = createServerSupabaseClient();
     const { data: perfil, error } = await supabaseServer
       .from('perfis')
