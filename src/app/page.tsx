@@ -115,7 +115,7 @@ export default function Home() {
                 </div>
                 <div className="flex items-center justify-between text-slate-400">
                   <span>P3 — CRUD de Leads & Kanban:</span>
-                  <span className="text-[10px] px-2 py-0.5 bg-yellow-500/10 text-yellow-400 rounded-full border border-yellow-500/20">Aguardando</span>
+                  <span className="text-[10px] px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20">Pronto</span>
                 </div>
               </div>
             </div>

@@ -55,6 +55,8 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=SEU_PROJECT_ID
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=SEU_STORAGE_BUCKET.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=SEU_MESSAGING_SENDER_ID
 NEXT_PUBLIC_FIREBASE_APP_ID=SEU_APP_ID
+# Firebase Realtime Database (RF06 / RF08 — Leads e Funil)
+NEXT_PUBLIC_FIREBASE_DATABASE_URL=https://SEU_PROJECT_ID-default-rtdb.firebaseio.com
 
 # Supabase DB Config
 NEXT_PUBLIC_SUPABASE_URL=https://SEU_PROJECT_ID.supabase.co
@@ -111,7 +113,21 @@ export default function MeuComponente() {
 }
 ```
 
-### 2. Como usar o Banco de Dados do Supabase:
+### 2. Como usar o Firebase Realtime Database (Leads — Pessoa 3):
+Os leads e o funil Kanban são persistidos no **Firebase Realtime Database** (`src/lib/leads.ts`). No Firebase Console, ative o Realtime Database e configure as regras de leitura/escrita para usuários autenticados. Exemplo mínimo de regras:
+
+```json
+{
+  "rules": {
+    "leads": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}
+```
+
+### 3. Como usar o Banco de Dados do Supabase:
 Para realizar queries e inserções em tabelas que vocês criarem (ex: `imoveis` ou `leads`), importem a instância global do Supabase:
 ```tsx
 import { supabase } from '@/lib/supabase';
@@ -122,7 +138,7 @@ const { data, error } = await supabase
   .select('*');
 ```
 
-### 3. Como proteger uma página privada:
+### 4. Como proteger uma página privada:
 Para garantir que uma nova página seja acessível apenas por usuários logados, envolva o JSX dela com o componente `<ProtectedRoute>`:
 ```tsx
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -136,7 +152,7 @@ export default function MinhaPaginaPrivada() {
 }
 ```
 
-### 4. Como restringir páginas baseado em Cargo (ex: Painel Admin):
+### 5. Como restringir páginas baseado em Cargo (ex: Painel Admin):
 Vocês podem combinar o `ProtectedRoute` com uma condicional baseada na role do usuário:
 ```tsx
 import ProtectedRoute from '@/components/ProtectedRoute';
