@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
-import { Circle, Eye, EyeOff } from 'lucide-react';
+import { ArrowRight, Circle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const VIDEO_SRC =
@@ -69,17 +69,17 @@ export default function Login() {
   if (loading || user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
-        <div className="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-brand-primary" />
       </div>
     );
   }
 
   return (
-    <main className="flex min-h-screen w-full bg-black selection:bg-white/30 p-2 transition-all duration-500 lg:h-screen lg:overflow-hidden lg:p-4">
+    <main className="flex min-h-screen w-full bg-black selection:bg-brand-primary/30 p-2 transition-all duration-500 lg:h-screen lg:overflow-hidden lg:p-4">
       {/* Coluna esquerda — Hero */}
       <section className="relative hidden lg:flex w-[52%] flex-col items-center justify-end pb-32 px-12 rounded-3xl overflow-hidden shadow-2xl h-full">
         <video
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover opacity-60"
           autoPlay
           muted
           loop
@@ -87,6 +87,15 @@ export default function Login() {
         >
           <source src={VIDEO_SRC} type="video/mp4" />
         </video>
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
+        <div
+          className="pointer-events-none absolute top-[-20%] left-[20%] h-[600px] w-[600px] bg-blue-900/20 blur-[120px] mix-blend-screen"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute right-[20%] bottom-[-10%] h-[500px] w-[500px] bg-indigo-900/20 blur-[120px] mix-blend-screen"
+          aria-hidden
+        />
 
         <motion.div
           className="relative z-10 w-full max-w-xs space-y-8"
@@ -170,7 +179,7 @@ export default function Login() {
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-brand-gray border-none rounded-xl h-11 px-4 pr-11 text-white placeholder:text-white/20 focus:ring-2 focus:ring-white/20 focus:outline-none"
+                  className="h-11 w-full rounded-xl border-none bg-brand-gray px-4 pr-11 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
                 />
                 <button
                   type="button"
@@ -190,22 +199,30 @@ export default function Login() {
             <button
               type="submit"
               disabled={carregando}
-              className="w-full h-14 bg-white text-black font-semibold rounded-xl hover:bg-white/90 active:scale-[0.98] mt-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="group mt-4 flex h-14 w-full items-center justify-center gap-3 rounded-full bg-white pl-6 pr-2 font-semibold text-[#0a0400] transition hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(48,84,255,0.35)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {carregando ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-black/20 border-t-brand-primary" />
                   Entrando...
                 </>
               ) : (
-                'Entrar'
+                <>
+                  <span>Entrar</span>
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-primary transition-colors group-hover:bg-brand-primary-hover">
+                    <ArrowRight className="h-5 w-5 text-white" strokeWidth={2} />
+                  </span>
+                </>
               )}
             </button>
           </form>
 
           <p className="text-sm text-white/40 text-center">
             Não tem uma conta?{' '}
-            <Link href="/cadastro" className="text-white font-medium hover:underline">
+            <Link
+              href="/cadastro"
+              className="font-medium text-brand-accent transition hover:text-white hover:underline"
+            >
               Cadastre-se gratuitamente
             </Link>
           </p>
@@ -257,7 +274,7 @@ function StepItem({
     >
       <span
         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
-          active ? 'bg-black text-white' : 'bg-white/10 text-white/40'
+          active ? 'bg-brand-primary text-white' : 'bg-white/10 text-white/40'
         }`}
       >
         {number}
@@ -309,7 +326,7 @@ function InputGroup({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-brand-gray border-none rounded-xl h-11 px-4 text-white placeholder:text-white/20 focus:ring-2 focus:ring-white/20 focus:outline-none"
+        className="h-11 w-full rounded-xl border-none bg-brand-gray px-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
       />
     </div>
   );
