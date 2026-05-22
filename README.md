@@ -1,65 +1,110 @@
 # CorreIA — CRM Imobiliário Inteligente
 
-Este é o repositório do projeto **CorreIA**, um CRM Imobiliário Inteligente desenvolvido com **Next.js (App Router)**, **TypeScript** e **Tailwind CSS**. A arquitetura de autenticação utiliza **JWT próprio** com cookies `httpOnly` e **Supabase** como banco de dados PostgreSQL.
-
-Este documento descreve a fundação do projeto, a estrutura de pastas e fornece instruções para os próximos membros do grupo continuarem o desenvolvimento (Pessoas 2, 3 e 4).
+Este é o repositório do projeto **CorreIA**, um CRM Imobiliário Inteligente desenvolvido com **Next.js (App Router)**, **TypeScript**, **Tailwind CSS** e animações fluidas com **GSAP**. A arquitetura de dados e autenticação utiliza **Supabase** como banco de dados PostgreSQL e storage de mídias, integrado com **autenticação JWT própria** persistida via cookies `httpOnly`.
 
 ---
 
-## 🛠️ Arquitetura de Autenticação (Pessoa 1 — Breno)
+## 🚀 Principais Módulos e Recursos Desenvolvidos
 
-A autenticação é 100% própria, sem dependência de serviços de terceiros para sessão:
+1. **Autenticação JWT Própria (Pessoa 1 — Breno)**
+   - Login e cadastro próprios, sem dependência de serviços externos para sessão.
+   - Tokens JWT assinados no servidor e salvos em cookies `httpOnly; Secure; SameSite=Strict`, garantindo imunidade contra ataques XSS.
+   - Criptografia de senhas com `bcrypt` no servidor.
+   - Proteção de rotas privativas server-side via `src/proxy.ts` (Next.js 16).
 
-- **JWT (JSON Web Token):** Gerado pelo servidor após login/cadastro, armazenado em cookie `httpOnly; Secure; SameSite=Strict` — completamente imune a XSS.
-- **Supabase Database (PostgreSQL):** Armazena todos os dados do usuário — credenciais (senha com hash `bcrypt`), perfil (CPF, CRECI, role), imóveis, leads e histórico.
-- **Proxy (Middleware) Server-Side:** Protege rotas antes de qualquer código ser executado no browser, verificando o token JWT a cada requisição.
+2. **CRM / Módulo de Leads & Kanban (Pessoa 3)**
+   - Gestão completa de Leads (criação, edição, exclusão e detalhamento).
+   - Quadro Kanban interativo com 5 colunas representando as etapas do funil de vendas (`Novo` → `Em atendimento` → `Visita agendada` → `Proposta` → `Fechado`).
+   - Mapeamento robusto entre as propriedades em formato camelCase no cliente e snake_case no banco de dados.
 
-### Fluxo resumido
+3. **Catálogo de Imóveis (Pessoa 2)**
+   - CRUD completo de imóveis (Casa, Apartamento, Terreno, Comercial).
+   - Integração com o **Supabase Storage** para upload de fotos do imóvel direto do formulário de criação/edição.
+   - Controle de status de disponibilidade do imóvel (`Disponível`, `Vendido`, `Alugado`).
 
-```
-POST /api/auth/login  →  bcrypt.compare(senha, hash)  →  jwt.sign()  →  cookie httpOnly
-GET  /api/auth/me     →  jwt.verify(cookie)            →  retorna perfil do Supabase
-proxy.ts              →  jwt.verify(cookie)            →  redireciona para /login se inválido
-```
+4. **Visual Premium & Landing Page (Pessoa 4)**
+   - Identidade visual moderna baseada em Dark Mode e Glassmorphism.
+   - Landing page com Seção Hero dinâmica e um **Cinematic Footer** interativo equipado com **GSAP** e **ScrollTrigger**, incluindo efeitos magnéticos e animações guiadas pelo rolamento da página.
 
 ---
 
-## 🗂️ Estrutura de Pastas Implementada
+## 🗂️ Estrutura de Pastas Atualizada
 
 ```text
 src/
 ├── app/
 │   ├── api/
-│   │   └── auth/
-│   │       ├── login/route.ts      # POST — valida credenciais e emite JWT
-│   │       ├── register/route.ts   # POST — cria conta com hash bcrypt + emite JWT
-│   │       ├── logout/route.ts     # POST — apaga cookie
-│   │       └── me/route.ts         # GET  — valida token e retorna perfil
-│   ├── cadastro/                   # Página de Cadastro de Corretores (RF02)
+│   │   ├── auth/
+│   │   │   ├── login/route.ts      # POST — valida credenciais e emite JWT
+│   │   │   ├── register/route.ts   # POST — cria conta com hash bcrypt + emite JWT
+│   │   │   ├── logout/route.ts     # POST — apaga cookie
+│   │   │   └── me/route.ts         # GET  — valida token e retorna perfil
+│   │   └── leads/
+│   │       ├── route.ts            # GET/POST — lista e cadastra leads
+│   │       └── [id]/route.ts       # GET/PATCH/DELETE — detalhe, edição e remoção
+│   ├── cadastro/                   # Página de Cadastro de Corretores
 │   │   └── page.tsx
-│   ├── login/                      # Página de Login com validação (RF01)
+│   ├── dashboard/                  # Dashboard adaptativo por cargo (Corretor vs Lead)
+│   │   └── page.tsx
+│   ├── funil/                      # Tela do Quadro Kanban de leads
+│   │   └── page.tsx
+│   ├── imoveis/                    # CRUD de imóveis (listagem, novo, editar)
+│   │   ├── page.tsx
+│   │   ├── novo/page.tsx
+│   │   └── [id]/
+│   │       ├── page.tsx
+│   │       └── editar/page.tsx
+│   ├── leads/                      # Listagem e detalhamento de Leads
+│   │   ├── page.tsx
+│   │   └── [id]/page.tsx
+│   ├── login/                      # Página de Login
 │   │   └── page.tsx
 │   ├── globals.css
-│   ├── layout.tsx                  # Layout raiz (AuthProvider + Navbar)
-│   └── page.tsx                    # Dashboard / Página Inicial protegida
+│   ├── layout.tsx                  # Layout raiz com Navbar global e AuthProvider
+│   └── page.tsx                    # Landing Page pública com animações / Redirecionamento
 ├── components/
-│   ├── Navbar.tsx                  # Menu de navegação global responsivo
-│   └── ProtectedRoute.tsx          # Spinner de loading enquanto AuthContext hidrata
+│   ├── Navbar.tsx                  # Menu de navegação global com suporte a deslogar
+│   ├── ProtectedRoute.tsx          # Wrapper para segurar renderização enquanto valida JWT
+│   ├── ConfirmModal.tsx            # Modal de confirmação geral (ex: excluir imóvel)
+│   ├── ImovelCard.tsx              # Card visual de exibição do imóvel
+│   ├── ImovelForm.tsx              # Formulário unificado de criação/edição com upload de imagem
+│   ├── auth/
+│   │   └── BackToHomeButton.tsx    # Botão de retorno à Home
+│   ├── cadastro/
+│   │   └── CadastroForm.tsx        # Formulário customizado de corretor / leads
+│   ├── landing/
+│   │   ├── LandingNavbar.tsx       # Navbar exclusiva da landing page
+│   │   ├── HeroSection.tsx         # Bloco inicial com estatísticas e apelo visual
+│   │   ├── CinematicFooter.tsx     # Rodapé com efeitos GSAP e Magnetic Buttons
+│   │   └── SunburstIcon.tsx        # Icone decorativo animado
+│   └── leads/
+│       ├── ConfirmDialog.tsx       # Confirmação de exclusão para Leads
+│       ├── KanbanBoard.tsx         # Estrutura principal do Kanban
+│       ├── KanbanColuna.tsx        # Renderização de cada estágio do funil
+│       ├── LeadCard.tsx            # Card individual do lead no funil
+│       └── LeadForm.tsx            # Formulário de criação/edição de lead
 ├── contexts/
-│   └── AuthContext.tsx             # Estado global de autenticação (via /api/auth/me)
+│   └── AuthContext.tsx             # Estado global de autenticação
 ├── hooks/
-│   └── useAuth.ts                  # Hook customizado para consumir o AuthContext
+│   ├── useAuth.ts                  # Hook de atalho para AuthContext
+│   ├── useImoveis.ts               # Hook de integração com Supabase para imóveis
+│   └── useLeads.ts                 # Hook para comunicação com API Routes de leads
 ├── lib/
+│   ├── api-auth.ts                 # Auxiliar de leitura JWT em API Routes
 │   ├── jwt.ts                      # signToken() e verifyToken()
-│   └── supabase.ts                 # Client público + createServerSupabaseClient()
-└── proxy.ts                        # Proteção server-side de rotas (substituiu middleware)
+│   ├── leads-mapper.ts             # Tradutor de camelCase <-> snake_case para leads
+│   ├── leads.ts                    # Requisições HTTP para API Routes de leads
+│   └── supabase.ts                 # Clients públicos e privados do Supabase
+├── types/
+│   └── lead.ts                     # Interfaces de tipos e constantes do funil
+└── proxy.ts                        # Middleware de roteamento e validação server-side
 ```
 
 ---
 
 ## 🔌 Configuração das Variáveis de Ambiente
 
-Crie um arquivo `.env.local` na raiz do projeto com os seguintes valores:
+Crie um arquivo `.env.local` na raiz do projeto:
 
 ```env
 # JWT — NUNCA adicionar NEXT_PUBLIC_ aqui (server-only)
@@ -73,31 +118,28 @@ NEXT_PUBLIC_SUPABASE_URL=https://SEU_PROJECT_ID.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=SUA_ANON_KEY_DO_SUPABASE
 ```
 
-> **⚠️ Atenção:** `JWT_SECRET` e `SUPABASE_SERVICE_ROLE_KEY` **nunca** devem ter o prefixo `NEXT_PUBLIC_`. Isso os mantém exclusivamente no servidor.
-
 ---
 
-## 💾 Script SQL do Banco de Dados (Supabase)
+## 💾 Modelagem do Banco de Dados (SQL do Supabase)
 
-Execute no **SQL Editor** do painel do Supabase:
+Execute os comandos a seguir no painel **SQL Editor** do Supabase para inicializar as tabelas necessárias:
 
 ```sql
--- Criação da tabela de perfis
+-- 1. Tabela de Perfis de Usuários
 CREATE TABLE perfis (
-  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   nome_completo text NOT NULL,
-  email       text UNIQUE NOT NULL,
-  cpf         text,
-  creci       text,
-  senha_hash  text NOT NULL,  -- hash bcrypt gerenciado pelo backend
-  role        text DEFAULT 'corretor', -- 'corretor' | 'admin_corretora' | 'super_admin'
-  criado_em   timestamp with time zone DEFAULT timezone('utc', now()) NOT NULL
+  email         text UNIQUE NOT NULL,
+  cpf           text,
+  creci         text,
+  senha_hash    text NOT NULL,
+  role          text DEFAULT 'corretor', -- 'corretor' | 'lead' | 'admin_corretora' | 'super_admin'
+  criado_em     timestamp with time zone DEFAULT timezone('utc', now()) NOT NULL
 );
 
--- RLS desativado — acesso controlado via service_role nas API Routes
 ALTER TABLE perfis DISABLE ROW LEVEL SECURITY;
 
--- Tabela de leads (RF06 / RF08 — Pessoa 3)
+-- 2. Tabela de Leads
 CREATE TABLE leads (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   nome            text NOT NULL,
@@ -106,79 +148,64 @@ CREATE TABLE leads (
   faixa_orcamento text NOT NULL,
   tipo_imovel     text NOT NULL,
   etapa           text NOT NULL DEFAULT 'novo',
-  corretor_id     uuid REFERENCES perfis(id),
+  corretor_id     uuid REFERENCES perfis(id) ON DELETE SET NULL,
   criado_em       timestamptz DEFAULT timezone('utc', now()) NOT NULL,
   atualizado_em   timestamptz DEFAULT timezone('utc', now()) NOT NULL
 );
 
 ALTER TABLE leads DISABLE ROW LEVEL SECURITY;
+
+-- 3. Tabela de Imóveis
+CREATE TABLE imoveis (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tipo        text NOT NULL, -- 'casa' | 'apartamento' | 'terreno' | 'comercial'
+  endereco    text NOT NULL,
+  bairro      text NOT NULL,
+  valor       numeric NOT NULL,
+  metragem    numeric,
+  quartos     integer,
+  vagas       integer,
+  status      text NOT NULL DEFAULT 'disponivel', -- 'disponivel' | 'vendido' | 'alugado'
+  imagem_url  text,
+  criado_em   timestamp with time zone DEFAULT timezone('utc', now()) NOT NULL
+);
+
+ALTER TABLE imoveis DISABLE ROW LEVEL SECURITY;
 ```
 
-> **💡 Dica de Admin:** O formulário público sempre cria contas com `role = 'corretor'`. Para elevar para `admin_corretora` ou `super_admin`, edite a coluna `role` diretamente no Table Editor do Supabase.
-
-> **Pessoa 3:** Os leads são acessados via API Routes (`/api/leads`) com JWT. Execute o SQL da tabela `leads` acima no Supabase antes de testar.
+### 📁 Configuração do Supabase Storage
+Para o upload de fotos dos imóveis funcionar:
+1. Vá até o menu **Storage** no console do Supabase.
+2. Crie um novo Bucket de armazenamento.
+3. Nomeie o bucket exatamente como `imoveis_imagens`.
+4. Certifique-se de configurar o bucket como **Public** para permitir que as URLs de visualização sejam carregadas publicamente nos cards.
 
 ---
 
-## 🚀 Guia de Integração para os Próximos Desenvolvedores (Pessoas 2, 3 e 4)
+## 🛠️ Guia de Integração e Desenvolvimento
 
-### 1. Como resgatar os dados do usuário autenticado
+### Controle de Rotas
+A segurança de rotas privadas é baseada em `src/proxy.ts`. Caso queira proteger uma nova página, lembre-se de adicionar o padrão dela na configuração de `matcher`:
+```ts
+export const config = {
+  matcher: ['/', '/dashboard/:path*', '/imoveis/:path*', '/leads/:path*', '/funil/:path*', '/outra-pagina/:path*'],
+};
+```
 
-Em qualquer componente `'use client'`, use o hook `useAuth`:
-
+### Resgatar dados de Autenticação no Client
 ```tsx
 import { useAuth } from '@/hooks/useAuth';
 
-export default function MeuComponente() {
-  const { user, profile, loading } = useAuth();
-
-  if (loading) return <p>Carregando...</p>;
-
-  return (
-    <div>
-      <p>Nome: {profile?.nome_completo}</p>
-      <p>Cargo: {profile?.role}</p> {/* corretor | admin_corretora | super_admin */}
-    </div>
-  );
+export default function Exemplo() {
+  const { profile, loading } = useAuth();
+  
+  if (loading) return <div>Carregando...</div>;
+  return <div>Nome: {profile?.nome_completo} ({profile?.role})</div>;
 }
 ```
 
-### 2. Leads e Funil Kanban (Pessoa 3)
-
-CRUD via API Routes autenticadas por cookie JWT:
-
-| Método | Rota | Ação |
-|--------|------|------|
-| GET | `/api/leads` | Listar leads |
-| POST | `/api/leads` | Criar lead |
-| GET | `/api/leads/[id]` | Detalhe |
-| PATCH | `/api/leads/[id]` | Editar / mover etapa no funil |
-| DELETE | `/api/leads/[id]` | Excluir |
-
-No client, use `src/lib/leads.ts` (`fetchLeads`, `createLead`, etc.).
-
-### 3. Como usar o Banco de Dados do Supabase (client-side)
-
-> `user` e `profile` apontam para o mesmo objeto `Profile`. Use `profile` para dados do usuário.
-
-Para queries em tabelas que vocês criarem (ex: `imoveis`, `leads`):
-
-```tsx
-import { supabase } from '@/lib/supabase';
-
-const { data, error } = await supabase
-  .from('imoveis')
-  .select('*');
-```
-
-### 4. Como proteger uma página privada:
-Para garantir que uma nova página seja acessível apenas por usuários logados, envolva o JSX dela com o componente `<ProtectedRoute>`:
-```tsx
-import ProtectedRoute from '@/components/ProtectedRoute';
-### 3. Como usar o Supabase em API Routes (server-side)
-
-Para operações privilegiadas dentro de `route.ts`, use o client com service_role:
-
+### Utilizando Serviços no Backend (API Routes)
+Para realizar queries que necessitam ultrapassar restrições de permissões ou ler dados sigilosos no backend, use o client com service_role:
 ```ts
 import { createServerSupabaseClient } from '@/lib/supabase';
 
@@ -186,38 +213,12 @@ const supabaseServer = createServerSupabaseClient();
 const { data } = await supabaseServer.from('perfis').select('*');
 ```
 
-### 5. Como restringir páginas baseado em Cargo (ex: Painel Admin):
-Vocês podem combinar o `ProtectedRoute` com uma condicional baseada na role do usuário:
-### 4. Como proteger uma página privada
-
-A proteção real acontece no `proxy.ts` (server-side). O `ProtectedRoute` é apenas um spinner de loading. Para adicionar uma nova rota protegida, adicione o path no `matcher` de `src/proxy.ts`:
-
-```ts
-export const config = {
-  matcher: ['/', '/dashboard/:path*', '/nova-rota/:path*'],
-};
-```
-
-### 5. Como restringir por Cargo (ex: Painel Admin)
-
-```tsx
-import { useAuth } from '@/hooks/useAuth';
-
-export default function AreaAdmin() {
-  const { profile } = useAuth();
-
-  if (profile?.role !== 'super_admin' && profile?.role !== 'admin_corretora') {
-    return <p>Acesso negado. Apenas administradores podem ver esta tela.</p>;
-  }
-
-  return <div>Painel de Controle Administrativo</div>;
-}
-```
-
 ---
 
 ## ⚙️ Comandos do Projeto
 
-- `npm run dev` — Inicia o servidor de desenvolvimento em `http://localhost:3000`
-- `npm run build` — Compila para produção e valida TypeScript
-- `npm start` — Inicia o servidor Next.js em modo produção após o build
+- `pnpm install` — Instala as dependências do projeto.
+- `pnpm dev` — Inicia o servidor de desenvolvimento local.
+- `pnpm build` — Compila a aplicação para produção e roda as validações estáticas/TypeScript.
+- `pnpm start` — Inicializa o servidor Next.js construído para produção.
+
