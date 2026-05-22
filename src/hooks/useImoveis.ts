@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createBrowserSupabaseClient } from '@/lib/supabase';
+
+const supabase = createBrowserSupabaseClient();
 
 export interface Imovel {
   id: string;
