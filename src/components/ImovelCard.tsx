@@ -11,6 +11,24 @@ interface ImovelCardProps {
 export default function ImovelCard({ imovel, onEdit, onDelete }: ImovelCardProps) {
   return (
     <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden hover:shadow-xl transition-shadow flex flex-col">
+      {/* Imagem do Imóvel */}
+      <div className="relative h-48 w-full bg-slate-900 border-b border-slate-700">
+        {imovel.imagem_url ? (
+          <img 
+            src={imovel.imagem_url} 
+            alt={`Imagem de ${imovel.tipo} em ${imovel.bairro}`}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 opacity-50">
+            <svg className="w-12 h-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            <span className="text-xs font-medium uppercase tracking-wider">Sem Foto</span>
+          </div>
+        )}
+      </div>
+
       <div className="p-5 flex-grow">
         <div className="flex justify-between items-start mb-4">
           <span className="inline-block px-3 py-1 bg-blue-500/20 text-blue-400 text-xs font-semibold rounded-full uppercase tracking-wider">

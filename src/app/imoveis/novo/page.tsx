@@ -6,7 +6,7 @@ import { useImoveis } from '@/hooks/useImoveis';
 import ImovelForm from '@/components/ImovelForm';
 
 export default function NovoImovelPage() {
-  const { createImovel, loading } = useImoveis();
+  const { createImovel, uploadImagem, loading } = useImoveis();
 
   return (
     <div className="p-6 md:p-8 max-w-4xl mx-auto">
@@ -22,7 +22,8 @@ export default function NovoImovelPage() {
       </div>
 
       <ImovelForm 
-        onSubmit={createImovel} 
+        onSubmit={createImovel}
+        onUploadImage={uploadImagem}
         isLoading={loading} 
       />
     </div>

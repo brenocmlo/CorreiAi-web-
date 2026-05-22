@@ -5,13 +5,17 @@ import { ImovelInput } from '@/hooks/useImoveis';
 import { useRouter } from 'next/navigation';
 
 interface ImovelFormProps {
-  initialData?: ImovelInput;
+  initialData?: ImovelInput & { imagem_url?: string | null };
   onSubmit: (data: ImovelInput) => Promise<boolean>;
+  onUploadImage?: (file: File) => Promise<string | null>;
   isLoading: boolean;
 }
 
-export default function ImovelForm({ initialData, onSubmit, isLoading }: ImovelFormProps) {
+export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoading }: ImovelFormProps) {
   const router = useRouter();
+  
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   
   const [formData, setFormData] = useState<ImovelInput>({
     tipo: initialData?.tipo || 'casa',
@@ -22,6 +26,7 @@ export default function ImovelForm({ initialData, onSubmit, isLoading }: ImovelF
     quartos: initialData?.quartos || 0,
     vagas: initialData?.vagas || 0,
     status: initialData?.status || 'disponivel',
+    imagem_url: initialData?.imagem_url || null,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -36,7 +41,21 @@ export default function ImovelForm({ initialData, onSubmit, isLoading }: ImovelF
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const success = await onSubmit(formData);
+    let finalUrl = formData.imagem_url;
+    
+    if (imageFile && onUploadImage) {
+      setUploading(true);
+      const url = await onUploadImage(imageFile);
+      setUploading(false);
+      if (url) {
+        finalUrl = url;
+      } else {
+        // Falha no upload, mas continua para tentar salvar o form
+        alert('Erro ao fazer upload da imagem. O imóvel será salvo sem a nova imagem.');
+      }
+    }
+
+    const success = await onSubmit({ ...formData, imagem_url: finalUrl });
     if (success) {
       router.push('/imoveis');
     }
@@ -44,6 +63,34 @@ export default function ImovelForm({ initialData, onSubmit, isLoading }: ImovelF
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 bg-slate-800 p-6 md:p-8 rounded-xl border border-slate-700">
+      <div className="mb-6 border-b border-slate-700 pb-6">
+        <label className="block text-sm font-medium text-slate-300 mb-2">
+          Foto Principal do Imóvel
+        </label>
+        <div className="flex items-center gap-4">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              if (e.target.files && e.target.files[0]) {
+                setImageFile(e.target.files[0]);
+              }
+            }}
+            className="block w-full text-sm text-slate-400
+              file:mr-4 file:py-2.5 file:px-4
+              file:rounded-lg file:border-0
+              file:text-sm file:font-semibold
+              file:bg-slate-700 file:text-slate-300
+              hover:file:bg-slate-600 transition-colors"
+          />
+          {formData.imagem_url && !imageFile && (
+            <div className="text-sm text-slate-400 truncate w-32">
+              (Imagem atual salva)
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         {/* Tipo */}
@@ -196,10 +243,10 @@ export default function ImovelForm({ initialData, onSubmit, isLoading }: ImovelF
         </button>
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || uploading}
           className="px-6 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center justify-center min-w-[120px]"
         >
-          {isLoading ? 'Salvando...' : 'Salvar Imóvel'}
+          {uploading ? 'Enviando imagem...' : isLoading ? 'Salvando...' : 'Salvar Imóvel'}
         </button>
       </div>
     </form>

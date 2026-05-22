@@ -14,6 +14,7 @@ export interface Imovel {
   vagas?: number | null;
   status: string;
   criado_em: string;
+  imagem_url?: string | null;
 }
 
 export type ImovelInput = Omit<Imovel, 'id' | 'criado_em'>;
@@ -122,6 +123,33 @@ export function useImoveis() {
     }
   };
 
+  const uploadImagem = async (file: File): Promise<string | null> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('imoveis_imagens')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('imoveis_imagens')
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    } catch (err: any) {
+      setError(err.message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     imoveis,
     loading,
@@ -131,5 +159,6 @@ export function useImoveis() {
     createImovel,
     updateImovel,
     deleteImovel,
+    uploadImagem,
   };
 }

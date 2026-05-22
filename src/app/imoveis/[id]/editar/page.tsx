@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 export default function EditarImovelPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = use(params);
-  const { fetchImovelById, updateImovel, loading } = useImoveis();
+  const { fetchImovelById, updateImovel, uploadImagem, loading } = useImoveis();
   const [imovel, setImovel] = useState<Imovel | null>(null);
   const [isFetching, setIsFetching] = useState(true);
 
@@ -56,6 +56,7 @@ export default function EditarImovelPage({ params }: { params: Promise<{ id: str
         <ImovelForm 
           initialData={imovel}
           onSubmit={handleUpdate} 
+          onUploadImage={uploadImagem}
           isLoading={loading} 
         />
       )}
