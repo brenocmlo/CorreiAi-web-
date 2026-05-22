@@ -10,8 +10,13 @@ export default function Navbar() {
   const pathname = usePathname();
   const [menuAberto, setMenuAberto] = useState(false);
 
-  // Não exibir a Navbar nas telas de Login e Cadastro
-  if (pathname === '/login' || pathname === '/cadastro') {
+  // Não exibir a Navbar nas telas públicas
+  if (
+    pathname === '/' ||
+    pathname === '/login' ||
+    pathname === '/cadastro' ||
+    pathname === '/cadastro/lead'
+  ) {
     return null;
   }
 
@@ -21,10 +26,11 @@ export default function Navbar() {
     return null;
   }
 
-  const nomeExibicao = profile?.nome_completo || 'Corretor';
-  
-  const navLinks = [
-    { href: '/', label: 'Dashboard' },
+  const nomeExibicao = profile?.nome_completo || 'Usuário';
+  const isLead = profile?.role === 'lead';
+
+  const navLinksCorretor = [
+    { href: '/dashboard', label: 'Dashboard' },
     { href: '/imoveis', label: 'Imóveis' },
     { href: '/leads', label: 'Leads' },
     { href: '/funil', label: 'Funil (Kanban)' },
@@ -32,13 +38,17 @@ export default function Navbar() {
     { href: '/admin', label: 'Admin' },
   ];
 
+  const navLinksLead = [{ href: '/dashboard', label: 'Início' }];
+
+  const navLinks = isLead ? navLinksLead : navLinksCorretor;
+
   return (
     <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo e Links Principais */}
           <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/dashboard" className="flex items-center gap-2">
               <span className="text-xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                 CorreIA
               </span>

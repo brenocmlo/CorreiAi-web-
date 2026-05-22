@@ -8,6 +8,8 @@ import { ArrowRight, Circle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { BackToHomeButton } from '@/components/auth/BackToHomeButton';
 
+type TipoPerfil = 'corretor' | 'lead';
+
 const VIDEO_SRC =
   'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260506_081238_406ed0e3-5d83-436e-a512-0bbff7ec5b95.mp4';
 
@@ -24,11 +26,39 @@ const fadeSlideUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
 
-export default function Login() {
+const COPY: Record<
+  TipoPerfil,
+  { tituloHero: string; subtituloHero: string; tituloForm: string; subtituloForm: string }
+> = {
+  corretor: {
+    tituloHero: 'Junte-se à CorreAI',
+    subtituloHero: 'Siga estas 2 etapas rápidas para ativar seu espaço.',
+    tituloForm: 'Criar novo perfil',
+    subtituloForm: 'Informe seus dados básicos para começar a jornada.',
+  },
+  lead: {
+    tituloHero: 'Encontre seu imóvel',
+    subtituloHero: 'Cadastre-se em poucos passos e receba recomendações personalizadas.',
+    tituloForm: 'Criar sua conta',
+    subtituloForm: 'Informe seus dados para começar a buscar imóveis.',
+  },
+};
+
+interface CadastroFormProps {
+  tipoPerfil: TipoPerfil;
+}
+
+export default function CadastroForm({ tipoPerfil }: CadastroFormProps) {
+  const copy = COPY[tipoPerfil];
+  const [primeiroNome, setPrimeiroNome] = useState('');
+  const [sobrenome, setSobrenome] = useState('');
   const [email, setEmail] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [creci, setCreci] = useState('');
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [erro, setErro] = useState('');
+  const [sucesso, setSucesso] = useState(false);
   const [carregando, setCarregando] = useState(false);
   const { user, loading, refreshProfile } = useAuth();
   const router = useRouter();
@@ -42,26 +72,57 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro('');
+    setSucesso(false);
+
+    const nomeCompleto = `${primeiroNome.trim()} ${sobrenome.trim()}`.trim();
+    if (!primeiroNome.trim() || !sobrenome.trim()) {
+      setErro('Preencha nome e sobrenome.');
+      return;
+    }
+
+    if (senha.length < 8) {
+      setErro('A senha deve ter no mínimo 8 caracteres.');
+      return;
+    }
+
+    if (!cpf) {
+      setErro('Por favor, preencha o CPF.');
+      return;
+    }
+
+    if (tipoPerfil === 'corretor' && !creci) {
+      setErro('Corretores devem informar o CRECI.');
+      return;
+    }
+
     setCarregando(true);
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, senha }),
+        body: JSON.stringify({
+          nome_completo: nomeCompleto,
+          email,
+          cpf,
+          creci: tipoPerfil === 'corretor' ? creci : null,
+          senha,
+          role: tipoPerfil,
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setErro(data.error ?? 'Ocorreu um erro ao fazer login. Tente novamente mais tarde.');
+        setErro(data.error ?? 'Ocorreu um erro ao criar a conta. Tente novamente.');
         return;
       }
 
+      setSucesso(true);
       await refreshProfile();
       router.replace('/dashboard');
     } catch {
-      setErro('Ocorreu um erro ao fazer login. Tente novamente mais tarde.');
+      setErro('Ocorreu um erro ao criar a conta. Tente novamente.');
     } finally {
       setCarregando(false);
     }
@@ -78,7 +139,6 @@ export default function Login() {
   return (
     <main className="relative flex min-h-screen w-full bg-black selection:bg-brand-primary/30 p-2 transition-all duration-500 lg:h-screen lg:overflow-hidden lg:p-4">
       <BackToHomeButton />
-      {/* Coluna esquerda — Hero */}
       <section className="relative hidden lg:flex w-[52%] flex-col items-center justify-end pb-32 px-12 rounded-3xl overflow-hidden shadow-2xl h-full">
         <video
           className="absolute inset-0 h-full w-full object-cover opacity-60"
@@ -112,21 +172,20 @@ export default function Login() {
 
           <motion.div variants={fadeSlideUp} className="space-y-3 text-center">
             <h1 className="text-4xl font-medium tracking-tight whitespace-nowrap">
-              Entre na CorreAI
+              {copy.tituloHero}
             </h1>
             <p className="text-white/60 text-sm leading-relaxed px-4">
-              Acesse seu painel e gerencie leads, imóveis e muito mais.
+              {copy.subtituloHero}
             </p>
           </motion.div>
 
           <motion.div variants={fadeSlideUp} className="space-y-3">
-            <StepItem number={1} text="Acesse sua conta" active />
-            <StepItem number={2} text="Gerencie seu CRM" />
+            <StepItem number={1} text="Cadastre sua identidade" active />
+            <StepItem number={2} text="Finalize seu perfil" />
           </motion.div>
         </motion.div>
       </section>
 
-      {/* Coluna direita — Formulário */}
       <section className="flex-1 flex flex-col items-center justify-center py-12 lg:py-6 px-4 sm:px-12 lg:px-16 xl:px-24 overflow-y-auto lg:overflow-hidden">
         <motion.div
           className="w-full max-w-xl space-y-8 lg:space-y-6 sm:space-y-10"
@@ -135,10 +194,8 @@ export default function Login() {
           transition={{ duration: 0.8, ease: 'easeOut' }}
         >
           <div className="space-y-2">
-            <h2 className="text-3xl font-medium tracking-tight">Entrar na sua conta</h2>
-            <p className="text-white/40 text-sm">
-              Entre na sua conta para gerenciar seu CRM imobiliário.
-            </p>
+            <h2 className="text-3xl font-medium tracking-tight">{copy.tituloForm}</h2>
+            <p className="text-white/40 text-sm">{copy.subtituloForm}</p>
           </div>
 
           <SocialButton icon={<GoogleIcon />} label="Continuar com Google" />
@@ -157,7 +214,30 @@ export default function Login() {
             </div>
           )}
 
+          {sucesso && (
+            <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-sm text-emerald-400">
+              Conta criada com sucesso! Redirecionando...
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="grid grid-cols-2 gap-4">
+              <InputGroup
+                label="Nome"
+                placeholder="João"
+                value={primeiroNome}
+                onChange={setPrimeiroNome}
+                required
+              />
+              <InputGroup
+                label="Sobrenome"
+                placeholder="Silva"
+                value={sobrenome}
+                onChange={setSobrenome}
+                required
+              />
+            </div>
+
             <InputGroup
               label="E-mail"
               placeholder="voce@email.com"
@@ -167,13 +247,26 @@ export default function Login() {
               required
             />
 
+            <InputGroup
+              label="CPF"
+              placeholder="000.000.000-00"
+              value={cpf}
+              onChange={setCpf}
+              required
+            />
+
+            {tipoPerfil === 'corretor' && (
+              <InputGroup
+                label="CRECI"
+                placeholder="Ex: 12345-F"
+                value={creci}
+                onChange={setCreci}
+                required
+              />
+            )}
+
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-white">Senha</label>
-                <a href="#" className="text-xs text-white/40 hover:text-white/70 transition">
-                  Esqueceu a senha?
-                </a>
-              </div>
+              <label className="block text-sm font-medium text-white">Senha</label>
               <div className="relative">
                 <input
                   type={mostrarSenha ? 'text' : 'password'}
@@ -196,21 +289,22 @@ export default function Login() {
                   )}
                 </button>
               </div>
+              <p className="text-xs text-white/30">Requer no mínimo 8 caracteres.</p>
             </div>
 
             <button
               type="submit"
-              disabled={carregando}
+              disabled={carregando || sucesso}
               className="group mt-4 flex h-14 w-full items-center justify-center gap-3 rounded-full bg-white pl-6 pr-2 font-semibold text-[#0a0400] transition hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(48,84,255,0.35)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {carregando ? (
                 <>
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-black/20 border-t-brand-primary" />
-                  Entrando...
+                  Criando conta...
                 </>
               ) : (
                 <>
-                  <span>Entrar</span>
+                  <span>Criar conta</span>
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-primary transition-colors group-hover:bg-brand-primary-hover">
                     <ArrowRight className="h-5 w-5 text-white" strokeWidth={2} />
                   </span>
@@ -220,12 +314,12 @@ export default function Login() {
           </form>
 
           <p className="text-sm text-white/40 text-center">
-            Não tem uma conta?{' '}
+            Já faz parte da equipe?{' '}
             <Link
-              href="/cadastro"
+              href="/login"
               className="font-medium text-brand-accent transition hover:text-white hover:underline"
             >
-              Cadastre-se gratuitamente
+              Entrar
             </Link>
           </p>
         </motion.div>

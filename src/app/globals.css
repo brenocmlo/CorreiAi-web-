@@ -1,8 +1,15 @@
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Instrument+Serif:ital@0;1&display=swap");
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-geist-sans);
+  --font-instrument-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-instrument-serif: "Instrument Serif", ui-serif, Georgia, serif;
+  --font-sans: var(--font-instrument-sans);
   --font-mono: var(--font-geist-mono);
+  --color-brand-gray: #1a1a1a;
+  --color-brand-primary: #3054ff;
+  --color-brand-primary-hover: #2040e0;
+  --color-brand-accent: #b4c0ff;
 }
 
 :root {

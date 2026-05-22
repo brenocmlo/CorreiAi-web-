@@ -96,9 +96,27 @@ CREATE TABLE perfis (
 
 -- RLS desativado — acesso controlado via service_role nas API Routes
 ALTER TABLE perfis DISABLE ROW LEVEL SECURITY;
+
+-- Tabela de leads (RF06 / RF08 — Pessoa 3)
+CREATE TABLE leads (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  nome            text NOT NULL,
+  telefone        text NOT NULL,
+  email           text NOT NULL,
+  faixa_orcamento text NOT NULL,
+  tipo_imovel     text NOT NULL,
+  etapa           text NOT NULL DEFAULT 'novo',
+  corretor_id     uuid REFERENCES perfis(id),
+  criado_em       timestamptz DEFAULT timezone('utc', now()) NOT NULL,
+  atualizado_em   timestamptz DEFAULT timezone('utc', now()) NOT NULL
+);
+
+ALTER TABLE leads DISABLE ROW LEVEL SECURITY;
 ```
 
 > **💡 Dica de Admin:** O formulário público sempre cria contas com `role = 'corretor'`. Para elevar para `admin_corretora` ou `super_admin`, edite a coluna `role` diretamente no Table Editor do Supabase.
+
+> **Pessoa 3:** Os leads são acessados via API Routes (`/api/leads`) com JWT. Execute o SQL da tabela `leads` acima no Supabase antes de testar.
 
 ---
 
@@ -125,9 +143,23 @@ export default function MeuComponente() {
 }
 ```
 
-> `user` e `profile` apontam para o mesmo objeto `Profile`. Use `profile` para dados do usuário.
+### 2. Leads e Funil Kanban (Pessoa 3)
 
-### 2. Como usar o Banco de Dados do Supabase (client-side)
+CRUD via API Routes autenticadas por cookie JWT:
+
+| Método | Rota | Ação |
+|--------|------|------|
+| GET | `/api/leads` | Listar leads |
+| POST | `/api/leads` | Criar lead |
+| GET | `/api/leads/[id]` | Detalhe |
+| PATCH | `/api/leads/[id]` | Editar / mover etapa no funil |
+| DELETE | `/api/leads/[id]` | Excluir |
+
+No client, use `src/lib/leads.ts` (`fetchLeads`, `createLead`, etc.).
+
+### 3. Como usar o Banco de Dados do Supabase (client-side)
+
+> `user` e `profile` apontam para o mesmo objeto `Profile`. Use `profile` para dados do usuário.
 
 Para queries em tabelas que vocês criarem (ex: `imoveis`, `leads`):
 
@@ -139,6 +171,10 @@ const { data, error } = await supabase
   .select('*');
 ```
 
+### 4. Como proteger uma página privada:
+Para garantir que uma nova página seja acessível apenas por usuários logados, envolva o JSX dela com o componente `<ProtectedRoute>`:
+```tsx
+import ProtectedRoute from '@/components/ProtectedRoute';
 ### 3. Como usar o Supabase em API Routes (server-side)
 
 Para operações privilegiadas dentro de `route.ts`, use o client com service_role:
@@ -150,6 +186,8 @@ const supabaseServer = createServerSupabaseClient();
 const { data } = await supabaseServer.from('perfis').select('*');
 ```
 
+### 5. Como restringir páginas baseado em Cargo (ex: Painel Admin):
+Vocês podem combinar o `ProtectedRoute` com uma condicional baseada na role do usuário:
 ### 4. Como proteger uma página privada
 
 A proteção real acontece no `proxy.ts` (server-side). O `ProtectedRoute` é apenas um spinner de loading. Para adicionar uma nova rota protegida, adicione o path no `matcher` de `src/proxy.ts`:

@@ -5,11 +5,19 @@ import { signToken } from '@/lib/jwt';
 
 export async function POST(request: NextRequest) {
   try {
-    const { nome_completo, email, cpf, creci, senha } = await request.json();
+    const { nome_completo, email, cpf, creci, senha, role } = await request.json();
+    const tipoPerfil = role === 'lead' ? 'lead' : 'corretor';
 
-    if (!nome_completo || !email || !cpf || !creci || !senha) {
+    if (!nome_completo || !email || !cpf || !senha) {
       return NextResponse.json(
-        { error: 'Todos os campos são obrigatórios.' },
+        { error: 'Nome, e-mail, CPF e senha são obrigatórios.' },
+        { status: 400 }
+      );
+    }
+
+    if (tipoPerfil === 'corretor' && !creci) {
+      return NextResponse.json(
+        { error: 'CRECI é obrigatório para corretores.' },
         { status: 400 }
       );
     }
@@ -52,9 +60,9 @@ export async function POST(request: NextRequest) {
           nome_completo,
           email,
           cpf,
-          creci,
+          creci: tipoPerfil === 'corretor' ? creci : null,
           senha_hash,
-          role: 'corretor',
+          role: tipoPerfil,
         },
       ])
       .select()
