@@ -11,12 +11,7 @@ export default function Navbar() {
   const [menuAberto, setMenuAberto] = useState(false);
 
   // Não exibir a Navbar nas telas públicas
-  if (
-    pathname === '/' ||
-    pathname === '/login' ||
-    pathname === '/cadastro' ||
-    pathname === '/cadastro/lead'
-  ) {
+  if (pathname === '/' || pathname === '/login' || pathname === '/cadastro') {
     return null;
   }
 
