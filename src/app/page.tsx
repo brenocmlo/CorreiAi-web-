@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { LandingNavbar } from '@/components/landing/LandingNavbar';
 import { HeroSection } from '@/components/landing/HeroSection';
+import { LandingMidShowcase } from '@/components/landing/LandingMidShowcase';
 import { CinematicFooter } from '@/components/landing/CinematicFooter';
 
 export default function LandingPage() {
@@ -29,6 +30,7 @@ export default function LandingPage() {
     <div className="bg-black text-white">
       <LandingNavbar />
       <HeroSection />
+      <LandingMidShowcase />
       <CinematicFooter />
     </div>
   );
