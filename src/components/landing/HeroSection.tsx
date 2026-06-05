@@ -120,6 +120,13 @@ export function HeroSection() {
             Já tenho conta
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
+
+          <Link
+            href="/assistente"
+            className="group flex items-center gap-2 rounded-lg px-4 py-2 font-[family-name:var(--font-instrument-sans)] text-white/50 backdrop-blur-sm transition hover:bg-white/5 hover:text-white text-sm"
+          >
+            Falar com Assistente IA
+          </Link>
         </motion.div>
       </div>
     </section>
