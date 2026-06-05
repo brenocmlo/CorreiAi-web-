@@ -19,6 +19,7 @@ type Card = {
   tag: string;
   gradientFrom: string;
   gradientTo: string;
+  imagem: string;
 };
 
 const MOCK_CARDS: Card[] = [
@@ -32,6 +33,7 @@ const MOCK_CARDS: Card[] = [
     tag: 'Ideal para viver bem',
     gradientFrom: 'rgba(48,84,255,0.6)',
     gradientTo: 'rgba(180,192,255,0.7)',
+    imagem: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'house-1',
@@ -43,6 +45,7 @@ const MOCK_CARDS: Card[] = [
     tag: 'Famílias em expansão',
     gradientFrom: 'rgba(48,84,255,0.35)',
     gradientTo: 'rgba(52,211,153,0.35)',
+    imagem: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'apt-2',
@@ -54,6 +57,7 @@ const MOCK_CARDS: Card[] = [
     tag: 'Primeiro imóvel',
     gradientFrom: 'rgba(48,84,255,0.45)',
     gradientTo: 'rgba(180,192,255,0.55)',
+    imagem: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'house-2',
@@ -65,6 +69,7 @@ const MOCK_CARDS: Card[] = [
     tag: 'Tranquilidade garantida',
     gradientFrom: 'rgba(48,84,255,0.28)',
     gradientTo: 'rgba(99,102,241,0.42)',
+    imagem: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'apt-3',
@@ -76,17 +81,19 @@ const MOCK_CARDS: Card[] = [
     tag: 'Casais e lifestyle',
     gradientFrom: 'rgba(180,192,255,0.55)',
     gradientTo: 'rgba(48,84,255,0.4)',
+    imagem: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'house-3',
     tipo: 'Casa',
-    titulo: 'Casa térrea com integração total',
+    titulo: 'Casa térrea com integration total',
     descricao: 'Conforto térmico, circulação fluida e cozinha integrada.',
     preco: 'R$ 1.620.000',
     area: '200 m²',
     tag: 'Começo de vida novo',
     gradientFrom: 'rgba(48,84,255,0.25)',
     gradientTo: 'rgba(52,211,153,0.28)',
+    imagem: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'apt-4',
@@ -98,6 +105,7 @@ const MOCK_CARDS: Card[] = [
     tag: 'Praticidade',
     gradientFrom: 'rgba(48,84,255,0.4)',
     gradientTo: 'rgba(180,192,255,0.55)',
+    imagem: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'house-4',
@@ -109,6 +117,7 @@ const MOCK_CARDS: Card[] = [
     tag: 'Receber com estilo',
     gradientFrom: 'rgba(48,84,255,0.28)',
     gradientTo: 'rgba(59,130,246,0.45)',
+    imagem: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=600&q=80',
   },
 ];
 
@@ -225,11 +234,16 @@ export function LandingMidShowcase() {
                       className="group relative w-[260px] shrink-0 rounded-3xl border border-white/10 bg-white/[0.03] p-4 shadow-[0_18px_45px_rgba(0,0,0,0.6)] backdrop-blur-lg"
                     >
                       <div
-                        className="mb-4 h-32 w-full overflow-hidden rounded-2xl"
+                        className="relative mb-4 h-32 w-full overflow-hidden rounded-2xl"
                         aria-hidden
                       >
+                        <img
+                          src={c.imagem}
+                          alt={c.titulo}
+                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
                         <div
-                          className="h-full w-full bg-[radial-gradient(circle_at_0%_0%,var(--g1),transparent_58%),radial-gradient(circle_at_100%_100%,var(--g2),transparent_58%)] transition-transform duration-700 group-hover:scale-105"
+                          className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,var(--g1),transparent_58%),radial-gradient(circle_at_100%_100%,var(--g2),transparent_58%)] mix-blend-overlay opacity-80 transition-opacity duration-700 group-hover:opacity-60"
                           style={
                             {
                               '--g1': c.gradientFrom,

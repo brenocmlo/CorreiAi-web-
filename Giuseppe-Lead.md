@@ -61,7 +61,7 @@ Sem token ou com token inválido → redirecionamento para `/login`.
 
 - Landing em tema escuro com vídeo HLS no hero (Mux + `hls.js`).
 - Navbar fixa com logo e CTA “Começar Agora” → `/cadastro`.
-- Seção intermediária com carrossel GSAP/ScrollTrigger e **cards de imóveis mockados** (apenas visual).
+- Seção intermediária com carrossel GSAP/ScrollTrigger e **cards de imóveis mockados** (visual, com fotos reais de imóveis de alta resolução integradas aos gradientes de marca).
 - Footer cinematográfico (GSAP, marquee, botões magnéticos) com links para `/cadastro`, `/login` e `mailto:suporte@correai.com`.
 - Formulário público de captura de lead no hero (`LeadCaptureForm` → `POST /api/leads/public`).
 - Usuário já logado é redirecionado para `/dashboard`.
@@ -237,7 +237,7 @@ Sem token ou com token inválido → redirecionamento para `/login`.
 | Formulário de lead na landing | Integrado (Supabase via `/api/leads/public`) |
 | CRUD de leads (área logada) | Integrado (Supabase + JWT) |
 | Funil Kanban | Integrado |
-| Cards de imóveis na landing | **Mock** (`MOCK_CARDS` em `LandingMidShowcase`) |
+| Cards de imóveis na landing | **Mock** (com fotos reais integradas via `MOCK_CARDS` em `LandingMidShowcase`) |
 | Imóveis, Chat IA, Admin | Apenas links na navbar (sem páginas) |
 | Cadastro de lead como página | API pronta; UI só expõe `/cadastro` para corretor |
 
