@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Hls from 'hls.js';
 import { motion } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
+import { LeadCaptureForm } from '@/components/landing/LeadCaptureForm';
 
 const VIDEO_SRC =
   'https://stream.mux.com/T6oQJQ02cQ6N01TR6iHwZkKFkbepS34dkkIc9iukgy400g.m3u8';
@@ -65,62 +66,55 @@ export function HeroSection() {
         aria-hidden
       />
 
-      <div className="relative z-10 mx-auto mt-20 flex max-w-5xl flex-col items-center space-y-12 px-6 pb-24 text-center">
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="font-[family-name:var(--font-instrument-serif)] text-3xl leading-[1.1] text-white sm:text-5xl lg:text-[48px]"
-        >
-          O imóvel certo, no seu ritmo
-        </motion.p>
+      <div className="relative z-10 mx-auto mt-20 max-w-6xl px-6 pb-24 pt-4 lg:pt-8">
+        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-12 xl:gap-16">
+          <div className="flex flex-col items-center space-y-8 text-center lg:items-start lg:text-left">
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="font-[family-name:var(--font-instrument-serif)] text-2xl leading-[1.1] text-white sm:text-3xl lg:text-4xl"
+            >
+              O imóvel certo, no seu ritmo
+            </motion.p>
 
-        <motion.h1
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2, duration: 0.6 }}
-          className="bg-gradient-to-b from-white via-white to-[#b4c0ff] bg-clip-text font-[family-name:var(--font-instrument-sans)] text-6xl font-semibold tracking-tighter text-transparent sm:text-8xl lg:text-[136px] leading-[0.9]"
-        >
-          Seu Lar Ideal
-        </motion.h1>
+            <motion.h1
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.15, duration: 0.6 }}
+              className="bg-gradient-to-b from-white via-white to-[#b4c0ff] bg-clip-text font-[family-name:var(--font-instrument-sans)] text-5xl font-semibold tracking-tighter text-transparent sm:text-6xl lg:text-7xl xl:text-8xl leading-[0.95]"
+            >
+              Seu Lar Ideal
+            </motion.h1>
 
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.7 }}
-          transition={{ delay: 0.4, duration: 0.6 }}
-          className="max-w-xl font-[family-name:var(--font-instrument-sans)] text-lg leading-[1.65] text-white sm:text-[20px]"
-        >
-          Chega de perder horas em anúncios que não combinam com você. A CorreAi aprende
-          seu estilo, filtra o que importa e te guia até o imóvel certo — simples, rápido e
-          feito sob medida.
-        </motion.p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.7 }}
+              transition={{ delay: 0.3, duration: 0.6 }}
+              className="max-w-md font-[family-name:var(--font-instrument-sans)] text-base leading-relaxed text-white sm:text-lg"
+            >
+              Chega de perder horas em anúncios que não combinam com você. A CorreAi aprende
+              seu estilo, filtra o que importa e te guia até o imóvel certo — simples, rápido e
+              feito sob medida.
+            </motion.p>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
-          className="flex flex-col items-center gap-6 sm:flex-row"
-        >
-          <Link
-            href="/cadastro/lead"
-            className="group flex items-center rounded-full bg-white py-2 pl-6 pr-2 transition hover:scale-105 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]"
-          >
-            <span className="font-[family-name:var(--font-instrument-sans)] text-lg font-medium text-[#0a0400]">
-              Encontrar Meu Imóvel
-            </span>
-            <span className="ml-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#3054ff] transition-colors group-hover:bg-[#2040e0]">
-              <ArrowRight className="h-5 w-5 text-white" strokeWidth={2} />
-            </span>
-          </Link>
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45, duration: 0.5 }}
+            >
+              <Link
+                href="/login"
+                className="group inline-flex items-center gap-2 rounded-lg px-2 py-2 font-[family-name:var(--font-instrument-sans)] text-sm text-white/60 transition hover:bg-white/5 hover:text-white"
+              >
+                Já tenho conta
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Link>
+            </motion.div>
+          </div>
 
-          <Link
-            href="/login"
-            className="group flex items-center gap-2 rounded-lg px-4 py-2 font-[family-name:var(--font-instrument-sans)] text-white/70 backdrop-blur-sm transition hover:bg-white/5 hover:text-white"
-          >
-            Já tenho conta
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-          </Link>
-        </motion.div>
+          <LeadCaptureForm />
+        </div>
       </div>
     </section>
   );
