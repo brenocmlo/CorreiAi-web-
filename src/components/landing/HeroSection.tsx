@@ -102,12 +102,21 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.45, duration: 0.5 }}
+              className="flex flex-wrap items-center gap-4"
             >
               <Link
                 href="/login"
-                className="group inline-flex items-center gap-2 rounded-lg px-2 py-2 font-[family-name:var(--font-instrument-sans)] text-sm text-white/60 transition hover:bg-white/5 hover:text-white"
+                className="group flex items-center gap-2 rounded-lg px-4 py-2 font-[family-name:var(--font-instrument-sans)] text-sm text-white/70 backdrop-blur-sm transition hover:bg-white/5 hover:text-white"
               >
                 Já tenho conta
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Link>
+
+              <Link
+                href="/assistente"
+                className="group flex items-center gap-2 rounded-lg px-4 py-2 font-[family-name:var(--font-instrument-sans)] text-sm text-white/50 backdrop-blur-sm transition hover:bg-white/5 hover:text-white"
+              >
+                Falar com Assistente IA
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
             </motion.div>

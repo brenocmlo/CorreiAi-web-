@@ -11,7 +11,13 @@ export default function Navbar() {
   const [menuAberto, setMenuAberto] = useState(false);
 
   // Não exibir a Navbar nas telas públicas
-  if (pathname === '/' || pathname === '/login' || pathname === '/cadastro') {
+  if (
+    pathname === '/' ||
+    pathname === '/login' ||
+    pathname === '/cadastro' ||
+    pathname === '/cadastro/lead' ||
+    pathname === '/assistente'
+  ) {
     return null;
   }
 
@@ -24,13 +30,14 @@ export default function Navbar() {
   const nomeExibicao = profile?.nome_completo || 'Usuário';
   const isLead = profile?.role === 'lead';
 
+  const isAdmin = profile?.role === 'admin_corretora' || profile?.role === 'super_admin';
+
   const navLinksCorretor = [
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/imoveis', label: 'Imóveis' },
     { href: '/leads', label: 'Leads' },
     { href: '/funil', label: 'Funil (Kanban)' },
-    { href: '/chat', label: 'Chat IA' },
-    { href: '/admin', label: 'Admin' },
+    ...(isAdmin ? [{ href: '/admin', label: 'Admin' }] : []),
   ];
 
   const navLinksLead = [{ href: '/dashboard', label: 'Início' }];
