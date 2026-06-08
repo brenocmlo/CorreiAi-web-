@@ -10,6 +10,16 @@ Documentação do trabalho realizado por **Giuseppe** na branch `Giuseppe-Lead`,
 
 ---
 
+## Última Alteração (Fotos nos Mockups)
+
+- **O que mudou**: Adição de fotos reais de imóveis de alta qualidade aos cards de mockups na Landing Page.
+- **Rota afetada**: `/` (Landing Page)
+- **Arquivo modificado**: [LandingMidShowcase.tsx](file:///Users/a1234/CorreiAi-web-/src/components/landing/LandingMidShowcase.tsx)
+- **Fórmula Simples para Memorizar**:
+  > **Showcase da Landing (/)** ➔ `MOCK_CARDS` com URLs do Unsplash + tag `<img>` com overlay `mix-blend-overlay` da marca.
+
+---
+
 ## Índice de rotas
 
 ### Páginas (App Router)

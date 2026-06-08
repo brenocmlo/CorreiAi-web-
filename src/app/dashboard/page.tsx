@@ -1,14 +1,85 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/hooks/useAuth';
+import { Users, TrendingUp, DollarSign, Calendar } from 'lucide-react';
+
+interface Metricas {
+  total: number;
+  emAtendimento: number;
+  taxaConversao: number;
+  faturamentoEstimado: number;
+  novosTrintaDias: number;
+}
 
 function DashboardCorretor() {
   const { profile } = useAuth();
   const nomeExibicao = profile?.nome_completo || 'Corretor';
-  const emailExibicao = profile?.email || '';
+  const [metricas, setMetricas] = useState<Metricas | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/dashboard')
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.error) setMetricas(data);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const cards = [
+    {
+      label: 'Total de Leads',
+      valor: metricas?.total ?? '-',
+      icon: Users,
+      cor: 'indigo',
+    },
+    {
+      label: 'Em Atendimento',
+      valor: metricas?.emAtendimento ?? '-',
+      icon: TrendingUp,
+      cor: 'amber',
+    },
+    {
+      label: 'Taxa de Conversão',
+      valor: metricas ? `${metricas.taxaConversao}%` : '-',
+      icon: TrendingUp,
+      cor: 'emerald',
+    },
+    {
+      label: 'Faturamento Estimado',
+      valor: metricas
+        ? `R$ ${metricas.faturamentoEstimado.toLocaleString('pt-BR')}`
+        : '-',
+      icon: DollarSign,
+      cor: 'purple',
+    },
+    {
+      label: 'Novos (30 dias)',
+      valor: metricas?.novosTrintaDias ?? '-',
+      icon: Calendar,
+      cor: 'cyan',
+    },
+  ];
+
+  const coresBorda: Record<string, string> = {
+    indigo: 'border-indigo-500/30',
+    amber: 'border-amber-500/30',
+    emerald: 'border-emerald-500/30',
+    purple: 'border-purple-500/30',
+    cyan: 'border-cyan-500/30',
+  };
+
+  const coresIcone: Record<string, string> = {
+    indigo: 'bg-indigo-500/10 text-indigo-400',
+    amber: 'bg-amber-500/10 text-amber-400',
+    emerald: 'bg-emerald-500/10 text-emerald-400',
+    purple: 'bg-purple-500/10 text-purple-400',
+    cyan: 'bg-cyan-500/10 text-cyan-400',
+  };
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -39,28 +110,25 @@ function DashboardCorretor() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-slate-900/30 border border-slate-800/80 rounded-2xl p-6">
-          <h3 className="font-bold text-slate-200 mb-4">Seu perfil</h3>
-          <ul className="space-y-3 text-xs text-slate-400">
-            <li className="flex justify-between border-b border-slate-800/50 pb-2">
-              <span>Cargo:</span>
-              <span className="text-indigo-400 font-bold uppercase">{profile?.role}</span>
-            </li>
-            <li className="flex justify-between border-b border-slate-800/50 pb-2">
-              <span>Nome:</span>
-              <span className="text-slate-300 font-medium">{profile?.nome_completo}</span>
-            </li>
-            <li className="flex justify-between border-b border-slate-800/50 pb-2">
-              <span>E-mail:</span>
-              <span className="text-slate-300 font-medium">{emailExibicao}</span>
-            </li>
-            <li className="flex justify-between pb-1">
-              <span>CRECI:</span>
-              <span className="text-slate-300 font-medium">{profile?.creci || 'N/A'}</span>
-            </li>
-          </ul>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {cards.map((card) => (
+          <div
+            key={card.label}
+            className={`bg-slate-900/30 border ${coresBorda[card.cor]} rounded-2xl p-5`}
+          >
+            <div
+              className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${coresIcone[card.cor]} mb-3`}
+            >
+              <card.icon className="h-4 w-4" />
+            </div>
+            <p className="text-xs text-slate-500 font-medium mb-1">{card.label}</p>
+            {loading ? (
+              <div className="h-6 w-16 bg-slate-800 animate-pulse rounded mt-1" />
+            ) : (
+              <p className="text-xl font-bold text-white tracking-tight">{card.valor}</p>
+            )}
+          </div>
+        ))}
       </div>
     </main>
   );
