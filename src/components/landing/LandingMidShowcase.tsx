@@ -193,7 +193,7 @@ export function LandingMidShowcase() {
     <section
       ref={sectionRef}
       className="relative z-10 mx-auto w-full bg-black"
-      aria-label="Opções mockadas de casas e apartamentos"
+      aria-label="Opções de casas e apartamentos"
     >
       <div className="mx-auto max-w-6xl px-6 py-20">
         <div
@@ -206,10 +206,10 @@ export function LandingMidShowcase() {
                 Meio termo
               </p>
               <h2 className="font-[family-name:var(--font-instrument-serif)] text-2xl leading-tight sm:text-3xl">
-                Sugestões mockadas para alinhar seu match
+                Sugestões de imóveis para alinhar seu match
               </h2>
               <p className="max-w-2xl text-sm text-white/60">
-                Casas e apartamentos que “parecem” com o que a CorreAi entrega ao lead e ao corretor.
+                Casas e apartamentos que se conectam com o que a CorreAi entrega ao lead e ao corretor.
                 Role para ver as opções mudando.
               </p>
             </div>
