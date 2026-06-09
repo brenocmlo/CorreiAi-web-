@@ -22,7 +22,7 @@ Este é o repositório do projeto **CorreIA**, um CRM Imobiliário Inteligente d
    - Integração com o **Supabase Storage** para upload de fotos do imóvel direto do formulário de criação/edição.
    - Controle de status de disponibilidade do imóvel (`Disponível`, `Vendido`, `Alugado`).
 
-4. **Visual Premium & Landing Page (Pessoa 4)**
+4. **Visual Premium & Landing Page (Gustavo Gurgel)**
    - Identidade visual moderna baseada em Dark Mode e Glassmorphism.
    - Landing page com Seção Hero dinâmica e um **Cinematic Footer** interativo equipado com **GSAP** e **ScrollTrigger**, incluindo efeitos magnéticos e animações guiadas pelo rolamento da página.
 
