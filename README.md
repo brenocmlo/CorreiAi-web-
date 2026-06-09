@@ -12,12 +12,12 @@ Este é o repositório do projeto **CorreIA**, um CRM Imobiliário Inteligente d
    - Criptografia de senhas com `bcrypt` no servidor.
    - Proteção de rotas privativas server-side via `src/proxy.ts` (Next.js 16).
 
-2. **CRM / Módulo de Leads & Kanban (Pessoa 3)**
+2. **CRM / Módulo de Leads & Kanban (Giuseppe)**
    - Gestão completa de Leads (criação, edição, exclusão e detalhamento).
    - Quadro Kanban interativo com 5 colunas representando as etapas do funil de vendas (`Novo` → `Em atendimento` → `Visita agendada` → `Proposta` → `Fechado`).
    - Mapeamento robusto entre as propriedades em formato camelCase no cliente e snake_case no banco de dados.
 
-3. **Catálogo de Imóveis (Pessoa 2)**
+3. **Catálogo de Imóveis (Gabriel Brandão)**
    - CRUD completo de imóveis (Casa, Apartamento, Terreno, Comercial).
    - Integração com o **Supabase Storage** para upload de fotos do imóvel direto do formulário de criação/edição.
    - Controle de status de disponibilidade do imóvel (`Disponível`, `Vendido`, `Alugado`).
