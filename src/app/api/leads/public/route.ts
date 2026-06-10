@@ -27,6 +27,16 @@ export async function POST(request: NextRequest) {
     etapa && ETAPAS_VALIDAS.has(etapa as EtapaFunil) ? (etapa as EtapaFunil) : 'novo';
 
   const supabase = createServerSupabaseClient();
+
+  // Busca o primeiro corretor cadastrado no sistema para associar o lead
+  const { data: corretores } = await supabase
+    .from('perfis')
+    .select('id')
+    .eq('role', 'corretor')
+    .limit(1);
+
+  const corretorId = corretores && corretores.length > 0 ? corretores[0].id : null;
+
   const { data, error } = await supabase
     .from('leads')
     .insert([
@@ -39,7 +49,7 @@ export async function POST(request: NextRequest) {
           tipoImovel,
           etapa: etapaFinal,
         }),
-        corretor_id: null,
+        corretor_id: corretorId,
       },
     ])
     .select('*')

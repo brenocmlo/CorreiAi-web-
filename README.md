@@ -30,20 +30,24 @@ Para fins de avaliação de arquitetura, o projeto foi subdividido em módulos f
    - Login e cadastro próprios, sem dependência de serviços externos para sessão.
    - Tokens JWT assinados no servidor e salvos em cookies `httpOnly; Secure; SameSite=Strict`, garantindo imunidade contra ataques XSS.
    - Criptografia de senhas com `bcrypt` no servidor e middleware de proteção de rotas server-side (`src/proxy.ts`).
+   - Redirecionamento de Logout: Redirecionamento imediato para a Landing Page pública (`/`) ao deslogar da conta, limpando a sessão.
 
 2. **CRM / Módulo de Leads & Funil Kanban (Giuseppe)**
    - Gestão completa de Leads (criação, edição, exclusão e detalhamento).
    - Quadro Kanban interativo com 5 colunas representando as etapas do funil de vendas (`Novo` → `Em atendimento` → `Visita agendada` → `Proposta` → `Fechado`).
    - Mapeamento robusto entre as propriedades em formato camelCase no cliente e snake_case no banco de dados.
+   - Atribuição Automática de Leads: Os leads preenchidos no formulário da Landing Page são atribuídos diretamente ao primeiro corretor ativo disponível no sistema.
 
 3. **Catálogo de Imóveis (Gabriel Brandão)**
    - CRUD completo de imóveis (Casa, Apartamento, Terreno, Comercial).
    - Integração com o **Supabase Storage** para upload de fotos do imóvel direto do formulário de criação/edição.
    - Controle de status de disponibilidade do imóvel (`Disponível`, `Vendido`, `Alugado`).
+   - Restrição de Privilégios para Leads: Ocultação de botões de edição e exclusão na página de detalhes de imóveis caso o perfil do usuário seja do tipo `lead`, adaptando a navegação para o dashboard.
 
-4. **Visual Premium & Landing Page (Gustavo Gurgel)**
-   - Identidade visual moderna baseada em Dark Mode e Glassmorphism.
-   - Landing page com Seção Hero dinâmica e um **Cinematic Footer** interativo equipado com **GSAP** e **ScrollTrigger**, incluindo efeitos magnéticos e animações guiadas pelo rolamento da página.
+4. **Visual Premium, Landing Page, IA, Dashboard & Admin (Gustavo Gurgel)**
+   - Identidade visual moderna baseada em Dark Mode e Glassmorphism, Landing Page, Seção Hero dinâmica e Cinematic Footer animado com GSAP.
+   - Extração Inteligente via IA: Processamento da conversa do assistente virtual utilizando o Gemini em tempo real para extrair nome, e-mail e telefone de contato do cliente, salvando os dados como lead no banco.
+   - Painel do Lead com Chat e Portfólio: Dashboard exclusivo do cliente estruturado com catálogo de imóveis disponíveis e assistente virtual interativo integrados em abas.
 
 ---
 

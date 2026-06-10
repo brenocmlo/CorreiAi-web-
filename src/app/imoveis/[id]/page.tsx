@@ -3,6 +3,7 @@
 import React, { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { useImoveis, Imovel } from '@/hooks/useImoveis';
+import { useAuth } from '@/hooks/useAuth';
 import ConfirmModal from '@/components/ConfirmModal';
 import { useRouter } from 'next/navigation';
 
@@ -10,6 +11,8 @@ export default function DetalheImovelPage({ params }: { params: Promise<{ id: st
   const router = useRouter();
   const { id } = use(params);
   const { fetchImovelById, deleteImovel } = useImoveis();
+  const { profile } = useAuth();
+  const isCorretor = profile?.role !== 'lead';
   
   const [imovel, setImovel] = useState<Imovel | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,26 +53,28 @@ export default function DetalheImovelPage({ params }: { params: Promise<{ id: st
     <div className="p-6 md:p-8 max-w-5xl mx-auto">
       <div className="mb-6 flex items-center justify-between">
         <Link 
-          href="/imoveis"
+          href={isCorretor ? "/imoveis" : "/dashboard"}
           className="text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
         >
-          &larr; Voltar para listagem
+          &larr; {isCorretor ? "Voltar para listagem" : "Voltar para o painel"}
         </Link>
         
-        <div className="flex gap-3">
-          <Link
-            href={`/imoveis/${imovel.id}/editar`}
-            className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
-          >
-            Editar Imóvel
-          </Link>
-          <button
-            onClick={() => setDeleteModalOpen(true)}
-            className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-          >
-            Excluir
-          </button>
-        </div>
+        {isCorretor && (
+          <div className="flex gap-3">
+            <Link
+              href={`/imoveis/${imovel.id}/editar`}
+              className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+            >
+              Editar Imóvel
+            </Link>
+            <button
+              onClick={() => setDeleteModalOpen(true)}
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+            >
+              Excluir
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-xl">
