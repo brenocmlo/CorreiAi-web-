@@ -30,16 +30,21 @@ Para fins de avaliação de arquitetura, o projeto foi subdividido em módulos f
    - Login e cadastro próprios, sem dependência de serviços externos para sessão.
    - Tokens JWT assinados no servidor e salvos em cookies `httpOnly; Secure; SameSite=Strict`, garantindo imunidade contra ataques XSS.
    - Criptografia de senhas com `bcrypt` no servidor e middleware de proteção de rotas server-side (`src/proxy.ts`).
+   - **Melhoria - Redirecionamento de Logout (Item 3º):** Redirecionamento imediato para a Landing Page pública (`/`) ao deslogar da conta, limpando a sessão.
 
 2. **CRM / Módulo de Leads & Funil Kanban (Giuseppe)**
    - Gestão completa de Leads (criação, edição, exclusão e detalhamento).
    - Quadro Kanban interativo com 5 colunas representando as etapas do funil de vendas (`Novo` → `Em atendimento` → `Visita agendada` → `Proposta` → `Fechado`).
    - Mapeamento robusto entre as propriedades em formato camelCase no cliente e snake_case no banco de dados.
+   - **Melhoria - Atribuição Automática de Leads (Item 1º):** Os leads preenchidos no formulário da Landing Page são atribuídos diretamente ao primeiro corretor ativo disponível no sistema.
+   - **Melhoria - Extração Inteligente via IA (Item 2º):** Processamento da conversa do assistente virtual utilizando o Gemini em tempo real para extrair nome, e-mail e telefone de contato do cliente, salvando os dados como lead associado no banco.
+   - **Melhoria - Painel do Lead com Chat e Portfólio (Item 4º):** Dashboard exclusivo do lead estruturado com catálogo de imóveis disponíveis e assistente virtual interativo integrados em abas.
 
 3. **Catálogo de Imóveis (Gabriel Brandão)**
    - CRUD completo de imóveis (Casa, Apartamento, Terreno, Comercial).
    - Integração com o **Supabase Storage** para upload de fotos do imóvel direto do formulário de criação/edição.
    - Controle de status de disponibilidade do imóvel (`Disponível`, `Vendido`, `Alugado`).
+   - **Melhoria - Adaptação de Privilégios para Leads (Item 4º):** Restrição na visualização de detalhes de imóveis para ocultar botões de edição e exclusão caso o perfil seja do tipo `lead`, adaptando a navegação para o dashboard.
 
 4. **Visual Premium & Landing Page (Gustavo Gurgel)**
    - Identidade visual moderna baseada em Dark Mode e Glassmorphism.
