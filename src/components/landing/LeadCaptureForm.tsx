@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
 import {
@@ -26,6 +27,7 @@ export function LeadCaptureForm() {
   const [faixaOrcamento, setFaixaOrcamento] = useState('');
   const [tipoImovel, setTipoImovel] = useState('');
   const [etapa, setEtapa] = useState<EtapaFunil>('novo');
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -58,12 +60,7 @@ export function LeadCaptureForm() {
       }
 
       setSuccess(true);
-      setNome('');
-      setTelefone('');
-      setEmail('');
-      setFaixaOrcamento('');
-      setTipoImovel('');
-      setEtapa('novo');
+      router.push('/assistente');
     } catch {
       setError('Não foi possível enviar. Tente novamente.');
     } finally {
