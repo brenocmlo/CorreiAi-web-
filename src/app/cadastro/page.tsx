@@ -1,5 +1,5 @@
 import CadastroForm from '@/components/cadastro/CadastroForm';
 
-export default function CadastroCorretorPage() {
-  return <CadastroForm tipoPerfil="corretor" />;
+export default function CadastroLeadPage() {
+  return <CadastroForm tipoPerfil="lead" />;
 }

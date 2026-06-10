@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/jwt';
 
-// Rotas que exigem autenticação
 export const config = {
-  matcher: ['/dashboard', '/dashboard/:path*', '/leads/:path*', '/funil'],
+  matcher: ['/dashboard', '/dashboard/:path*', '/leads/:path*', '/funil', '/admin'],
 };
 
 export function proxy(request: NextRequest) {
@@ -14,10 +13,18 @@ export function proxy(request: NextRequest) {
   }
 
   try {
-    verifyToken(token);
+    const payload = verifyToken(token);
+
+    if (
+      request.nextUrl.pathname.startsWith('/admin') &&
+      payload.role !== 'admin_corretora' &&
+      payload.role !== 'super_admin'
+    ) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
     return NextResponse.next();
   } catch {
-    // Token inválido ou expirado — limpar cookie e redirecionar
     const response = NextResponse.redirect(new URL('/login', request.url));
     response.cookies.set('auth_token', '', { maxAge: 0, path: '/' });
     return response;

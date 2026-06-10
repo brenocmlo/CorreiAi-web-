@@ -74,15 +74,22 @@ export default function DetalheImovelPage({ params }: { params: Promise<{ id: st
 
       <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-xl">
         {/* Imagem Hero do Imóvel */}
-        {imovel.imagem_url && (
-          <div className="relative w-full h-64 md:h-96 border-b border-slate-700 bg-slate-900">
+        <div className="relative w-full h-64 md:h-96 border-b border-slate-700 bg-slate-900 flex items-center justify-center">
+          {imovel.imagem_url ? (
             <img 
               src={imovel.imagem_url} 
               alt={`Foto de ${imovel.tipo} em ${imovel.bairro}`}
               className="w-full h-full object-cover"
             />
-          </div>
-        )}
+          ) : (
+            <div className="flex flex-col items-center justify-center text-slate-500 opacity-50">
+              <svg className="w-16 h-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              <span className="text-sm font-medium uppercase tracking-widest">Sem Foto Principal</span>
+            </div>
+          )}
+        </div>
 
         {/* Header do Imóvel */}
         <div className="p-6 md:p-8 border-b border-slate-700">

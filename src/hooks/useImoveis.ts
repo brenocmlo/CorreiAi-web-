@@ -44,7 +44,7 @@ export function useImoveis() {
     }
   }, []);
 
-  const fetchImovelById = async (id: string): Promise<Imovel | null> => {
+  const fetchImovelById = useCallback(async (id: string): Promise<Imovel | null> => {
     setLoading(true);
     setError(null);
     try {
@@ -62,9 +62,9 @@ export function useImoveis() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const createImovel = async (imovel: ImovelInput): Promise<boolean> => {
+  const createImovel = useCallback(async (imovel: ImovelInput): Promise<boolean> => {
     setLoading(true);
     setError(null);
     try {
@@ -81,9 +81,9 @@ export function useImoveis() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchImoveis]);
 
-  const updateImovel = async (id: string, updates: Partial<ImovelInput>): Promise<boolean> => {
+  const updateImovel = useCallback(async (id: string, updates: Partial<ImovelInput>): Promise<boolean> => {
     setLoading(true);
     setError(null);
     try {
@@ -101,9 +101,9 @@ export function useImoveis() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchImoveis]);
 
-  const deleteImovel = async (id: string): Promise<boolean> => {
+  const deleteImovel = useCallback(async (id: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
     try {
@@ -121,9 +121,9 @@ export function useImoveis() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchImoveis]);
 
-  const uploadImagem = async (file: File): Promise<string | null> => {
+  const uploadImagem = useCallback(async (file: File): Promise<string | null> => {
     setLoading(true);
     setError(null);
     try {
@@ -148,7 +148,7 @@ export function useImoveis() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   return {
     imoveis,

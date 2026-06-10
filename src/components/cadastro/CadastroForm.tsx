@@ -98,7 +98,7 @@ export default function CadastroForm({ tipoPerfil }: CadastroFormProps) {
     setCarregando(true);
 
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await fetch('/api/auth/cadastro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -120,7 +120,11 @@ export default function CadastroForm({ tipoPerfil }: CadastroFormProps) {
 
       setSucesso(true);
       await refreshProfile();
-      router.replace('/dashboard');
+      if (tipoPerfil === 'lead') {
+        router.replace('/assistente');
+      } else {
+        router.replace('/dashboard');
+      }
     } catch {
       setErro('Ocorreu um erro ao criar a conta. Tente novamente.');
     } finally {

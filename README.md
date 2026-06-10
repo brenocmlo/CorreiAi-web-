@@ -22,6 +22,31 @@ O sistema foi concebido sob uma arquitetura moderna baseada em **BaaS (Backend a
 
 ---
 
+## 👥 Estrutura de Módulos e Responsabilidades da Equipe
+
+Para fins de avaliação de arquitetura, o projeto foi subdividido em módulos funcionais sob a responsabilidade dos respectivos desenvolvedores:
+
+1. **Autenticação JWT Própria e Infraestrutura Base (Breno)**
+   - Login e cadastro próprios, sem dependência de serviços externos para sessão.
+   - Tokens JWT assinados no servidor e salvos em cookies `httpOnly; Secure; SameSite=Strict`, garantindo imunidade contra ataques XSS.
+   - Criptografia de senhas com `bcrypt` no servidor e middleware de proteção de rotas server-side (`src/proxy.ts`).
+
+2. **CRM / Módulo de Leads & Funil Kanban (Giuseppe)**
+   - Gestão completa de Leads (criação, edição, exclusão e detalhamento).
+   - Quadro Kanban interativo com 5 colunas representando as etapas do funil de vendas (`Novo` → `Em atendimento` → `Visita agendada` → `Proposta` → `Fechado`).
+   - Mapeamento robusto entre as propriedades em formato camelCase no cliente e snake_case no banco de dados.
+
+3. **Catálogo de Imóveis (Gabriel Brandão)**
+   - CRUD completo de imóveis (Casa, Apartamento, Terreno, Comercial).
+   - Integração com o **Supabase Storage** para upload de fotos do imóvel direto do formulário de criação/edição.
+   - Controle de status de disponibilidade do imóvel (`Disponível`, `Vendido`, `Alugado`).
+
+4. **Visual Premium & Landing Page (Gustavo Gurgel)**
+   - Identidade visual moderna baseada em Dark Mode e Glassmorphism.
+   - Landing page com Seção Hero dinâmica e um **Cinematic Footer** interativo equipado com **GSAP** e **ScrollTrigger**, incluindo efeitos magnéticos e animações guiadas pelo rolamento da página.
+
+---
+
 ## 📐 Arquitetura de Sistemas e Fluxo de Dados
 
 A arquitetura do CorreIA é estruturada em camadas bem definidas para garantir o desacoplamento entre a interface do usuário (UI), a lógica de negócios e os serviços de infraestrutura de dados.
