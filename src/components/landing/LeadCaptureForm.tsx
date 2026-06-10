@@ -26,7 +26,7 @@ export function LeadCaptureForm() {
   const [email, setEmail] = useState('');
   const [faixaOrcamento, setFaixaOrcamento] = useState('');
   const [tipoImovel, setTipoImovel] = useState('');
-  const [etapa, setEtapa] = useState<EtapaFunil>('novo');
+  // const [etapa, setEtapa] = useState<EtapaFunil>('novo');
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -48,7 +48,7 @@ export function LeadCaptureForm() {
           email,
           faixaOrcamento,
           tipoImovel,
-          etapa,
+          // etapa,
         }),
       });
 
@@ -160,7 +160,7 @@ export function LeadCaptureForm() {
           </Field>
         </div>
 
-        <Field label="Etapa">
+        {/* <Field label="Etapa">
           <select
             value={etapa}
             onChange={(e) => setEtapa(e.target.value as EtapaFunil)}
@@ -173,7 +173,9 @@ export function LeadCaptureForm() {
               </option>
             ))}
           </select>
-        </Field>
+        </Field> */}
+
+        <div className="mt-9" />
 
         {error && (
           <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">

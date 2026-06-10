@@ -2,7 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/jwt';
 
 export const config = {
-  matcher: ['/dashboard', '/dashboard/:path*', '/leads/:path*', '/funil', '/admin'],
+  matcher: [
+    '/dashboard',
+    '/dashboard/:path*',
+    '/leads/:path*',
+    '/funil',
+    '/admin',
+    '/admin/:path*',
+    '/imoveis',
+    '/imoveis/:path*',
+  ],
 };
 
 export function proxy(request: NextRequest) {

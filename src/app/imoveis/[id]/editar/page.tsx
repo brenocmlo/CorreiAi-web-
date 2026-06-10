@@ -1,17 +1,25 @@
 'use client';
 
 import React, { useEffect, useState, use } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useImoveis, Imovel } from '@/hooks/useImoveis';
+import { useAuth } from '@/hooks/useAuth';
 import ImovelForm from '@/components/ImovelForm';
-import { useRouter } from 'next/navigation';
 
 export default function EditarImovelPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = use(params);
+  const { profile, loading: authLoading } = useAuth();
   const { fetchImovelById, updateImovel, uploadImagem, loading } = useImoveis();
   const [imovel, setImovel] = useState<Imovel | null>(null);
   const [isFetching, setIsFetching] = useState(true);
+
+  useEffect(() => {
+    if (!authLoading && profile && profile.role === 'lead') {
+      router.replace('/dashboard');
+    }
+  }, [profile, authLoading, router]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -31,13 +39,15 @@ export default function EditarImovelPage({ params }: { params: Promise<{ id: str
     return await updateImovel(id, data);
   };
 
-  if (isFetching) {
+  if (authLoading || isFetching) {
     return (
       <div className="flex justify-center py-20">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     );
   }
+
+  if (!profile || profile.role === 'lead') return null;
 
   return (
     <div className="p-6 md:p-8 max-w-4xl mx-auto">

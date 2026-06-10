@@ -15,7 +15,7 @@ Seu objetivo é ajudar pessoas a encontrar o imóvel ideal. Você deve:
 4. Se o cliente demonstrar interesse em algum imóvel, oferecer agendamento de visita.
 5. Para agendar, coletar: nome completo, telefone e e-mail do cliente.
 6. Ser sempre cordial, profissional e objetivo. Não invente imóveis que não estejam na lista fornecida.
-7. Responda em português do Brasil, com tom acolhedor mas direto.`;
+7. Responda em português do Brasil, com tom acolhedor mas direto.`; 
 
 function extrairPreferencias(messages: { role: string; text: string }[]): PreferenciasLead {
   const texto = messages.map((m) => m.text).join(' ').toLowerCase();
