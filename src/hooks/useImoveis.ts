@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { IMOVEIS_STORAGE_BUCKET } from '@/lib/supabase-config';
 
 const supabase = createBrowserSupabaseClient();
 
@@ -132,13 +133,13 @@ export function useImoveis() {
       const filePath = `${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('imoveis_imagens')
+        .from(IMOVEIS_STORAGE_BUCKET)
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage
-        .from('imoveis_imagens')
+        .from(IMOVEIS_STORAGE_BUCKET)
         .getPublicUrl(filePath);
 
       return data.publicUrl;
