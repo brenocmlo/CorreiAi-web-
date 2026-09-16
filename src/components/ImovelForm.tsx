@@ -3,6 +3,8 @@
 import React, { useState, FormEvent } from 'react';
 import { ImovelInput } from '@/hooks/useImoveis';
 import { useRouter } from 'next/navigation';
+import { Field, Input, Select } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
 
 interface ImovelFormProps {
   initialData?: ImovelInput & { imagem_url?: string | null };
@@ -62,7 +64,10 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 bg-slate-800 p-6 md:p-8 rounded-xl border border-slate-700">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-6 bg-slate-800 p-6 md:p-8 rounded-xl border border-slate-700"
+    >
       <div className="mb-6 border-b border-slate-700 pb-6">
         <label className="block text-sm font-medium text-slate-300 mb-2">
           Foto Principal do Imóvel
@@ -92,52 +97,25 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        {/* Tipo */}
-        <div>
-          <label htmlFor="tipo" className="block text-sm font-medium text-slate-300 mb-2">
-            Tipo de Imóvel *
-          </label>
-          <select
-            id="tipo"
-            name="tipo"
-            value={formData.tipo}
-            onChange={handleChange}
-            required
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
+        <Field label="Tipo de Imóvel" htmlFor="tipo" required>
+          <Select id="tipo" name="tipo" value={formData.tipo} onChange={handleChange} required>
             <option value="casa">Casa</option>
             <option value="apartamento">Apartamento</option>
             <option value="terreno">Terreno</option>
             <option value="comercial">Ponto Comercial</option>
-          </select>
-        </div>
+          </Select>
+        </Field>
 
-        {/* Status */}
-        <div>
-          <label htmlFor="status" className="block text-sm font-medium text-slate-300 mb-2">
-            Status *
-          </label>
-          <select
-            id="status"
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-            required
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
+        <Field label="Status" htmlFor="status" required>
+          <Select id="status" name="status" value={formData.status} onChange={handleChange} required>
             <option value="disponivel">Disponível</option>
             <option value="vendido">Vendido</option>
             <option value="alugado">Alugado</option>
-          </select>
-        </div>
+          </Select>
+        </Field>
 
-        {/* Endereço */}
-        <div className="md:col-span-2">
-          <label htmlFor="endereco" className="block text-sm font-medium text-slate-300 mb-2">
-            Endereço Completo *
-          </label>
-          <input
+        <Field label="Endereço Completo" htmlFor="endereco" required className="md:col-span-2">
+          <Input
             type="text"
             id="endereco"
             name="endereco"
@@ -145,16 +123,11 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
             onChange={handleChange}
             required
             placeholder="Ex: Rua das Flores, 123"
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-        </div>
+        </Field>
 
-        {/* Bairro */}
-        <div>
-          <label htmlFor="bairro" className="block text-sm font-medium text-slate-300 mb-2">
-            Bairro *
-          </label>
-          <input
+        <Field label="Bairro" htmlFor="bairro" required>
+          <Input
             type="text"
             id="bairro"
             name="bairro"
@@ -162,16 +135,11 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
             onChange={handleChange}
             required
             placeholder="Ex: Centro"
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-        </div>
+        </Field>
 
-        {/* Valor */}
-        <div>
-          <label htmlFor="valor" className="block text-sm font-medium text-slate-300 mb-2">
-            Valor (R$) *
-          </label>
-          <input
+        <Field label="Valor (R$)" htmlFor="valor" required>
+          <Input
             type="number"
             id="valor"
             name="valor"
@@ -180,74 +148,51 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
             required
             min="0"
             step="0.01"
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-        </div>
+        </Field>
 
-        {/* Metragem */}
-        <div>
-          <label htmlFor="metragem" className="block text-sm font-medium text-slate-300 mb-2">
-            Metragem (m²)
-          </label>
-          <input
+        <Field label="Metragem (m²)" htmlFor="metragem">
+          <Input
             type="number"
             id="metragem"
             name="metragem"
             value={formData.metragem || ''}
             onChange={handleChange}
             min="0"
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-        </div>
+        </Field>
 
-        {/* Quartos e Vagas */}
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="quartos" className="block text-sm font-medium text-slate-300 mb-2">
-              Quartos
-            </label>
-            <input
+          <Field label="Quartos" htmlFor="quartos">
+            <Input
               type="number"
               id="quartos"
               name="quartos"
               value={formData.quartos || ''}
               onChange={handleChange}
               min="0"
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-          </div>
-          <div>
-            <label htmlFor="vagas" className="block text-sm font-medium text-slate-300 mb-2">
-              Vagas
-            </label>
-            <input
+          </Field>
+          <Field label="Vagas" htmlFor="vagas">
+            <Input
               type="number"
               id="vagas"
               name="vagas"
               value={formData.vagas || ''}
               onChange={handleChange}
               min="0"
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-          </div>
+          </Field>
         </div>
       </div>
 
       <div className="pt-6 border-t border-slate-700 flex justify-end gap-4">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="px-6 py-2.5 text-sm font-medium text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
-        >
+        <Button type="button" variant="secondary" onClick={() => router.back()}>
           Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={isLoading || uploading}
-          className="px-6 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center justify-center min-w-[120px]"
-        >
+        </Button>
+        <Button type="submit" isLoading={isLoading || uploading} className="min-w-[140px]">
           {uploading ? 'Enviando imagem...' : isLoading ? 'Salvando...' : 'Salvar Imóvel'}
-        </button>
+        </Button>
       </div>
     </form>
   );

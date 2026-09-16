@@ -1,6 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { Imovel } from '@/hooks/useImoveis';
+import { Card, CardFooter } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 
 interface ImovelCardProps {
   imovel: Imovel;
@@ -10,7 +12,7 @@ interface ImovelCardProps {
 
 export default function ImovelCard({ imovel, onEdit, onDelete }: ImovelCardProps) {
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden hover:shadow-xl transition-shadow flex flex-col">
+    <Card padding="none" className="overflow-hidden hover:shadow-xl transition-shadow flex flex-col">
       {/* Imagem do Imóvel */}
       <div className="relative h-48 w-full bg-slate-900 border-b border-slate-700">
         {imovel.imagem_url ? (
@@ -70,33 +72,27 @@ export default function ImovelCard({ imovel, onEdit, onDelete }: ImovelCardProps
         </div>
       </div>
       
-      <div className="bg-slate-900/50 p-4 border-t border-slate-700 flex justify-between items-center">
-        <Link 
+      <CardFooter className="flex justify-between items-center">
+        <Link
           href={`/imoveis/${imovel.id}`}
-          className="text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
+          className="text-sm font-medium text-brand-accent hover:text-white transition-colors"
         >
           Ver detalhes
         </Link>
-        
+
         <div className="flex gap-2">
           {onEdit && (
-            <button
-              onClick={() => onEdit(imovel.id)}
-              className="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 rounded transition-colors"
-            >
+            <Button variant="secondary" size="sm" onClick={() => onEdit(imovel.id)}>
               Editar
-            </button>
+            </Button>
           )}
           {onDelete && (
-            <button
-              onClick={() => onDelete(imovel.id)}
-              className="px-3 py-1.5 text-xs font-medium text-red-400 hover:text-white bg-red-950/30 hover:bg-red-600 rounded transition-colors"
-            >
+            <Button variant="danger" size="sm" onClick={() => onDelete(imovel.id)}>
               Excluir
-            </button>
+            </Button>
           )}
         </div>
-      </div>
-    </div>
+      </CardFooter>
+    </Card>
   );
 }
