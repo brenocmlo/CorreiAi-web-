@@ -2,12 +2,8 @@
 
 import React from 'react';
 import { FAIXAS_ORCAMENTO, TIPOS_IMOVEL, type LeadInput } from '@/types/lead';
-
-export const inputClassName =
-  'w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-indigo-500 rounded-xl px-4 py-3 text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition duration-200';
-
-export const labelClassName =
-  'block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2';
+import { Field, Input, Select } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
 
 interface LeadFormProps {
   valores: LeadInput;
@@ -29,56 +25,48 @@ export default function LeadForm({
   return (
     <form onSubmit={onSubmit} className="space-y-5">
       {erro && (
-        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400">
+        <div className="p-4 bg-danger/10 border border-danger/20 rounded-lg text-sm text-danger">
           {erro}
         </div>
       )}
 
-      <div>
-        <label className={labelClassName}>Nome completo</label>
-        <input
+      <Field label="Nome completo">
+        <Input
           type="text"
           required
           value={valores.nome}
           onChange={(e) => onChange('nome', e.target.value)}
           placeholder="Ex.: Roberto Mendes"
-          className={inputClassName}
         />
-      </div>
+      </Field>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <div>
-          <label className={labelClassName}>Telefone</label>
-          <input
+        <Field label="Telefone">
+          <Input
             type="tel"
             required
             value={valores.telefone}
             onChange={(e) => onChange('telefone', e.target.value)}
             placeholder="(85) 99999-9999"
-            className={inputClassName}
           />
-        </div>
-        <div>
-          <label className={labelClassName}>E-mail</label>
-          <input
+        </Field>
+        <Field label="E-mail">
+          <Input
             type="email"
             required
             value={valores.email}
             onChange={(e) => onChange('email', e.target.value)}
             placeholder="cliente@email.com"
-            className={inputClassName}
           />
-        </div>
+        </Field>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <div>
-          <label className={labelClassName}>Faixa de orçamento</label>
-          <select
+        <Field label="Faixa de orçamento">
+          <Select
             required
             value={valores.faixaOrcamento}
             onChange={(e) => onChange('faixaOrcamento', e.target.value)}
-            className={inputClassName}
           >
             <option value="" disabled>
               Selecione a faixa
@@ -88,15 +76,13 @@ export default function LeadForm({
                 {faixa}
               </option>
             ))}
-          </select>
-        </div>
-        <div>
-          <label className={labelClassName}>Tipo de imóvel desejado</label>
-          <select
+          </Select>
+        </Field>
+        <Field label="Tipo de imóvel desejado">
+          <Select
             required
             value={valores.tipoImovel}
             onChange={(e) => onChange('tipoImovel', e.target.value)}
-            className={inputClassName}
           >
             <option value="" disabled>
               Selecione o tipo
@@ -106,24 +92,13 @@ export default function LeadForm({
                 {tipo}
               </option>
             ))}
-          </select>
-        </div>
+          </Select>
+        </Field>
       </div>
 
-      <button
-        type="submit"
-        disabled={carregando}
-        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-4 rounded-xl transition shadow-lg shadow-indigo-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
-      >
-        {carregando ? (
-          <>
-            <span className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-            Salvando...
-          </>
-        ) : (
-          submitLabel
-        )}
-      </button>
+      <Button type="submit" fullWidth size="lg" isLoading={carregando}>
+        {carregando ? 'Salvando...' : submitLabel}
+      </Button>
     </form>
   );
 }
