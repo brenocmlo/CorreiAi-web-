@@ -52,6 +52,13 @@ export async function updateLead(
   });
 }
 
+export async function updateLeadStage(id: string, etapa: EtapaFunil): Promise<void> {
+  await apiRequest(`/api/leads/${id}/etapa`, {
+    method: 'PATCH',
+    body: JSON.stringify({ etapa }),
+  });
+}
+
 export async function deleteLead(id: string): Promise<void> {
   await apiRequest(`/api/leads/${id}`, { method: 'DELETE' });
 }

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import KanbanColuna from '@/components/leads/KanbanColuna';
 import { ETAPAS_FUNIL, type EtapaFunil, type Lead } from '@/types/lead';
-import { updateLead } from '@/lib/leads';
+import { updateLeadStage } from '@/lib/leads';
 
 interface KanbanBoardProps {
   leads: Lead[];
@@ -21,7 +21,7 @@ export default function KanbanBoard({ leads, onLeadUpdated }: KanbanBoardProps) 
     setMovendo(leadId);
     setErro(null);
     try {
-      await updateLead(leadId, { etapa });
+      await updateLeadStage(leadId, etapa);
       onLeadUpdated?.();
     } catch {
       setErro('Não foi possível mover o lead. Tente novamente.');

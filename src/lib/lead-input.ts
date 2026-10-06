@@ -32,3 +32,18 @@ export function parseLeadDetails(value: unknown, options: { partial?: boolean; a
 export function ownerFilter(uid: string): ['corretor_id', string] {
   return ['corretor_id', uid];
 }
+
+export function parseLeadStage(value: unknown, validStages: readonly string[]):
+  { data: string; error?: never } | { error: string; data?: never } {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return { error: 'Etapa inválida.' };
+  }
+  const input = value as Record<string, unknown>;
+  if (Object.keys(input).some((key) => key !== 'etapa')) {
+    return { error: 'Somente o campo etapa pode ser alterado nesta rota.' };
+  }
+  if (typeof input.etapa !== 'string' || !validStages.includes(input.etapa)) {
+    return { error: 'Etapa inválida.' };
+  }
+  return { data: input.etapa };
+}

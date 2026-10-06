@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { ownerFilter, parseLeadDetails } from '../src/lib/lead-input.ts';
+import { ownerFilter, parseLeadDetails, parseLeadStage } from '../src/lib/lead-input.ts';
+import { ETAPAS_FUNIL } from '../src/types/lead.ts';
 
 const valid = {
   nome: ' Ana Souza ',
@@ -35,4 +36,14 @@ test('todas as consultas de leads são filtradas pelo corretor do JWT', () => {
   const query = { eq(column, value) { filters.push([column, value]); return this; } };
   assert.equal(query.eq(...ownerFilter('uid-do-corretor')), query);
   assert.deepEqual(filters, [['corretor_id', 'uid-do-corretor']]);
+});
+
+test('mudança de etapa aceita somente uma etapa conhecida e nenhum outro campo', () => {
+  const etapas = ETAPAS_FUNIL.map((etapa) => etapa.id);
+  for (const etapa of etapas) {
+    assert.deepEqual(parseLeadStage({ etapa }, etapas), { data: etapa });
+  }
+  assert.match(parseLeadStage({ etapa: 'inexistente' }, etapas).error, /etapa/i);
+  assert.match(parseLeadStage({ etapa: 'novo', corretor_id: 'outro' }, etapas).error, /campo/i);
+  assert.match(parseLeadStage({}, etapas).error, /etapa/i);
 });
