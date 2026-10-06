@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import { IMOVEIS_STORAGE_BUCKET } from '@/lib/supabase-config';
+import { parseImageMetadata } from '@/lib/imoveis-upload';
 
 const supabase = createBrowserSupabaseClient();
 
@@ -114,19 +115,23 @@ export function useImoveis() {
     setLoading(true);
     setError(null);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const parsed = parseImageMetadata(file);
+      if (!parsed.extension) throw new Error(parsed.error);
+
+      const { path, token } = await apiRequest<{ path: string; token: string }>(
+        '/api/imoveis/upload-url',
+        { method: 'POST', body: JSON.stringify({ name: file.name, type: file.type, size: file.size }) }
+      );
 
       const { error: uploadError } = await supabase.storage
         .from(IMOVEIS_STORAGE_BUCKET)
-        .upload(filePath, file);
+        .uploadToSignedUrl(path, token, file, { contentType: file.type });
 
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage
         .from(IMOVEIS_STORAGE_BUCKET)
-        .getPublicUrl(filePath);
+        .getPublicUrl(path);
 
       return data.publicUrl;
     } catch (err) {

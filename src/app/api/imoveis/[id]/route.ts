@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthFromRequest } from '@/lib/api-auth';
 import { isUuid, parseImovelInput } from '@/lib/imoveis-input';
+import { isPublicImovelImageUrl } from '@/lib/imoveis-upload';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -37,6 +38,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
   const parsed = parseImovelInput(body, { partial: true });
   if (!parsed.data) return NextResponse.json({ error: parsed.error }, { status: 400 });
+  if (parsed.data.imagem_url && !isPublicImovelImageUrl(parsed.data.imagem_url, process.env.NEXT_PUBLIC_SUPABASE_URL)) {
+    return NextResponse.json({ error: 'URL da imagem fora do bucket de imóveis.' }, { status: 400 });
+  }
 
   const { data, error } = await createServerSupabaseClient()
     .from('imoveis').update(parsed.data).eq('id', id).select('*').maybeSingle();

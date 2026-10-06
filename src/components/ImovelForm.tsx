@@ -52,8 +52,8 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
       if (url) {
         finalUrl = url;
       } else {
-        // Falha no upload, mas continua para tentar salvar o form
-        alert('Erro ao fazer upload da imagem. O imóvel será salvo sem a nova imagem.');
+        alert('Erro ao fazer upload da imagem. O imóvel não foi salvo; tente novamente.');
+        return;
       }
     }
 
