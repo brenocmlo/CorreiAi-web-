@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthFromRequest } from '@/lib/api-auth';
 import { inputToRow, rowToLead } from '@/lib/leads-mapper';
+import { ownerFilter, parseLeadDetails } from '@/lib/lead-input';
 import { createServerSupabaseClient } from '@/lib/supabase';
+import type { LeadInput } from '@/types/lead';
 
 export async function GET(request: NextRequest) {
   const auth = getAuthFromRequest(request);
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
+  if (auth.role === 'lead') return NextResponse.json({ error: 'Sem permissão.' }, { status: 403 });
 
   const supabase = createServerSupabaseClient();
-  const { data, error } = await supabase
-    .from('leads')
-    .select('*')
+  const { data, error } = await supabase.from('leads').select('*').eq(...ownerFilter(auth.uid))
     .order('criado_em', { ascending: false });
 
   if (error) {
@@ -27,6 +28,7 @@ export async function POST(request: NextRequest) {
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
+  if (auth.role === 'lead') return NextResponse.json({ error: 'Sem permissão.' }, { status: 403 });
 
   let body: unknown;
   try {
@@ -35,17 +37,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'JSON inválido.' }, { status: 400 });
   }
 
-  const { nome, telefone, email, faixaOrcamento, tipoImovel } = body as Record<string, string>;
-  if (!nome || !telefone || !email || !faixaOrcamento || !tipoImovel) {
-    return NextResponse.json({ error: 'Campos obrigatórios ausentes.' }, { status: 400 });
-  }
+  const parsed = parseLeadDetails(body);
+  if (!parsed.data) return NextResponse.json({ error: parsed.error }, { status: 400 });
 
   const supabase = createServerSupabaseClient();
   const { data, error } = await supabase
     .from('leads')
     .insert([
       {
-        ...inputToRow({ nome, telefone, email, faixaOrcamento, tipoImovel }),
+        ...inputToRow(parsed.data as LeadInput),
         corretor_id: auth.uid,
       },
     ])
