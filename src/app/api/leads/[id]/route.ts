@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthFromRequest } from '@/lib/api-auth';
 import { rowToLead } from '@/lib/leads-mapper';
-import { ownerFilter, parseLeadDetails } from '@/lib/lead-input';
-import { isUuid } from '@/lib/imoveis-input';
 import { createServerSupabaseClient } from '@/lib/supabase';
 import { ETAPAS_FUNIL, type EtapaFunil } from '@/types/lead';
 type RouteContext = { params: Promise<{ id: string }> };
@@ -13,13 +11,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
-  if (auth.role === 'lead') return NextResponse.json({ error: 'Sem permissão.' }, { status: 403 });
+  if (auth.role === 'lead') return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
 
   const { id } = await context.params;
   if (!isUuid(id)) return NextResponse.json({ error: 'ID inválido.' }, { status: 400 });
   const supabase = createServerSupabaseClient();
-  const { data, error } = await supabase.from('leads').select('*').eq('id', id)
-    .eq(...ownerFilter(auth.uid)).maybeSingle();
+  let query = supabase.from('leads').select('*').eq('id', id);
+  if (auth.role === 'corretor') query = query.eq('corretor_id', auth.uid);
+  const { data, error } = await query.maybeSingle();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -36,7 +35,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
-  if (auth.role === 'lead') return NextResponse.json({ error: 'Sem permissão.' }, { status: 403 });
+  if (auth.role === 'lead') return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
 
   const { id } = await context.params;
   if (!isUuid(id)) return NextResponse.json({ error: 'ID inválido.' }, { status: 400 });
@@ -71,10 +70,12 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   if (hasEtapa) updatePayload.etapa = input.etapa as string;
 
   const supabase = createServerSupabaseClient();
-  const { data, error } = await supabase.from('leads').update(updatePayload).eq('id', id)
-    .eq(...ownerFilter(auth.uid))
-    .select('*')
-    .maybeSingle();
+  let query = supabase
+    .from('leads')
+    .update(updatePayload)
+    .eq('id', id);
+  if (auth.role === 'corretor') query = query.eq('corretor_id', auth.uid);
+  const { data, error } = await query.select('*').maybeSingle();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -91,14 +92,14 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
-  if (auth.role === 'lead') return NextResponse.json({ error: 'Sem permissão.' }, { status: 403 });
+  if (auth.role === 'lead') return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
 
   const { id } = await context.params;
   if (!isUuid(id)) return NextResponse.json({ error: 'ID inválido.' }, { status: 400 });
   const supabase = createServerSupabaseClient();
-  const { data, error } = await supabase.from('leads').delete().eq('id', id)
-    .eq(...ownerFilter(auth.uid))
-    .select('id').maybeSingle();
+  let query = supabase.from('leads').delete().eq('id', id);
+  if (auth.role === 'corretor') query = query.eq('corretor_id', auth.uid);
+  const { error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
