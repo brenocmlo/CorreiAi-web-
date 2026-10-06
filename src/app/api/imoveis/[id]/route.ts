@@ -1,21 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthFromRequest } from '@/lib/api-auth';
-import { isUuid, parseImovelInput } from '@/lib/imoveis-input';
+import { COLUNAS_PUBLICAS_IMOVEL, isUuid, parseImovelInput } from '@/lib/imoveis-input';
 import { isPublicImovelImageUrl } from '@/lib/imoveis-upload';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(request: NextRequest, context: RouteContext) {
-  if (!getAuthFromRequest(request)) {
-    return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
-  }
-
+export async function GET(_request: NextRequest, context: RouteContext) {
   const { id } = await context.params;
   if (!isUuid(id)) return NextResponse.json({ error: 'ID inválido.' }, { status: 400 });
 
   const { data, error } = await createServerSupabaseClient()
-    .from('imoveis').select('*').eq('id', id).maybeSingle();
+    .from('imoveis').select(COLUNAS_PUBLICAS_IMOVEL).eq('id', id).maybeSingle();
 
   if (error) return NextResponse.json({ error: 'Não foi possível consultar o imóvel.' }, { status: 500 });
   if (!data) return NextResponse.json({ error: 'Imóvel não encontrado.' }, { status: 404 });

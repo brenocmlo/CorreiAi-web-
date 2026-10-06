@@ -3,8 +3,22 @@
 import React, { useState, FormEvent } from 'react';
 import { ImovelInput } from '@/hooks/useImoveis';
 import { useRouter } from 'next/navigation';
-import { Field, Input, Select } from '@/components/ui/Input';
+import { Field, Input, Select, Textarea } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+
+type CampoImovel = 'endereco' | 'bairro' | 'valor' | 'metragem' | 'quartos' | 'vagas';
+type ErrosImovel = Partial<Record<CampoImovel, string>>;
+
+function validarImovel(dados: ImovelInput): ErrosImovel {
+  const erros: ErrosImovel = {};
+  if (!dados.endereco.trim()) erros.endereco = 'Informe o endereço.';
+  if (!dados.bairro.trim()) erros.bairro = 'Informe o bairro.';
+  if (!(dados.valor > 0)) erros.valor = 'Informe um valor maior que zero.';
+  if (dados.metragem != null && dados.metragem < 0) erros.metragem = 'A metragem não pode ser negativa.';
+  if (!Number.isInteger(dados.quartos ?? 0) || (dados.quartos ?? 0) < 0) erros.quartos = 'Use um número inteiro, zero ou maior.';
+  if (!Number.isInteger(dados.vagas ?? 0) || (dados.vagas ?? 0) < 0) erros.vagas = 'Use um número inteiro, zero ou maior.';
+  return erros;
+}
 
 interface ImovelFormProps {
   initialData?: ImovelInput & { imagem_url?: string | null };
@@ -18,6 +32,7 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
   
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [erros, setErros] = useState<ErrosImovel>({});
   
   const [formData, setFormData] = useState<ImovelInput>({
     tipo: initialData?.tipo || 'casa',
@@ -29,12 +44,14 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
     vagas: initialData?.vagas || 0,
     status: initialData?.status || 'disponivel',
     imagem_url: initialData?.imagem_url || null,
+    descricao: initialData?.descricao || null,
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     const isNumber = ['valor', 'metragem', 'quartos', 'vagas'].includes(name);
-    
+
+    setErros((prev) => ({ ...prev, [name]: undefined }));
     setFormData((prev) => ({
       ...prev,
       [name]: isNumber ? Number(value) : value,
@@ -43,6 +60,11 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
+    const errosValidacao = validarImovel(formData);
+    setErros(errosValidacao);
+    if (Object.keys(errosValidacao).length > 0) return;
+
     let finalUrl = formData.imagem_url;
     
     if (imageFile && onUploadImage) {
@@ -66,6 +88,7 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
   return (
     <form
       onSubmit={handleSubmit}
+      noValidate
       className="space-y-6 bg-slate-800 p-6 md:p-8 rounded-xl border border-slate-700"
     >
       <div className="mb-6 border-b border-slate-700 pb-6">
@@ -114,7 +137,7 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
           </Select>
         </Field>
 
-        <Field label="Endereço Completo" htmlFor="endereco" required className="md:col-span-2">
+        <Field label="Endereço Completo" htmlFor="endereco" required error={erros.endereco} className="md:col-span-2">
           <Input
             type="text"
             id="endereco"
@@ -126,7 +149,18 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
           />
         </Field>
 
-        <Field label="Bairro" htmlFor="bairro" required>
+        <Field label="Descrição" htmlFor="descricao" className="md:col-span-2">
+          <Textarea
+            id="descricao"
+            name="descricao"
+            value={formData.descricao ?? ''}
+            onChange={handleChange}
+            rows={4}
+            placeholder="Destaques do imóvel, acabamento, vizinhança..."
+          />
+        </Field>
+
+        <Field label="Bairro" htmlFor="bairro" required error={erros.bairro}>
           <Input
             type="text"
             id="bairro"
@@ -138,7 +172,7 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
           />
         </Field>
 
-        <Field label="Valor (R$)" htmlFor="valor" required>
+        <Field label="Valor (R$)" htmlFor="valor" required error={erros.valor}>
           <Input
             type="number"
             id="valor"
@@ -151,7 +185,7 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
           />
         </Field>
 
-        <Field label="Metragem (m²)" htmlFor="metragem">
+        <Field label="Metragem (m²)" htmlFor="metragem" error={erros.metragem}>
           <Input
             type="number"
             id="metragem"
@@ -163,7 +197,7 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
         </Field>
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Quartos" htmlFor="quartos">
+          <Field label="Quartos" htmlFor="quartos" error={erros.quartos}>
             <Input
               type="number"
               id="quartos"
@@ -173,7 +207,7 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
               min="0"
             />
           </Field>
-          <Field label="Vagas" htmlFor="vagas">
+          <Field label="Vagas" htmlFor="vagas" error={erros.vagas}>
             <Input
               type="number"
               id="vagas"

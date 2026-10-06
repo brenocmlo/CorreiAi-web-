@@ -8,8 +8,7 @@ import ImovelCard from '@/components/ImovelCard';
 import ConfirmModal from '@/components/ConfirmModal';
 
 export default function ImoveisPage() {
-  const { profile } = useAuth();
-  const isCorretor = profile?.role !== 'lead';
+  const { isCorretor } = useAuth();
   const { imoveis, loading, fetchImoveis, deleteImovel } = useImoveis();
   
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);

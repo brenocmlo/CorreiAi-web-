@@ -29,6 +29,7 @@ export default function Login() {
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [erro, setErro] = useState('');
+  const [errosCampo, setErrosCampo] = useState<{ email?: string; senha?: string }>({});
   const [carregando, setCarregando] = useState(false);
   const { user, loading, refreshProfile } = useAuth();
   const router = useRouter();
@@ -42,6 +43,7 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro('');
+    setErrosCampo({});
     setCarregando(true);
 
     try {
@@ -54,7 +56,10 @@ export default function Login() {
       const data = await res.json();
 
       if (!res.ok) {
-        setErro(data.error ?? 'Ocorreu um erro ao fazer login. Tente novamente mais tarde.');
+        const mensagem = data.error ?? 'Ocorreu um erro ao fazer login. Tente novamente mais tarde.';
+        if (res.status === 401) setErrosCampo({ senha: mensagem });
+        else if (res.status === 400) setErrosCampo({ email: mensagem });
+        else setErro(mensagem);
         return;
       }
 
@@ -157,7 +162,7 @@ export default function Login() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} noValidate className="space-y-5">
             <InputGroup
               label="E-mail"
               placeholder="voce@email.com"
@@ -165,19 +170,22 @@ export default function Login() {
               value={email}
               onChange={setEmail}
               required
+              error={errosCampo.email}
             />
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-white">Senha</label>
+                <label htmlFor="login-senha" className="block text-sm font-medium text-white">Senha</label>
                 <a href="#" className="text-xs text-white/40 hover:text-white/70 transition">
                   Esqueceu a senha?
                 </a>
               </div>
               <div className="relative">
                 <input
+                  id="login-senha"
                   type={mostrarSenha ? 'text' : 'password'}
                   required
+                  aria-invalid={Boolean(errosCampo.senha)}
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
                   placeholder="••••••••"
@@ -196,6 +204,7 @@ export default function Login() {
                   )}
                 </button>
               </div>
+              {errosCampo.senha && <p className="text-xs text-red-400">{errosCampo.senha}</p>}
             </div>
 
             <button
@@ -311,6 +320,7 @@ function InputGroup({
   value,
   onChange,
   required = false,
+  error,
 }: {
   label: string;
   placeholder: string;
@@ -318,6 +328,7 @@ function InputGroup({
   value: string;
   onChange: (value: string) => void;
   required?: boolean;
+  error?: string;
 }) {
   return (
     <div className="space-y-2">
@@ -325,11 +336,13 @@ function InputGroup({
       <input
         type={type}
         required={required}
+        aria-invalid={Boolean(error)}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className="h-11 w-full rounded-xl border-none bg-brand-gray px-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
       />
+      {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
   );
 }

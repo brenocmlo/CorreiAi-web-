@@ -9,6 +9,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { BackToHomeButton } from '@/components/auth/BackToHomeButton';
 
 type TipoPerfil = 'corretor' | 'lead';
+type CampoCadastro = 'nome' | 'sobrenome' | 'email' | 'cpf' | 'creci' | 'senha';
+type ErrosCampo = Partial<Record<CampoCadastro, string>>;
 
 const VIDEO_SRC =
   'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260506_081238_406ed0e3-5d83-436e-a512-0bbff7ec5b95.mp4';
@@ -48,8 +50,10 @@ interface CadastroFormProps {
   tipoPerfil: TipoPerfil;
 }
 
-export default function CadastroForm({ tipoPerfil }: CadastroFormProps) {
+export default function CadastroForm({ tipoPerfil: tipoInicial }: CadastroFormProps) {
+  const [tipoPerfil, setTipoPerfil] = useState<TipoPerfil>(tipoInicial);
   const copy = COPY[tipoPerfil];
+  const [errosCampo, setErrosCampo] = useState<ErrosCampo>({});
   const [primeiroNome, setPrimeiroNome] = useState('');
   const [sobrenome, setSobrenome] = useState('');
   const [email, setEmail] = useState('');
@@ -72,28 +76,22 @@ export default function CadastroForm({ tipoPerfil }: CadastroFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro('');
+    setErrosCampo({});
     setSucesso(false);
 
+    const novosErros: ErrosCampo = {};
+    if (!primeiroNome.trim()) novosErros.nome = 'Informe seu nome.';
+    if (!sobrenome.trim()) novosErros.sobrenome = 'Informe seu sobrenome.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) novosErros.email = 'Informe um e-mail válido.';
+    if (!cpf.trim()) novosErros.cpf = 'Informe seu CPF.';
+    if (tipoPerfil === 'corretor' && !creci.trim()) novosErros.creci = 'Informe seu CRECI.';
+    if (senha.length < 8) novosErros.senha = 'A senha deve ter no mínimo 8 caracteres.';
+    if (Object.keys(novosErros).length > 0) {
+      setErrosCampo(novosErros);
+      return;
+    }
+
     const nomeCompleto = `${primeiroNome.trim()} ${sobrenome.trim()}`.trim();
-    if (!primeiroNome.trim() || !sobrenome.trim()) {
-      setErro('Preencha nome e sobrenome.');
-      return;
-    }
-
-    if (senha.length < 8) {
-      setErro('A senha deve ter no mínimo 8 caracteres.');
-      return;
-    }
-
-    if (!cpf) {
-      setErro('Por favor, preencha o CPF.');
-      return;
-    }
-
-    if (tipoPerfil === 'corretor' && !creci) {
-      setErro('Corretores devem informar o CRECI.');
-      return;
-    }
 
     setCarregando(true);
 
@@ -114,7 +112,9 @@ export default function CadastroForm({ tipoPerfil }: CadastroFormProps) {
       const data = await res.json();
 
       if (!res.ok) {
-        setErro(data.error ?? 'Ocorreu um erro ao criar a conta. Tente novamente.');
+        const mensagem = data.error ?? 'Ocorreu um erro ao criar a conta. Tente novamente.';
+        if (res.status === 409) setErrosCampo({ email: mensagem });
+        else setErro(mensagem);
         return;
       }
 
@@ -202,6 +202,32 @@ export default function CadastroForm({ tipoPerfil }: CadastroFormProps) {
             <p className="text-white/40 text-sm">{copy.subtituloForm}</p>
           </div>
 
+          <div role="radiogroup" aria-label="Tipo de perfil" className="grid grid-cols-2 gap-2 rounded-xl bg-brand-gray p-1">
+            {(
+              [
+                { valor: 'corretor', rotulo: 'Sou corretor' },
+                { valor: 'lead', rotulo: 'Sou cliente' },
+              ] as const
+            ).map((opcao) => (
+              <button
+                key={opcao.valor}
+                type="button"
+                role="radio"
+                aria-checked={tipoPerfil === opcao.valor}
+                onClick={() => {
+                  setTipoPerfil(opcao.valor);
+                  setErrosCampo({});
+                  setErro('');
+                }}
+                className={`h-10 rounded-lg text-sm font-medium transition ${
+                  tipoPerfil === opcao.valor ? 'bg-white text-black' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                {opcao.rotulo}
+              </button>
+            ))}
+          </div>
+
           <SocialButton icon={<GoogleIcon />} label="Continuar com Google" />
 
           <div className="relative flex items-center">
@@ -224,7 +250,7 @@ export default function CadastroForm({ tipoPerfil }: CadastroFormProps) {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} noValidate className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
               <InputGroup
                 label="Nome"
@@ -232,6 +258,7 @@ export default function CadastroForm({ tipoPerfil }: CadastroFormProps) {
                 value={primeiroNome}
                 onChange={setPrimeiroNome}
                 required
+                error={errosCampo.nome}
               />
               <InputGroup
                 label="Sobrenome"
@@ -239,6 +266,7 @@ export default function CadastroForm({ tipoPerfil }: CadastroFormProps) {
                 value={sobrenome}
                 onChange={setSobrenome}
                 required
+                error={errosCampo.sobrenome}
               />
             </div>
 
@@ -249,6 +277,7 @@ export default function CadastroForm({ tipoPerfil }: CadastroFormProps) {
               value={email}
               onChange={setEmail}
               required
+              error={errosCampo.email}
             />
 
             <InputGroup
@@ -257,6 +286,7 @@ export default function CadastroForm({ tipoPerfil }: CadastroFormProps) {
               value={cpf}
               onChange={setCpf}
               required
+              error={errosCampo.cpf}
             />
 
             {tipoPerfil === 'corretor' && (
@@ -266,15 +296,18 @@ export default function CadastroForm({ tipoPerfil }: CadastroFormProps) {
                 value={creci}
                 onChange={setCreci}
                 required
+                error={errosCampo.creci}
               />
             )}
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-white">Senha</label>
+              <label htmlFor="cadastro-senha" className="block text-sm font-medium text-white">Senha</label>
               <div className="relative">
                 <input
+                  id="cadastro-senha"
                   type={mostrarSenha ? 'text' : 'password'}
                   required
+                  aria-invalid={Boolean(errosCampo.senha)}
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
                   placeholder="••••••••"
@@ -293,7 +326,11 @@ export default function CadastroForm({ tipoPerfil }: CadastroFormProps) {
                   )}
                 </button>
               </div>
-              <p className="text-xs text-white/30">Requer no mínimo 8 caracteres.</p>
+              {errosCampo.senha ? (
+                <p className="text-xs text-red-400">{errosCampo.senha}</p>
+              ) : (
+                <p className="text-xs text-white/30">Requer no mínimo 8 caracteres.</p>
+              )}
             </div>
 
             <button
@@ -409,6 +446,7 @@ function InputGroup({
   value,
   onChange,
   required = false,
+  error,
 }: {
   label: string;
   placeholder: string;
@@ -416,6 +454,7 @@ function InputGroup({
   value: string;
   onChange: (value: string) => void;
   required?: boolean;
+  error?: string;
 }) {
   return (
     <div className="space-y-2">
@@ -423,11 +462,13 @@ function InputGroup({
       <input
         type={type}
         required={required}
+        aria-invalid={Boolean(error)}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className="h-11 w-full rounded-xl border-none bg-brand-gray px-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
       />
+      {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
   );
 }
