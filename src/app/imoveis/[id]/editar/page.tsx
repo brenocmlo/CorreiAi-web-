@@ -10,16 +10,16 @@ import ImovelForm from '@/components/ImovelForm';
 export default function EditarImovelPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = use(params);
-  const { profile, loading: authLoading } = useAuth();
+  const { profile, loading: authLoading, isLead } = useAuth();
   const { fetchImovelById, updateImovel, uploadImagem, loading } = useImoveis();
   const [imovel, setImovel] = useState<Imovel | null>(null);
   const [isFetching, setIsFetching] = useState(true);
 
   useEffect(() => {
-    if (!authLoading && profile && profile.role === 'lead') {
+    if (!authLoading && profile && isLead) {
       router.replace('/dashboard');
     }
-  }, [profile, authLoading, router]);
+  }, [profile, authLoading, isLead, router]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -47,7 +47,7 @@ export default function EditarImovelPage({ params }: { params: Promise<{ id: str
     );
   }
 
-  if (!profile || profile.role === 'lead') return null;
+  if (!profile || isLead) return null;
 
   return (
     <div className="p-6 md:p-8 max-w-4xl mx-auto">

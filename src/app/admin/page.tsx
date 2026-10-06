@@ -18,19 +18,19 @@ interface Usuario {
 }
 
 export default function AdminPage() {
-  const { profile, loading: authLoading } = useAuth();
+  const { profile, loading: authLoading, isAdmin } = useAuth();
   const router = useRouter();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!authLoading && profile) {
-      if (profile.role !== 'admin_corretora' && profile.role !== 'super_admin') {
+      if (!isAdmin) {
         router.replace('/dashboard');
         return;
       }
     }
-  }, [profile, authLoading, router]);
+  }, [profile, authLoading, isAdmin, router]);
 
   useEffect(() => {
     fetch('/api/admin')
@@ -64,7 +64,7 @@ export default function AdminPage() {
     );
   }
 
-  if (!profile || (profile.role !== 'admin_corretora' && profile.role !== 'super_admin')) {
+  if (!profile || !isAdmin) {
     return null;
   }
 

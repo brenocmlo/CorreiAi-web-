@@ -11,8 +11,7 @@ export default function DetalheImovelPage({ params }: { params: Promise<{ id: st
   const router = useRouter();
   const { id } = use(params);
   const { fetchImovelById, deleteImovel } = useImoveis();
-  const { profile } = useAuth();
-  const isCorretor = profile?.role !== 'lead';
+  const { isCorretor, isLead } = useAuth();
   
   const [imovel, setImovel] = useState<Imovel | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,10 +52,10 @@ export default function DetalheImovelPage({ params }: { params: Promise<{ id: st
     <div className="p-6 md:p-8 max-w-5xl mx-auto">
       <div className="mb-6 flex items-center justify-between">
         <Link 
-          href={isCorretor ? "/imoveis" : "/dashboard"}
+          href={isLead ? "/dashboard" : "/imoveis"}
           className="text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
         >
-          &larr; {isCorretor ? "Voltar para listagem" : "Voltar para o painel"}
+          &larr; {isLead ? "Voltar para o painel" : "Voltar para listagem"}
         </Link>
         
         {isCorretor && (
@@ -149,6 +148,13 @@ export default function DetalheImovelPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
         </div>
+
+        {imovel.descricao && (
+          <div className="p-6 md:p-8 border-t border-slate-700">
+            <h3 className="text-xl font-semibold text-white mb-4">Descrição</h3>
+            <p className="text-slate-300 leading-relaxed whitespace-pre-line">{imovel.descricao}</p>
+          </div>
+        )}
       </div>
 
       <ConfirmModal

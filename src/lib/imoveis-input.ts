@@ -8,13 +8,17 @@ export interface ImovelPayload {
   vagas?: number | null;
   status: 'disponivel' | 'vendido' | 'alugado';
   imagem_url?: string | null;
+  descricao?: string | null;
 }
 
 type Result = { data: Partial<ImovelPayload>; error?: never } | { error: string; data?: never };
 
 const TIPOS = new Set<ImovelPayload['tipo']>(['casa', 'apartamento', 'terreno', 'comercial']);
 const STATUS = new Set<ImovelPayload['status']>(['disponivel', 'vendido', 'alugado']);
-const CAMPOS = ['tipo', 'endereco', 'bairro', 'valor', 'metragem', 'quartos', 'vagas', 'status', 'imagem_url'] as const;
+const CAMPOS = ['tipo', 'endereco', 'bairro', 'valor', 'metragem', 'quartos', 'vagas', 'status', 'imagem_url', 'descricao'] as const;
+
+export const COLUNAS_PUBLICAS_IMOVEL =
+  'id,tipo,endereco,bairro,valor,metragem,quartos,vagas,status,criado_em,imagem_url,descricao';
 
 export function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
@@ -59,6 +63,9 @@ export function parseImovelInput(value: unknown, options: { partial?: boolean } 
     } else if (field === 'imagem_url') {
       if (raw !== null && (typeof raw !== 'string' || !/^https:\/\//.test(raw))) return { error: 'URL da imagem inválida.' };
       data.imagem_url = raw;
+    } else if (field === 'descricao') {
+      if (raw !== null && typeof raw !== 'string') return { error: 'Descrição inválida.' };
+      data.descricao = typeof raw === 'string' && raw.trim() ? raw.trim() : null;
     }
   }
 

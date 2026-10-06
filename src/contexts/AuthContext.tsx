@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { AppRole, isAdminRole } from '@/lib/auth-policy';
 
 interface Profile {
   id: string;
@@ -8,13 +9,17 @@ interface Profile {
   email: string;
   cpf?: string;
   creci?: string;
-  role: 'corretor' | 'lead' | 'admin_corretora' | 'super_admin';
+  role: AppRole;
   criado_em: string;
 }
 
 interface AuthContextType {
   user: Profile | null;
   profile: Profile | null;
+  role: AppRole | null;
+  isLead: boolean;
+  isCorretor: boolean;
+  isAdmin: boolean;
   loading: boolean;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -66,9 +71,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const role = profile?.role ?? null;
+
   return (
-    // user e profile apontam para o mesmo objeto — mantendo compatibilidade com código existente
-    <AuthContext.Provider value={{ user: profile, profile, loading, logout, refreshProfile }}>
+    <AuthContext.Provider
+      value={{
+        user: profile,
+        profile,
+        role,
+        isLead: role === 'lead',
+        isCorretor: role !== null && role !== 'lead',
+        isAdmin: isAdminRole(role),
+        loading,
+        logout,
+        refreshProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

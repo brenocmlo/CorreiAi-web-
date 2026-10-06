@@ -28,6 +28,7 @@ export interface Imovel {
   status: string;
   criado_em: string;
   imagem_url?: string | null;
+  descricao?: string | null;
 }
 
 export type ImovelInput = Omit<Imovel, 'id' | 'criado_em'>;

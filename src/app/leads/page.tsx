@@ -12,15 +12,15 @@ import { deleteLead } from '@/lib/leads';
 import type { Lead } from '@/types/lead';
 
 export default function LeadsPage() {
-  const { profile } = useAuth();
+  const { isLead } = useAuth();
   const router = useRouter();
   const { leads, loading, erro, recarregar } = useLeads();
 
   useEffect(() => {
-    if (profile?.role === 'lead') {
+    if (isLead) {
       router.replace('/dashboard');
     }
-  }, [profile?.role, router]);
+  }, [isLead, router]);
   const [leadExcluir, setLeadExcluir] = useState<Lead | null>(null);
   const [excluindo, setExcluindo] = useState(false);
   const [erroExclusao, setErroExclusao] = useState('');
@@ -53,12 +53,20 @@ export default function LeadsPage() {
                 RF06.1 — Listagem com opções de editar e excluir cada registro
               </p>
             </div>
-            <Link
-              href="/funil"
-              className="px-4 py-2.5 rounded-xl border border-slate-700 text-sm font-medium text-slate-300 hover:bg-slate-800 transition"
-            >
-              Ver funil (Kanban)
-            </Link>
+            <div className="flex gap-3">
+              <Link
+                href="/funil"
+                className="px-4 py-2.5 rounded-xl border border-slate-700 text-sm font-medium text-slate-300 hover:bg-slate-800 transition"
+              >
+                Ver funil (Kanban)
+              </Link>
+              <Link
+                href="/leads/novo"
+                className="px-4 py-2.5 rounded-xl bg-brand-primary hover:bg-brand-primary-hover text-sm font-semibold text-white transition"
+              >
+                Novo lead
+              </Link>
+            </div>
           </div>
 
           {erro && (

@@ -8,15 +8,15 @@ import { useAuth } from '@/hooks/useAuth';
 import ImovelForm from '@/components/ImovelForm';
 
 export default function NovoImovelPage() {
-  const { profile, loading: authLoading } = useAuth();
+  const { profile, loading: authLoading, isLead } = useAuth();
   const router = useRouter();
   const { createImovel, uploadImagem, loading } = useImoveis();
 
   useEffect(() => {
-    if (!authLoading && profile && profile.role === 'lead') {
+    if (!authLoading && profile && isLead) {
       router.replace('/dashboard');
     }
-  }, [profile, authLoading, router]);
+  }, [profile, authLoading, isLead, router]);
 
   if (authLoading) {
     return (
@@ -26,7 +26,7 @@ export default function NovoImovelPage() {
     );
   }
 
-  if (!profile || profile.role === 'lead') return null;
+  if (!profile || isLead) return null;
 
   return (
     <div className="p-6 md:p-8 max-w-4xl mx-auto">

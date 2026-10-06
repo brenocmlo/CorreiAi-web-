@@ -358,8 +358,7 @@ function DashboardLead() {
 }
 
 export default function DashboardPage() {
-  const { profile } = useAuth();
-  const isLead = profile?.role === 'lead';
+  const { isLead } = useAuth();
 
   return (
     <ProtectedRoute>

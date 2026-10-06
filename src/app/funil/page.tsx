@@ -9,15 +9,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { useLeads } from '@/hooks/useLeads';
 
 export default function FunilPage() {
-  const { profile } = useAuth();
+  const { isLead } = useAuth();
   const router = useRouter();
   const { leads, loading, erro, recarregar } = useLeads();
 
   useEffect(() => {
-    if (profile?.role === 'lead') {
+    if (isLead) {
       router.replace('/dashboard');
     }
-  }, [profile?.role, router]);
+  }, [isLead, router]);
 
   return (
     <ProtectedRoute>

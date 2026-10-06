@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthFromRequest } from '@/lib/api-auth';
-import { parseImovelInput } from '@/lib/imoveis-input';
+import { COLUNAS_PUBLICAS_IMOVEL, parseImovelInput } from '@/lib/imoveis-input';
 import { isPublicImovelImageUrl } from '@/lib/imoveis-upload';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
-export async function GET(request: NextRequest) {
-  if (!getAuthFromRequest(request)) {
-    return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
-  }
-
+export async function GET() {
   const { data, error } = await createServerSupabaseClient()
     .from('imoveis')
-    .select('*')
+    .select(COLUNAS_PUBLICAS_IMOVEL)
     .order('criado_em', { ascending: false });
 
   if (error) return NextResponse.json({ error: 'Não foi possível listar os imóveis.' }, { status: 500 });

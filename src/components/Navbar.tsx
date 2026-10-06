@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function Navbar() {
-  const { user, profile, logout } = useAuth();
+  const { user, profile, logout, isLead, isAdmin } = useAuth();
   const pathname = usePathname();
   const [menuAberto, setMenuAberto] = useState(false);
 
@@ -28,9 +28,6 @@ export default function Navbar() {
   }
 
   const nomeExibicao = profile?.nome_completo || 'Usuário';
-  const isLead = profile?.role === 'lead';
-
-  const isAdmin = profile?.role === 'admin_corretora' || profile?.role === 'super_admin';
 
   const navLinksCorretor = [
     { href: '/dashboard', label: 'Dashboard' },
