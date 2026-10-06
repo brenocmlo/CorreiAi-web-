@@ -1,8 +1,20 @@
 import { useState, useCallback } from 'react';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import { IMOVEIS_STORAGE_BUCKET } from '@/lib/supabase-config';
+import { parseImageMetadata } from '@/lib/imoveis-upload';
 
 const supabase = createBrowserSupabaseClient();
+
+async function apiRequest<T>(url: string, options: RequestInit = {}): Promise<T> {
+  const response = await fetch(url, {
+    ...options,
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...options.headers },
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error ?? 'Erro ao consultar imóveis.');
+  return body as T;
+}
 
 export interface Imovel {
   id: string;
@@ -29,16 +41,11 @@ export function useImoveis() {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: sbError } = await supabase
-        .from('imoveis')
-        .select('*')
-        .order('criado_em', { ascending: false });
-
-      if (sbError) throw sbError;
-      setImoveis(data as Imovel[]);
-      return data;
-    } catch (err: any) {
-      setError(err.message);
+      const { imoveis } = await apiRequest<{ imoveis: Imovel[] }>('/api/imoveis');
+      setImoveis(imoveis);
+      return imoveis;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao consultar imóveis.');
       return [];
     } finally {
       setLoading(false);
@@ -49,16 +56,10 @@ export function useImoveis() {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: sbError } = await supabase
-        .from('imoveis')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (sbError) throw sbError;
-      return data as Imovel;
-    } catch (err: any) {
-      setError(err.message);
+      const { imovel } = await apiRequest<{ imovel: Imovel }>(`/api/imoveis/${id}`);
+      return imovel;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao consultar imóvel.');
       return null;
     } finally {
       setLoading(false);
@@ -69,15 +70,11 @@ export function useImoveis() {
     setLoading(true);
     setError(null);
     try {
-      const { error: sbError } = await supabase
-        .from('imoveis')
-        .insert([imovel]);
-
-      if (sbError) throw sbError;
+      await apiRequest('/api/imoveis', { method: 'POST', body: JSON.stringify(imovel) });
       await fetchImoveis(); // Refresh list
       return true;
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao cadastrar imóvel.');
       return false;
     } finally {
       setLoading(false);
@@ -88,16 +85,11 @@ export function useImoveis() {
     setLoading(true);
     setError(null);
     try {
-      const { error: sbError } = await supabase
-        .from('imoveis')
-        .update(updates)
-        .eq('id', id);
-
-      if (sbError) throw sbError;
+      await apiRequest(`/api/imoveis/${id}`, { method: 'PATCH', body: JSON.stringify(updates) });
       await fetchImoveis(); // Refresh list
       return true;
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao editar imóvel.');
       return false;
     } finally {
       setLoading(false);
@@ -108,16 +100,11 @@ export function useImoveis() {
     setLoading(true);
     setError(null);
     try {
-      const { error: sbError } = await supabase
-        .from('imoveis')
-        .delete()
-        .eq('id', id);
-
-      if (sbError) throw sbError;
+      await apiRequest(`/api/imoveis/${id}`, { method: 'DELETE' });
       await fetchImoveis(); // Refresh list
       return true;
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao excluir imóvel.');
       return false;
     } finally {
       setLoading(false);
@@ -128,23 +115,27 @@ export function useImoveis() {
     setLoading(true);
     setError(null);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const parsed = parseImageMetadata(file);
+      if (!parsed.extension) throw new Error(parsed.error);
+
+      const { path, token } = await apiRequest<{ path: string; token: string }>(
+        '/api/imoveis/upload-url',
+        { method: 'POST', body: JSON.stringify({ name: file.name, type: file.type, size: file.size }) }
+      );
 
       const { error: uploadError } = await supabase.storage
         .from(IMOVEIS_STORAGE_BUCKET)
-        .upload(filePath, file);
+        .uploadToSignedUrl(path, token, file, { contentType: file.type });
 
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage
         .from(IMOVEIS_STORAGE_BUCKET)
-        .getPublicUrl(filePath);
+        .getPublicUrl(path);
 
       return data.publicUrl;
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao enviar imagem.');
       return null;
     } finally {
       setLoading(false);
