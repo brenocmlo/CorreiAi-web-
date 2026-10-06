@@ -7,6 +7,9 @@ export async function GET(request: NextRequest) {
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
   }
+  if (auth.role === 'lead') {
+    return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
+  }
 
   const supabase = createServerSupabaseClient();
 

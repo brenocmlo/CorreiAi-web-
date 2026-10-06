@@ -45,18 +45,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    fetchMe().finally(() => setLoading(false));
+    async function loadSession() {
+      await fetchMe();
+      setLoading(false);
+    }
+    void loadSession();
   }, []);
 
   const logout = async () => {
     setLoading(true);
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      const response = await fetch('/api/auth/logout', { method: 'POST' });
+      if (!response.ok) throw new Error('Não foi possível encerrar a sessão.');
       setProfile(null);
       window.location.href = '/';
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
-      window.location.href = '/';
     } finally {
       setLoading(false);
     }

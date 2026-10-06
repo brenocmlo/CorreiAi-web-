@@ -2,41 +2,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { createServerSupabaseClient } from '@/lib/supabase';
 import { signToken } from '@/lib/jwt';
+import { parseRegistration } from '@/lib/auth-input';
 
 export async function POST(request: NextRequest) {
   try {
-    const { nome_completo, email, cpf, creci, senha, role } = await request.json();
-    const tipoPerfil = role === 'lead' ? 'lead' : 'corretor';
-
-    if (!nome_completo || !email || !cpf || !senha) {
+    const input = parseRegistration(await request.json());
+    if (!input) {
       return NextResponse.json(
-        { error: 'Nome, e-mail, CPF e senha são obrigatórios.' },
+        { error: 'Dados inválidos. Informe nome, e-mail, CPF, perfil e senha de pelo menos 6 caracteres; corretores precisam informar CRECI.' },
         { status: 400 }
       );
     }
-
-    if (tipoPerfil === 'corretor' && !creci) {
-      return NextResponse.json(
-        { error: 'CRECI é obrigatório para corretores.' },
-        { status: 400 }
-      );
-    }
-
-    if (senha.length < 6) {
-      return NextResponse.json(
-        { error: 'A senha deve ter no mínimo 6 caracteres.' },
-        { status: 400 }
-      );
-    }
+    const { nome_completo, email, cpf, creci, senha, role } = input;
 
     const supabaseServer = createServerSupabaseClient();
 
     // Verificar se o e-mail já existe
-    const { data: existente } = await supabaseServer
+    const { data: existente, error: lookupError } = await supabaseServer
       .from('perfis')
       .select('id')
       .eq('email', email)
       .maybeSingle();
+
+    if (lookupError) {
+      return NextResponse.json({ error: 'Erro ao verificar e-mail.' }, { status: 500 });
+    }
 
     if (existente) {
       return NextResponse.json(
@@ -60,16 +50,19 @@ export async function POST(request: NextRequest) {
           nome_completo,
           email,
           cpf,
-          creci: tipoPerfil === 'corretor' ? creci : null,
+          creci,
           senha_hash,
-          role: tipoPerfil,
+          role,
         },
       ])
       .select()
       .single();
 
     if (dbError || !novoPerfil) {
-      console.error('[POST /api/auth/register] DB error:', dbError?.message);
+      if (dbError?.code === '23505') {
+        return NextResponse.json({ error: 'Este e-mail já está sendo utilizado por outra conta.' }, { status: 409 });
+      }
+      console.error('[POST /api/auth/cadastro] DB error:', dbError?.message);
       return NextResponse.json(
         { error: 'Erro ao criar conta. Tente novamente.' },
         { status: 500 }
@@ -95,7 +88,7 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (err) {
-    console.error('[POST /api/auth/register]', err);
+    console.error('[POST /api/auth/cadastro]', err);
     return NextResponse.json(
       { error: 'Erro interno do servidor.' },
       { status: 500 }

@@ -8,12 +8,17 @@ export async function GET(request: NextRequest) {
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
+  if (auth.role === 'lead') {
+    return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
+  }
 
   const supabase = createServerSupabaseClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from('leads')
     .select('*')
     .order('criado_em', { ascending: false });
+  if (auth.role === 'corretor') query = query.eq('corretor_id', auth.uid);
+  const { data, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -26,6 +31,9 @@ export async function POST(request: NextRequest) {
   const auth = getAuthFromRequest(request);
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
+  }
+  if (auth.role === 'lead') {
+    return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
   }
 
   let body: unknown;

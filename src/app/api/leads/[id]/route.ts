@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthFromRequest } from '@/lib/api-auth';
-import { inputToRow, rowToLead } from '@/lib/leads-mapper';
+import { rowToLead } from '@/lib/leads-mapper';
 import { createServerSupabaseClient } from '@/lib/supabase';
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -9,10 +9,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
+  if (auth.role === 'lead') return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
 
   const { id } = await context.params;
   const supabase = createServerSupabaseClient();
-  const { data, error } = await supabase.from('leads').select('*').eq('id', id).maybeSingle();
+  let query = supabase.from('leads').select('*').eq('id', id);
+  if (auth.role === 'corretor') query = query.eq('corretor_id', auth.uid);
+  const { data, error } = await query.maybeSingle();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -29,6 +32,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
+  if (auth.role === 'lead') return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
 
   const { id } = await context.params;
   let body: Record<string, string>;
@@ -50,12 +54,12 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   if (body.etapa) updatePayload.etapa = body.etapa;
 
   const supabase = createServerSupabaseClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from('leads')
     .update(updatePayload)
-    .eq('id', id)
-    .select('*')
-    .maybeSingle();
+    .eq('id', id);
+  if (auth.role === 'corretor') query = query.eq('corretor_id', auth.uid);
+  const { data, error } = await query.select('*').maybeSingle();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -72,10 +76,13 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
+  if (auth.role === 'lead') return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
 
   const { id } = await context.params;
   const supabase = createServerSupabaseClient();
-  const { error } = await supabase.from('leads').delete().eq('id', id);
+  let query = supabase.from('leads').delete().eq('id', id);
+  if (auth.role === 'corretor') query = query.eq('corretor_id', auth.uid);
+  const { error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

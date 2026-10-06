@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/jwt';
+import { canAccessPage } from '@/lib/auth-policy';
 
 export const config = {
   matcher: [
@@ -24,11 +25,7 @@ export function proxy(request: NextRequest) {
   try {
     const payload = verifyToken(token);
 
-    if (
-      request.nextUrl.pathname.startsWith('/admin') &&
-      payload.role !== 'admin_corretora' &&
-      payload.role !== 'super_admin'
-    ) {
+    if (!canAccessPage(payload.role, request.nextUrl.pathname)) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 

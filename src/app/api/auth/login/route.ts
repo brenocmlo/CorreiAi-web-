@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { createServerSupabaseClient } from '@/lib/supabase';
 import { signToken } from '@/lib/jwt';
+import { normalizeEmail } from '@/lib/auth-input';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, senha } = await request.json();
+    const body = await request.json();
+    const email = normalizeEmail(body?.email);
+    const senha = body?.senha;
 
-    if (!email || !senha) {
+    if (!/^[^\s@%]+@[^\s@%]+\.[^\s@%]+$/.test(email) || typeof senha !== 'string' || !senha) {
       return NextResponse.json(
         { error: 'E-mail e senha são obrigatórios.' },
         { status: 400 }
@@ -31,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar senha
-    const senhaCorreta = await bcrypt.compare(senha, perfil.senha_hash);
+    const senhaCorreta = typeof perfil.senha_hash === 'string' && await bcrypt.compare(senha, perfil.senha_hash);
     if (!senhaCorreta) {
       return NextResponse.json(
         { error: 'E-mail ou senha incorretos.' },
