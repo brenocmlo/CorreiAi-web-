@@ -1,134 +1,87 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { openRouterChat, type ChatMessage } from '@/lib/openrouter';
-import { createPublicLead } from '@/lib/public-leads';
-import { recomendarImoveis, type PreferenciasLead } from '@/lib/recomendacao';
+import { openRouterChat, OpenRouterError } from '@/lib/openrouter';
+import { qualificationFrom, selectPortfolio } from '@/lib/assistant-qualification';
+import { conciseReply, conversationPrompt, extractionMessages, fallbackReply, groundedReply } from '@/lib/assistant-prompt';
+import { ASSISTANT_COOKIE, assistantSession, getAssistantLead, saveAssistantLead } from '@/lib/assistant-store';
 import { createServerSupabaseClient } from '@/lib/supabase';
-import { FAIXAS_ORCAMENTO, TIPOS_IMOVEL } from '@/types/lead';
-
-type ConversationMessage = { role: 'user' | 'assistant'; text: string };
-
-const SYSTEM_PROMPT = `Você é CorretorIA, assistente imobiliário da CorreIA.
-Responda em português brasileiro de forma cordial e objetiva. Descubra tipo de imóvel,
-orçamento e bairro. Apresente somente imóveis incluídos no portfólio abaixo; nunca invente
-imóveis ou disponibilidade. Se houver interesse, peça nome completo, e-mail e telefone.
-Nunca afirme que uma visita foi agendada ou que um contato foi salvo: ofereça o encaminhamento
-para um corretor após receber os dados.`;
+import { isUuid } from '@/lib/imoveis-input';
+import type { AssistantProperty, CaptureStatus, ConversationMessage } from '@/types/assistant';
 
 function validMessages(value: unknown): value is ConversationMessage[] {
-  return Array.isArray(value) && value.length > 0 && value.length <= 30 &&
-    value.every((message) => message && typeof message === 'object' &&
-      (message.role === 'user' || message.role === 'assistant') &&
-      typeof message.text === 'string' && message.text.trim().length > 0 &&
-      message.text.length <= 2000) && value[value.length - 1].role === 'user';
+  return Array.isArray(value) && value.length > 0 && value.length <= 30 && value.every((m) => m && typeof m === 'object' &&
+    (m.role === 'user' || m.role === 'assistant') && typeof m.text === 'string' && m.text.trim().length > 0 && m.text.length <= 2000) && value.at(-1).role === 'user';
 }
 
-function preferencesFrom(messages: ConversationMessage[]): PreferenciasLead {
-  const text = messages.filter((m) => m.role === 'user').map((m) => m.text).join(' ').toLowerCase();
-  const tipoImovel = TIPOS_IMOVEL.find((tipo) => text.includes(tipo.toLowerCase()));
-  const faixaOrcamento = FAIXAS_ORCAMENTO.find((faixa) => text.includes(faixa.toLowerCase()));
-  const bairro = text.match(/\bbairro\s+(?:da|de|do|na|no)?\s*([\p{L}\s-]{2,40})/iu)?.[1]?.trim();
-  return { tipoImovel, faixaOrcamento, bairro };
+function sameOrigin(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  return !origin || origin === request.nextUrl.origin;
 }
 
-function hasContactHints(messages: ConversationMessage[]): boolean {
-  const text = messages.filter((m) => m.role === 'user').map((m) => m.text).join(' ');
-  const possiblePhones = text.match(/\+?\d[\d\s()-]{8,}\d/g) ?? [];
-  return /[^\s@]+@[^\s@]+\.[^\s@]+/.test(text) &&
-    possiblePhones.some((phone) => { const length = phone.replace(/\D/g, '').length; return length >= 10 && length <= 15; });
+function withSession(response: NextResponse, token: string) {
+  response.headers.set('Cache-Control', 'no-store');
+  response.cookies.set(ASSISTANT_COOKIE, token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', path: '/', maxAge: 60 * 60 * 24 * 7 });
+  return response;
 }
 
-function parseExtractedLead(raw: string, messages: ConversationMessage[]) {
+export async function GET(request: NextRequest) {
+  const token = request.cookies.get(ASSISTANT_COOKIE)?.value;
+  if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) return NextResponse.json({ atendimento: null }, { headers: { 'Cache-Control': 'no-store' } });
   try {
-    const data = JSON.parse(raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')) as Record<string, unknown>;
-    if (typeof data.nome !== 'string' || typeof data.email !== 'string' || typeof data.telefone !== 'string') return null;
-    const text = messages.filter((m) => m.role === 'user').map((m) => m.text).join(' ');
-    const nome = data.nome.trim();
-    const email = data.email.trim();
-    const telefone = data.telefone.trim();
-    if (!nome || !text.toLowerCase().includes(nome.toLowerCase()) ||
-      !text.toLowerCase().includes(email.toLowerCase()) ||
-      !text.replace(/\D/g, '').includes(telefone.replace(/\D/g, ''))) return null;
-
-    return {
-      nome,
-      email,
-      telefone,
-      faixaOrcamento: FAIXAS_ORCAMENTO.includes(data.faixaOrcamento as typeof FAIXAS_ORCAMENTO[number])
-        ? data.faixaOrcamento as string : 'Não informado',
-      tipoImovel: TIPOS_IMOVEL.includes(data.tipoImovel as typeof TIPOS_IMOVEL[number])
-        ? data.tipoImovel as string : 'Não informado',
-    };
+    const lead = await getAssistantLead(assistantSession(token).hash);
+    return NextResponse.json({ atendimento: lead?.qualificacao ?? null }, { headers: { 'Cache-Control': 'no-store' } });
   } catch {
-    return null;
+    return NextResponse.json({ error: 'Não foi possível recuperar a conversa.' }, { status: 503 });
   }
 }
 
-async function registerLeadIfComplete(messages: ConversationMessage[]): Promise<boolean> {
-  if (!hasContactHints(messages)) return false;
-
-  const userText = messages.filter((m) => m.role === 'user').map((m) => m.text).join('\n');
-  const raw = await openRouterChat([
-    { role: 'system', content: `Extraia APENAS informações explicitamente fornecidas pelo cliente.
-Retorne somente JSON com nome, email, telefone, faixaOrcamento e tipoImovel.
-Campos ausentes devem ser null. Não invente dados nem use informações do assistente.` },
-    { role: 'user', content: userText },
-  ], 256);
-  const lead = parseExtractedLead(raw, messages);
-  if (!lead) return false;
-
-  const supabase = createServerSupabaseClient();
-  const { data: existing, error } = await supabase
-    .from('leads')
-    .select('id')
-    .eq('email', lead.email)
-    .maybeSingle();
-  if (error) throw error;
-  if (existing) return false;
-
-  const result = await createPublicLead(lead);
-  if (!result.ok) throw new Error(`Falha ao criar lead: ${result.status}`);
-  return true;
+export async function DELETE(request: NextRequest) {
+  if (!sameOrigin(request)) return NextResponse.json({ error: 'Origem inválida.' }, { status: 403 });
+  const response = NextResponse.json({ ok: true });
+  response.cookies.set(ASSISTANT_COOKIE, '', { path: '/', maxAge: 0 });
+  return response;
 }
 
 export async function POST(request: NextRequest) {
-  let body: unknown;
+  if (!sameOrigin(request)) return NextResponse.json({ error: 'Origem inválida.' }, { status: 403 });
+  let body: Record<string, unknown>;
+  try { body = await request.json(); } catch { return NextResponse.json({ error: 'JSON inválido.' }, { status: 400 }); }
+  if (!body || typeof body !== 'object' || !validMessages(body.messages)) return NextResponse.json({ error: 'Histórico da conversa inválido.' }, { status: 400 });
+  if (body.imovelId !== undefined && (typeof body.imovelId !== 'string' || !isUuid(body.imovelId))) return NextResponse.json({ error: 'Imóvel inválido.' }, { status: 400 });
+  if (!process.env.OPENROUTER_API_KEY) return NextResponse.json({ error: 'Assistente indisponível no momento.' }, { status: 503 });
+
+  const session = assistantSession(request.cookies.get(ASSISTANT_COOKIE)?.value);
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'JSON inválido.' }, { status: 400 });
-  }
-
-  const messages = (body && typeof body === 'object' && !Array.isArray(body))
-    ? (body as Record<string, unknown>).messages : null;
-  if (!validMessages(messages)) {
-    return NextResponse.json({ error: 'Histórico da conversa inválido.' }, { status: 400 });
-  }
-  if (!process.env.OPENROUTER_API_KEY) {
-    return NextResponse.json({ error: 'Assistente indisponível no momento.' }, { status: 503 });
-  }
-
-  try {
-    const prefs = preferencesFrom(messages);
-    const imoveis = await recomendarImoveis(prefs);
-    const portfolio = imoveis.map((i) =>
-      `${i.tipo} | ${i.endereco}, ${i.bairro} | R$ ${i.valor.toLocaleString('pt-BR')}`
-    ).join('\n');
-    const chatMessages: ChatMessage[] = [
-      { role: 'system', content: `${SYSTEM_PROMPT}\n\nPORTFÓLIO DISPONÍVEL:\n${portfolio || 'Nenhum imóvel compatível encontrado.'}` },
-      ...messages.map((m) => ({ role: m.role, content: m.text })),
-    ];
-    const reply = await openRouterChat(chatMessages);
-
-    let leadRegistrado = false;
-    try {
-      leadRegistrado = await registerLeadIfComplete(messages);
-    } catch (error) {
-      console.error('Falha ao registrar lead extraído:', error instanceof Error ? error.message : 'erro desconhecido');
+    const existing = await getAssistantLead(session.hash);
+    const raw = await openRouterChat(extractionMessages(body.messages), 512);
+    let extracted: unknown = {};
+    try { extracted = JSON.parse(raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')); } catch { /* Não aproveitar fatos não comprovados. */ }
+    const q = qualificationFrom(body.messages, extracted, existing?.qualificacao);
+    const catalog = await createServerSupabaseClient().from('imoveis').select('id,tipo,endereco,bairro,valor,metragem,quartos,vagas,descricao,imagem_url,status').eq('status', 'disponivel').order('valor', { ascending: true }).limit(500);
+    const properties = (catalog.data ?? []) as AssistantProperty[];
+    if (body.imovelId) {
+      if (!properties.some((p) => p.id === body.imovelId && p.status === 'disponivel')) return withSession(NextResponse.json({ error: 'Esse imóvel não está disponível. Escolha outro imóvel do catálogo.' }, { status: 409 }), session.token);
+      q.imovelInteresseId = body.imovelId as string;
     }
-
-    return NextResponse.json({ reply, leadRegistrado });
+    if (q.imovelInteresseId && !properties.some((p) => p.id === q.imovelInteresseId)) q.imovelInteresseId = null;
+    const matches = selectPortfolio(properties, q);
+    if (q.imovelInteresseId && !matches.some((p) => p.id === q.imovelInteresseId)) q.imovelInteresseId = null;
+    let reply: string;
+    let aviso: string | undefined = catalog.error ? 'Não consegui consultar os imóveis agora. Sua busca pode continuar e um corretor verificará as opções.' : undefined;
+    try {
+      reply = await openRouterChat([{ role: 'system', content: conversationPrompt(q, matches, !catalog.error, body.messages.at(-1)!.text) }, ...body.messages.map((m) => ({ role: m.role, content: m.text }))], 512);
+    } catch {
+      reply = fallbackReply(q, matches.length);
+      aviso = 'O atendimento está mais lento agora. Mantive sua busca; você pode tentar novamente.';
+    }
+    reply = conciseReply(groundedReply(reply, q, matches, !catalog.error, body.messages.at(-1)!.text));
+    let captura: CaptureStatus = 'indisponivel';
+    try { captura = await saveAssistantLead(session.hash, q, [...body.messages, { role: 'assistant', text: reply }]); }
+    catch { aviso = 'Não consegui salvar o atendimento no funil agora. Seus dados não foram confirmados; tente enviar novamente.'; }
+    return withSession(NextResponse.json({ reply, leadRegistrado: captura === 'criado', captura, qualificacao: q, imoveis: matches, ...(aviso ? { aviso } : {}) }), session.token);
   } catch (error) {
-    console.error('Falha no assistente:', error instanceof Error ? error.message : 'erro desconhecido');
-    return NextResponse.json({ error: 'Não foi possível responder agora. Tente novamente.' }, { status: 502 });
+    const limited = error instanceof OpenRouterError && error.status === 429;
+    const timeout = error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError');
+    const status = limited ? 429 : timeout ? 504 : 503;
+    return withSession(NextResponse.json({ error: limited ? 'O assistente está ocupado. Aguarde um pouco e tente novamente.' : timeout ? 'A resposta demorou mais que o esperado. Tente novamente; sua mensagem foi preservada.' : 'Não foi possível atender agora. Tente novamente.' }, { status, ...(limited ? { headers: { 'Retry-After': '30' } } : {}) }), session.token);
   }
 }

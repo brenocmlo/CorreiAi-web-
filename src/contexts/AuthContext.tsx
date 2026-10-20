@@ -62,6 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await fetch('/api/auth/logout', { method: 'POST' });
       if (!response.ok) throw new Error('Não foi possível encerrar a sessão.');
+      try { sessionStorage.removeItem('correia-assistente'); } catch { /* Armazenamento local pode estar indisponível. */ }
       setProfile(null);
       window.location.href = '/';
     } catch (error) {

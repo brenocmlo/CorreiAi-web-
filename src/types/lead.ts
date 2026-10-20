@@ -1,3 +1,5 @@
+import type { Qualification } from './assistant';
+
 export const ETAPAS_FUNIL = [
   { id: 'novo', label: 'Novo', cor: 'indigo' },
   { id: 'em_atendimento', label: 'Em atendimento', cor: 'amber' },
@@ -18,6 +20,7 @@ export interface Lead {
   etapa: EtapaFunil;
   criadoEm: number;
   atualizadoEm: number;
+  qualificacao?: Qualification | null;
 }
 
 export interface LeadInput {

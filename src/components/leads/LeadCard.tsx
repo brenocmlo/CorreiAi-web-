@@ -41,6 +41,14 @@ export default function LeadCard({
       </div>
 
       <div className="mt-3 space-y-1 text-xs text-slate-400">
+        {lead.qualificacao && (
+          <div className="mb-2 space-y-1">
+            <p className="font-medium text-indigo-300">Atendimento pelo assistente</p>
+            {lead.qualificacao.bairro && <p>Bairro: {lead.qualificacao.bairro}</p>}
+            {lead.qualificacao.visitaSolicitada && <p className="text-amber-300">Visita solicitada · confirmar com o cliente</p>}
+            {!lead.qualificacao.permiteContato && <p className="text-amber-300">Cliente pediu para não ser contatado</p>}
+          </div>
+        )}
         <p>
           <span className="text-slate-500">Tel:</span> {lead.telefone}
         </p>

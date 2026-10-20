@@ -29,7 +29,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: 'Lead não encontrado.' }, { status: 404 });
   }
 
-  return NextResponse.json({ lead: rowToLead(data) });
+  return NextResponse.json({ lead: rowToLead(data, true) });
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {

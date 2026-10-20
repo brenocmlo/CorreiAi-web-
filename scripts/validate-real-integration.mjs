@@ -21,7 +21,7 @@ const run = `QA-${new Date().toISOString().slice(0, 10)}-${randomUUID().slice(0,
 const output = path.resolve(execFileSync('git', ['rev-parse', '--git-path', 'validation'], { encoding: 'utf8' }).trim());
 await mkdir(output, { recursive: true });
 const reportFile = path.join(output, 'real-integration-latest.json');
-const report = { run, startedAt: new Date().toISOString(), target: base, checks: [], cleanup: [], skipped: ['Conversa real OpenRouter adiada pelo usuário; nenhuma chamada paga realizada.'] };
+const report = { run, startedAt: new Date().toISOString(), target: base, checks: [], cleanup: [], skipped: ['Conversa real OpenRouter não é exercitada neste script; validar em teste separado do assistente.'] };
 const fixtures = { profiles: [], leads: [], imoveis: [], files: [] };
 
 async function save() {
