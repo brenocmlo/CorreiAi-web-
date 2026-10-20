@@ -55,6 +55,8 @@ Para fins de avaliação de arquitetura, o projeto foi subdividido em módulos f
 
 Configure `OPENROUTER_API_KEY` apenas no ambiente do servidor. `OPENROUTER_MODEL` é opcional e usa `openrouter/free` por padrão; escolha explicitamente outro modelo se a equipe aprovar custos. A rota `/api/assistente` mantém o histórico enviado pelo cliente, consulta imóveis disponíveis e registra o lead somente após identificar nome, e-mail e telefone completos. A migration `20261020210008_add_broker_active_status.sql` deve ser aplicada antes de publicar a captura pública de leads.
 
+`GET /api/imoveis/recomendacoes?tipoImovel=Casa&bairro=Aldeota` expõe até cinco imóveis disponíveis, ordenados pela pontuação de tipo, faixa de orçamento e bairro. A consulta aceita também `faixaOrcamento` com um dos valores de `FAIXAS_ORCAMENTO`.
+
 ---
 
 ## 📐 Arquitetura de Sistemas e Fluxo de Dados

@@ -5,7 +5,7 @@ const FAIXAS_VALORES: Record<string, { min: number; max: number }> = {
   'R$ 300 mil – R$ 500 mil': { min: 300000, max: 500000 },
   'R$ 500 mil – R$ 800 mil': { min: 500000, max: 800000 },
   'R$ 800 mil – R$ 1,2 mi': { min: 800000, max: 1200000 },
-  'Acima de R$ 1,2 mi': { min: 1200000, max: 999999999 },
+  'Acima de R$ 1,2 mi': { min: 1200000, max: Infinity },
 };
 
 export interface PreferenciasLead {
@@ -31,16 +31,23 @@ export interface ImovelRecomendado extends ImovelRow {
   pontuacao: number;
 }
 
+function normalize(text: string): string {
+  return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+}
+
 export async function recomendarImoveis(
   prefs: PreferenciasLead,
   client?: { from: (table: string) => unknown }
 ): Promise<ImovelRecomendado[]> {
+  if (!prefs.tipoImovel?.trim() && !prefs.faixaOrcamento?.trim() && !prefs.bairro?.trim()) {
+    return [];
+  }
+
   const supabase = (client ?? createServerSupabaseClient()) as {
     from: (table: string) => {
       select: (fields: string) => {
         eq: (col: string, val: string) => {
           order: (col: string, opt: { ascending: boolean }) => {
-            ilike: (col: string, pattern: string) => unknown;
             then: (resolve: (res: { data: unknown; error: unknown }) => void) => void;
           };
         };
@@ -54,35 +61,35 @@ export async function recomendarImoveis(
     .eq('status', 'disponivel')
     .order('valor', { ascending: true });
 
-  if (prefs.tipoImovel) {
-    query.ilike('tipo', `%${prefs.tipoImovel}%`);
-  }
-
   const { data, error } = await query;
 
-  if (error || !data) return [];
+  if (error || !Array.isArray(data)) return [];
 
-  const imoveis = data as ImovelRow[];
+  const imoveis = (data as ImovelRow[]).filter((imovel) =>
+    imovel && typeof imovel.id === 'string' && imovel.id.trim() &&
+    imovel.status === 'disponivel' && Number.isFinite(imovel.valor) &&
+    imovel.valor >= 0
+  );
 
   const faixa = prefs.faixaOrcamento ? FAIXAS_VALORES[prefs.faixaOrcamento] : null;
 
   const comPontuacao: ImovelRecomendado[] = imoveis.map((imovel) => {
     let pontuacao = 0;
 
-    if (prefs.tipoImovel && imovel.tipo?.toLowerCase().includes(prefs.tipoImovel.toLowerCase())) {
+    if (prefs.tipoImovel && normalize(imovel.tipo || '') === normalize(prefs.tipoImovel)) {
       pontuacao += 3;
     }
 
     if (faixa && imovel.valor >= faixa.min && imovel.valor <= faixa.max) {
       pontuacao += 3;
     } else if (faixa) {
-      const margem = faixa.max * 0.2;
+      const margem = Number.isFinite(faixa.max) ? faixa.max * 0.2 : faixa.min * 0.2;
       if (imovel.valor >= faixa.min - margem && imovel.valor <= faixa.max + margem) {
         pontuacao += 1;
       }
     }
 
-    if (prefs.bairro && imovel.bairro?.toLowerCase().includes(prefs.bairro.toLowerCase())) {
+    if (prefs.bairro && normalize(imovel.bairro || '').includes(normalize(prefs.bairro))) {
       pontuacao += 2;
     }
 
@@ -91,6 +98,6 @@ export async function recomendarImoveis(
 
   return comPontuacao
     .filter((i) => i.pontuacao > 0)
-    .sort((a, b) => b.pontuacao - a.pontuacao)
+    .sort((a, b) => b.pontuacao - a.pontuacao || a.valor - b.valor)
     .slice(0, 5);
 }
