@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server.js';
 import bcrypt from 'bcryptjs';
 import { createServerSupabaseClient } from '../../../../lib/supabase.ts';
 import { signToken } from '../../../../lib/jwt.ts';

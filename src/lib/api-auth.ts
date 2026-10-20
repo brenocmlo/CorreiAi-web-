@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server.js';
 import { verifyToken } from './jwt.ts';
 
 export function getAuthFromRequest(request: NextRequest) {
