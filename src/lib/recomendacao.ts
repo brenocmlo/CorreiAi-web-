@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from '@/lib/supabase';
+import { createServerSupabaseClient } from './supabase.ts';
 
 const FAIXAS_VALORES: Record<string, { min: number; max: number }> = {
   'Até R$ 300 mil': { min: 0, max: 300000 },
@@ -31,8 +31,22 @@ export interface ImovelRecomendado extends ImovelRow {
   pontuacao: number;
 }
 
-export async function recomendarImoveis(prefs: PreferenciasLead): Promise<ImovelRecomendado[]> {
-  const supabase = createServerSupabaseClient();
+export async function recomendarImoveis(
+  prefs: PreferenciasLead,
+  client?: { from: (table: string) => unknown }
+): Promise<ImovelRecomendado[]> {
+  const supabase = (client ?? createServerSupabaseClient()) as {
+    from: (table: string) => {
+      select: (fields: string) => {
+        eq: (col: string, val: string) => {
+          order: (col: string, opt: { ascending: boolean }) => {
+            ilike: (col: string, pattern: string) => unknown;
+            then: (resolve: (res: { data: unknown; error: unknown }) => void) => void;
+          };
+        };
+      };
+    };
+  };
 
   const query = supabase
     .from('imoveis')
