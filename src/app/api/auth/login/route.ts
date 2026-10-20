@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { createServerSupabaseClient } from '@/lib/supabase';
-import { signToken } from '@/lib/jwt';
-import { normalizeEmail } from '@/lib/auth-input';
+import { createServerSupabaseClient } from '../../../../lib/supabase.ts';
+import { signToken } from '../../../../lib/jwt.ts';
+import { normalizeEmail } from '../../../../lib/auth-input.ts';
 
 export async function POST(request: NextRequest) {
   try {

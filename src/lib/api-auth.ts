@@ -1,5 +1,5 @@
-import { NextRequest } from 'next/server';
-import { verifyToken } from '@/lib/jwt';
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyToken } from './jwt.ts';
 
 export function getAuthFromRequest(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value;

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthFromRequest } from '@/lib/api-auth';
-import { inputToRow, rowToLead } from '@/lib/leads-mapper';
-import { ownerFilter, parseLeadDetails } from '@/lib/lead-input';
-import { createServerSupabaseClient } from '@/lib/supabase';
-import type { LeadInput } from '@/types/lead';
+import { getAuthFromRequest } from '../../../lib/api-auth.ts';
+import { inputToRow, rowToLead } from '../../../lib/leads-mapper.ts';
+import { ownerFilter, parseLeadDetails } from '../../../lib/lead-input.ts';
+import { createServerSupabaseClient } from '../../../lib/supabase.ts';
+import type { LeadInput } from '../../../types/lead.ts';
 
 export async function GET(request: NextRequest) {
   const auth = getAuthFromRequest(request);
