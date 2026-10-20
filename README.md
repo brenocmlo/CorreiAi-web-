@@ -46,8 +46,14 @@ Para fins de avaliação de arquitetura, o projeto foi subdividido em módulos f
 
 4. **Visual Premium, Landing Page, IA, Dashboard & Admin (Gustavo Gurgel)**
    - Identidade visual moderna baseada em Dark Mode e Glassmorphism, Landing Page, Seção Hero dinâmica e Cinematic Footer animado com GSAP.
-   - Extração Inteligente via IA: Processamento da conversa do assistente virtual utilizando o Gemini em tempo real para extrair nome, e-mail e telefone de contato do cliente, salvando os dados como lead no banco.
+   - Extração Inteligente via IA: A interface conversa com a API do assistente; o backend usa OpenRouter para extrair nome, e-mail e telefone de contato e só salva o lead com contato completo.
    - Painel do Lead com Chat e Portfólio: Dashboard exclusivo do cliente estruturado com catálogo de imóveis disponíveis e assistente virtual interativo integrados em abas.
+
+---
+
+## Assistente virtual (Sprint 5)
+
+Configure `OPENROUTER_API_KEY` apenas no ambiente do servidor. `OPENROUTER_MODEL` é opcional e usa `openrouter/free` por padrão; escolha explicitamente outro modelo se a equipe aprovar custos. A rota `/api/assistente` mantém o histórico enviado pelo cliente, consulta imóveis disponíveis e registra o lead somente após identificar nome, e-mail e telefone completos. A migration `20261020210008_add_broker_active_status.sql` deve ser aplicada antes de publicar a captura pública de leads.
 
 ---
 

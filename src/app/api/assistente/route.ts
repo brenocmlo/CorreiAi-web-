@@ -1,184 +1,134 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getGeminiModel } from '@/lib/gemini';
+import { openRouterChat, type ChatMessage } from '@/lib/openrouter';
+import { createPublicLead } from '@/lib/public-leads';
 import { recomendarImoveis, type PreferenciasLead } from '@/lib/recomendacao';
-import { FAIXAS_ORCAMENTO, TIPOS_IMOVEL } from '@/types/lead';
 import { createServerSupabaseClient } from '@/lib/supabase';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { FAIXAS_ORCAMENTO, TIPOS_IMOVEL } from '@/types/lead';
 
-const SYSTEM_PROMPT = `Você é o assistente virtual da imobiliária CorreIA. Seu nome é CorretorIA.
+type ConversationMessage = { role: 'user' | 'assistant'; text: string };
 
-Seu objetivo é ajudar pessoas a encontrar o imóvel ideal. Você deve:
+const SYSTEM_PROMPT = `Você é CorretorIA, assistente imobiliário da CorreIA.
+Responda em português brasileiro de forma cordial e objetiva. Descubra tipo de imóvel,
+orçamento e bairro. Apresente somente imóveis incluídos no portfólio abaixo; nunca invente
+imóveis ou disponibilidade. Se houver interesse, peça nome completo, e-mail e telefone.
+Nunca afirme que uma visita foi agendada ou que um contato foi salvo: ofereça o encaminhamento
+para um corretor após receber os dados.`;
 
-1. Receber o visitante com simpatia e se apresentar brevemente.
-2. Perguntar sobre as preferências do cliente: tipo de imóvel (Apartamento, Casa, Cobertura, Studio, Terreno, Comercial), faixa de orçamento e bairro de interesse.
-3. Quando receber uma lista de imóveis compatíveis no contexto da conversa, apresente os melhores de forma clara: nome do imóvel, tipo, bairro, valor e características.
-4. Se o cliente demonstrar interesse em algum imóvel, oferecer agendamento de visita.
-5. Para agendar, coletar: nome completo, telefone e e-mail do cliente.
-6. Ser sempre cordial, profissional e objetivo. Não invente imóveis que não estejam na lista fornecida.
-7. Responda em português do Brasil, com tom acolhedor mas direto.`; 
-
-function extrairPreferencias(messages: { role: string; text: string }[]): PreferenciasLead {
-  const texto = messages.map((m) => m.text).join(' ').toLowerCase();
-  const prefs: PreferenciasLead = {};
-
-  for (const tipo of TIPOS_IMOVEL) {
-    if (texto.includes(tipo.toLowerCase())) {
-      prefs.tipoImovel = tipo;
-      break;
-    }
-  }
-
-  for (const faixa of FAIXAS_ORCAMENTO) {
-    if (texto.includes(faixa.toLowerCase())) {
-      prefs.faixaOrcamento = faixa;
-      break;
-    }
-  }
-
-  return prefs;
+function validMessages(value: unknown): value is ConversationMessage[] {
+  return Array.isArray(value) && value.length > 0 && value.length <= 30 &&
+    value.every((message) => message && typeof message === 'object' &&
+      (message.role === 'user' || message.role === 'assistant') &&
+      typeof message.text === 'string' && message.text.trim().length > 0 &&
+      message.text.length <= 2000) && value[value.length - 1].role === 'user';
 }
 
-function formatarImoveisParaPrompt(imoveis: Awaited<ReturnType<typeof recomendarImoveis>>): string {
-  if (imoveis.length === 0) return '';
-  return imoveis
-    .map(
-      (i, idx) =>
-        `${idx + 1}. ${i.tipo} - ${i.endereco}, ${i.bairro} | R$ ${i.valor.toLocaleString('pt-BR')} | ${i.metragem || '?'}m² | ${i.quartos || '?'} quartos | ${i.vagas || '?'} vagas`
-    )
-    .join('\n');
+function preferencesFrom(messages: ConversationMessage[]): PreferenciasLead {
+  const text = messages.filter((m) => m.role === 'user').map((m) => m.text).join(' ').toLowerCase();
+  const tipoImovel = TIPOS_IMOVEL.find((tipo) => text.includes(tipo.toLowerCase()));
+  const faixaOrcamento = FAIXAS_ORCAMENTO.find((faixa) => text.includes(faixa.toLowerCase()));
+  const bairro = text.match(/\bbairro\s+(?:da|de|do|na|no)?\s*([\p{L}\s-]{2,40})/iu)?.[1]?.trim();
+  return { tipoImovel, faixaOrcamento, bairro };
 }
 
-async function extrairDadosLeadComGemini(messages: { role: string; text: string }[]): Promise<{
-  nome: string | null;
-  email: string | null;
-  telefone: string | null;
-  faixaOrcamento: string | null;
-  tipoImovel: string | null;
-} | null> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
+function hasContactHints(messages: ConversationMessage[]): boolean {
+  const text = messages.filter((m) => m.role === 'user').map((m) => m.text).join(' ');
+  const possiblePhones = text.match(/\+?\d[\d\s()-]{8,}\d/g) ?? [];
+  return /[^\s@]+@[^\s@]+\.[^\s@]+/.test(text) &&
+    possiblePhones.some((phone) => { const length = phone.replace(/\D/g, '').length; return length >= 10 && length <= 15; });
+}
 
+function parseExtractedLead(raw: string, messages: ConversationMessage[]) {
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-3.1-flash-lite',
-      generationConfig: { responseMimeType: 'application/json' },
-    });
+    const data = JSON.parse(raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')) as Record<string, unknown>;
+    if (typeof data.nome !== 'string' || typeof data.email !== 'string' || typeof data.telefone !== 'string') return null;
+    const text = messages.filter((m) => m.role === 'user').map((m) => m.text).join(' ');
+    const nome = data.nome.trim();
+    const email = data.email.trim();
+    const telefone = data.telefone.trim();
+    if (!nome || !text.toLowerCase().includes(nome.toLowerCase()) ||
+      !text.toLowerCase().includes(email.toLowerCase()) ||
+      !text.replace(/\D/g, '').includes(telefone.replace(/\D/g, ''))) return null;
 
-    const conversationText = messages
-      .map((m) => `${m.role === 'assistant' ? 'Assistente' : 'Cliente'}: ${m.text}`)
-      .join('\n');
-
-    const prompt = `Analise a conversa abaixo entre um assistente imobiliário (CorretorIA) e um cliente.
-Extraia as informações de contato do cliente (se fornecidas na conversa) e as suas preferências de imóvel.
-Retorne um objeto JSON estritamente no seguinte formato:
-{
-  "nome": string ou null (nome completo do cliente),
-  "email": string ou null (email do cliente),
-  "telefone": string ou null (telefone do cliente),
-  "faixaOrcamento": string ou null (ex: "Até R$ 300 mil", "R$ 300 mil – R$ 500 mil", "R$ 500 mil – R$ 800 mil", "R$ 800 mil – R$ 1,2 mi", "Acima de R$ 1,2 mi"),
-  "tipoImovel": string ou null (ex: "Apartamento", "Casa", "Cobertura", "Studio", "Terreno", "Comercial")
-}
-
-Preencha apenas o que foi explicitamente fornecido na conversa. Se o cliente não forneceu nome, email ou telefone de contato, retorne null para esses campos.
-
-Conversa:
-${conversationText}`;
-
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    const data = JSON.parse(text);
-    return data;
-  } catch (err) {
-    console.error('Erro ao extrair lead via Gemini:', err);
+    return {
+      nome,
+      email,
+      telefone,
+      faixaOrcamento: FAIXAS_ORCAMENTO.includes(data.faixaOrcamento as typeof FAIXAS_ORCAMENTO[number])
+        ? data.faixaOrcamento as string : 'Não informado',
+      tipoImovel: TIPOS_IMOVEL.includes(data.tipoImovel as typeof TIPOS_IMOVEL[number])
+        ? data.tipoImovel as string : 'Não informado',
+    };
+  } catch {
     return null;
   }
 }
 
+async function registerLeadIfComplete(messages: ConversationMessage[]): Promise<boolean> {
+  if (!hasContactHints(messages)) return false;
+
+  const userText = messages.filter((m) => m.role === 'user').map((m) => m.text).join('\n');
+  const raw = await openRouterChat([
+    { role: 'system', content: `Extraia APENAS informações explicitamente fornecidas pelo cliente.
+Retorne somente JSON com nome, email, telefone, faixaOrcamento e tipoImovel.
+Campos ausentes devem ser null. Não invente dados nem use informações do assistente.` },
+    { role: 'user', content: userText },
+  ], 256);
+  const lead = parseExtractedLead(raw, messages);
+  if (!lead) return false;
+
+  const supabase = createServerSupabaseClient();
+  const { data: existing, error } = await supabase
+    .from('leads')
+    .select('id')
+    .eq('email', lead.email)
+    .maybeSingle();
+  if (error) throw error;
+  if (existing) return false;
+
+  const result = await createPublicLead(lead);
+  if (!result.ok) throw new Error(`Falha ao criar lead: ${result.status}`);
+  return true;
+}
+
 export async function POST(request: NextRequest) {
+  let body: unknown;
   try {
-    const { messages } = await request.json();
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'JSON inválido.' }, { status: 400 });
+  }
 
-    if (!messages || !Array.isArray(messages)) {
-      return NextResponse.json({ error: 'Messages array é obrigatório' }, { status: 400 });
-    }
+  const messages = (body && typeof body === 'object' && !Array.isArray(body))
+    ? (body as Record<string, unknown>).messages : null;
+  if (!validMessages(messages)) {
+    return NextResponse.json({ error: 'Histórico da conversa inválido.' }, { status: 400 });
+  }
+  if (!process.env.OPENROUTER_API_KEY) {
+    return NextResponse.json({ error: 'Assistente indisponível no momento.' }, { status: 503 });
+  }
 
-    const prefs = extrairPreferencias(messages);
+  try {
+    const prefs = preferencesFrom(messages);
     const imoveis = await recomendarImoveis(prefs);
-    const listaImoveis = formatarImoveisParaPrompt(imoveis);
+    const portfolio = imoveis.map((i) =>
+      `${i.tipo} | ${i.endereco}, ${i.bairro} | R$ ${i.valor.toLocaleString('pt-BR')}`
+    ).join('\n');
+    const chatMessages: ChatMessage[] = [
+      { role: 'system', content: `${SYSTEM_PROMPT}\n\nPORTFÓLIO DISPONÍVEL:\n${portfolio || 'Nenhum imóvel compatível encontrado.'}` },
+      ...messages.map((m) => ({ role: m.role, content: m.text })),
+    ];
+    const reply = await openRouterChat(chatMessages);
 
-    let systemPrompt = SYSTEM_PROMPT;
-    if (listaImoveis) {
-      systemPrompt += `\n\nIMÓVEIS DISPONÍVEIS NO PORTFÓLIO (use estes dados para recomendar):\n${listaImoveis}`;
+    let leadRegistrado = false;
+    try {
+      leadRegistrado = await registerLeadIfComplete(messages);
+    } catch (error) {
+      console.error('Falha ao registrar lead extraído:', error instanceof Error ? error.message : 'erro desconhecido');
     }
 
-    const model = getGeminiModel(systemPrompt);
-
-    const primeiroUser = messages.findIndex((m: { role: string }) => m.role === 'user');
-    const history = messages
-      .slice(primeiroUser >= 0 ? primeiroUser : 0, -1)
-      .map((m: { role: string; text: string }) => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.text }],
-      }));
-
-    const chat = model.startChat({ history });
-    const lastMsg = messages[messages.length - 1]?.text || '';
-
-    const result = await chat.sendMessage(lastMsg);
-    const reply = result.response.text();
-
-    // Tenta extrair dados do lead e salvar no banco em background
-    if (messages.length > 0) {
-      try {
-        const dadosLead = await extrairDadosLeadComGemini(messages);
-        if (dadosLead && dadosLead.nome && dadosLead.email && dadosLead.telefone) {
-          const supabase = createServerSupabaseClient();
-          
-          // Verifica se o lead com este email já existe
-          const { data: existente } = await supabase
-            .from('leads')
-            .select('id')
-            .eq('email', dadosLead.email.trim())
-            .maybeSingle();
-
-          if (!existente) {
-            // Busca o primeiro corretor cadastrado no sistema para associar o lead
-            const { data: corretores } = await supabase
-              .from('perfis')
-              .select('id')
-              .eq('role', 'corretor')
-              .limit(1);
-
-            const corretorId = corretores && corretores.length > 0 ? corretores[0].id : null;
-
-            await supabase
-              .from('leads')
-              .insert([
-                {
-                  nome: dadosLead.nome.trim(),
-                  telefone: dadosLead.telefone.trim(),
-                  email: dadosLead.email.trim(),
-                  faixa_orcamento: dadosLead.faixaOrcamento || 'Até R$ 300 mil',
-                  tipo_imovel: dadosLead.tipoImovel || 'Apartamento',
-                  etapa: 'novo',
-                  corretor_id: corretorId,
-                },
-              ]);
-            console.log(`[Assistente] Lead ${dadosLead.nome} inserido e associado ao corretor ${corretorId}`);
-          }
-        }
-      } catch (err) {
-        console.error('Erro ao salvar lead extraído da conversa:', err);
-      }
-    }
-
-    return NextResponse.json({ reply });
+    return NextResponse.json({ reply, leadRegistrado });
   } catch (error) {
-    console.error('Erro no assistente:', error);
-    return NextResponse.json(
-      { error: 'Erro ao processar a mensagem. Tente novamente.' },
-      { status: 500 }
-    );
+    console.error('Falha no assistente:', error instanceof Error ? error.message : 'erro desconhecido');
+    return NextResponse.json({ error: 'Não foi possível responder agora. Tente novamente.' }, { status: 502 });
   }
 }
