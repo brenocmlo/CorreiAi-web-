@@ -146,3 +146,20 @@ test('retorna lista vazia quando nenhum imóvel tem pontuação positiva', async
 
   assert.deepEqual(resultado, []);
 });
+
+test('nunca recomenda imóveis indisponíveis ou sem identificador válido', async () => {
+  const imoveis = [
+    { ...baseImovel, id: 'disponivel', tipo: 'Casa', status: 'disponivel' },
+    { ...baseImovel, id: 'vendido', tipo: 'Casa', status: 'vendido' },
+    { ...baseImovel, id: 'alugado', tipo: 'Casa', status: 'alugado' },
+    { ...baseImovel, id: '', tipo: 'Casa', status: 'disponivel' },
+  ];
+  const client = createMockSupabase({ data: imoveis });
+  const resultado = await recomendarImoveis({ tipoImovel: 'Casa' }, client);
+  assert.deepEqual(resultado.map((item) => item.id), ['disponivel']);
+});
+
+test('sem preferências não consulta o banco nem recomenda imóveis arbitrários', async () => {
+  const client = { from: () => { throw new Error('Não deveria consultar o banco'); } };
+  assert.deepEqual(await recomendarImoveis({}, client), []);
+});

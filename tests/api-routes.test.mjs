@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test, { beforeEach, afterEach } from 'node:test';
 import bcrypt from 'bcryptjs';
-import { NextRequest } from 'next/server';
+import { NextRequest } from 'next/server.js';
 
 process.env.JWT_SECRET = 'segredo-de-teste-para-rotas-123456';
 const { signToken } = await import('../src/lib/jwt.ts');
@@ -9,6 +9,8 @@ const { setServerSupabaseClientOverride } = await import('../src/lib/supabase.ts
 const { POST: loginHandler } = await import('../src/app/api/auth/login/route.ts');
 const { POST: cadastroHandler } = await import('../src/app/api/auth/cadastro/route.ts');
 const { GET: getLeadsHandler, POST: postLeadsHandler } = await import('../src/app/api/leads/route.ts');
+const { POST: publicLeadHandler } = await import('../src/app/api/leads/public/route.ts');
+const { GET: getLeadHandler, PATCH: patchLeadHandler, DELETE: deleteLeadHandler } = await import('../src/app/api/leads/[id]/route.ts');
 
 function createRequest(url, { method = 'GET', body = null, token = null } = {}) {
   const headers = new Headers();
@@ -49,8 +51,20 @@ function createMockSupabase(handlers = {}) {
           queryState.orderBy = { field, opts };
           return this;
         },
+        limit(count) {
+          queryState.limit = count;
+          return this;
+        },
         insert(data) {
           queryState.insertedData = data;
+          return this;
+        },
+        update(data) {
+          queryState.updatedData = data;
+          return this;
+        },
+        delete() {
+          queryState.deleted = true;
           return this;
         },
         maybeSingle() {
@@ -469,3 +483,162 @@ test('leads cria lead associado ao corretor autenticado (201)', async () => {
   assert.equal(registroInserido.corretor_id, 'corretor-vip');
   assert.equal(registroInserido.etapa, 'novo');
 });
+
+test('captura pública rejeita corpo inválido sem acessar o banco', async () => {
+  for (const body of [null, [], {}, { nome: 'Ana' }]) {
+    const req = createRequest('http://localhost/api/leads/public', { method: 'POST', body });
+    const res = await publicLeadHandler(req);
+    assert.equal(res.status, 400);
+  }
+});
+
+test('captura pública atribui a corretor ativo e sempre inicia em Novo', async () => {
+  let filtros = [];
+  let inserido;
+  setServerSupabaseClientOverride(createMockSupabase({
+    perfis: {
+      execute: (state) => {
+        filtros = state.filters;
+        return { data: [{ id: 'corretor-ativo' }], error: null };
+      },
+    },
+    leads: {
+      single: (state) => {
+        inserido = state.insertedData[0];
+        return { data: {
+          id: 'lead-publico', ...inserido,
+          criado_em: '2026-10-20T12:00:00Z', atualizado_em: '2026-10-20T12:00:00Z',
+        }, error: null };
+      },
+    },
+  }));
+  const req = createRequest('http://localhost/api/leads/public', { method: 'POST', body: {
+    nome: 'Ana Silva', telefone: '85999990000', email: 'ana@example.com',
+    faixaOrcamento: 'Até R$ 300 mil', tipoImovel: 'Casa', etapa: 'fechado',
+  } });
+  const res = await publicLeadHandler(req);
+  assert.equal(res.status, 201);
+  assert.deepEqual(filtros, [{ col: 'role', val: 'corretor' }, { col: 'ativo', val: true }]);
+  assert.equal(inserido.corretor_id, 'corretor-ativo');
+  assert.equal(inserido.etapa, 'novo');
+});
+
+test('captura pública não insere lead quando não há corretor ativo', async () => {
+  let houveInsert = false;
+  setServerSupabaseClientOverride(createMockSupabase({
+    perfis: { execute: () => ({ data: [], error: null }) },
+    leads: { single: () => { houveInsert = true; return { data: null, error: null }; } },
+  }));
+  const req = createRequest('http://localhost/api/leads/public', { method: 'POST', body: {
+    nome: 'Ana Silva', telefone: '85999990000', email: 'ana@example.com',
+    faixaOrcamento: 'Até R$ 300 mil', tipoImovel: 'Casa',
+  } });
+  const res = await publicLeadHandler(req);
+  assert.equal(res.status, 503);
+  assert.equal(houveInsert, false);
+});
+
+test('edição de lead por ID aceita dados válidos do corretor', async () => {
+  const token = signToken({ uid: 'corretor-1', email: 'c@example.com', role: 'corretor', nome_completo: 'Corretor' });
+  const id = '123e4567-e89b-42d3-a456-426614174000';
+  let updated;
+  setServerSupabaseClientOverride(createMockSupabase({ leads: {
+    maybeSingle: (state) => {
+      updated = state.updatedData;
+      return { data: {
+        id, nome: 'Ana Silva', email: 'ana@example.com', telefone: '85999990000',
+        faixa_orcamento: 'Até R$ 300 mil', tipo_imovel: 'Casa', etapa: 'novo',
+        criado_em: '2026-10-20T12:00:00Z', atualizado_em: '2026-10-20T12:00:00Z',
+      }, error: null };
+    },
+  } }));
+  const req = createRequest(`http://localhost/api/leads/${id}`, {
+    method: 'PATCH', token, body: { telefone: '85988887777' },
+  });
+  const res = await patchLeadHandler(req, { params: Promise.resolve({ id }) });
+  assert.equal(res.status, 200);
+  assert.equal(updated.telefone, '85988887777');
+});
+
+test('exclusão de lead por ID distingue registro inexistente de excluído', async () => {
+  const token = signToken({ uid: 'corretor-1', email: 'c@example.com', role: 'corretor', nome_completo: 'Corretor' });
+  const id = '123e4567-e89b-42d3-a456-426614174000';
+  for (const [row, expectedStatus] of [[null, 404], [{ id }, 200]]) {
+    setServerSupabaseClientOverride(createMockSupabase({ leads: {
+      maybeSingle: () => ({ data: row, error: null }),
+    } }));
+    const req = createRequest(`http://localhost/api/leads/${id}`, { method: 'DELETE', token });
+    const res = await deleteLeadHandler(req, { params: Promise.resolve({ id }) });
+    assert.equal(res.status, expectedStatus);
+  }
+});
+
+const leadId = '12345678-1234-4234-8234-123456789abc';
+const leadContext = (id = leadId) => ({ params: Promise.resolve({ id }) });
+const brokerToken = () => signToken({
+  uid: 'corretor-1', email: 'corretor@teste.com', role: 'corretor', nome_completo: 'Corretor',
+});
+
+for (const [method, handler] of [['GET', getLeadHandler], ['PATCH', patchLeadHandler], ['DELETE', deleteLeadHandler]]) {
+  test(`leads/[id] ${method} rejeita UUID inválido antes de consultar o banco`, async () => {
+    const req = createRequest('http://localhost/api/leads/invalido', {
+      method, token: brokerToken(), ...(method === 'PATCH' ? { body: { nome: 'Ana' } } : {}),
+    });
+    const res = await handler(req, leadContext('invalido'));
+    assert.equal(res.status, 400);
+  });
+}
+
+test('leads/[id] GET consulta o lead dentro do corretor autenticado', async () => {
+  let filters;
+  setServerSupabaseClientOverride(createMockSupabase({ leads: {
+    maybeSingle: (state) => {
+      filters = state.filters;
+      return Promise.resolve({ data: { id: leadId, nome: 'Ana' }, error: null });
+    },
+  } }));
+  const req = createRequest(`http://localhost/api/leads/${leadId}`, { token: brokerToken() });
+  const res = await getLeadHandler(req, leadContext());
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).lead.id, leadId);
+  assert.deepEqual(filters, [{ col: 'id', val: leadId }, { col: 'corretor_id', val: 'corretor-1' }]);
+});
+
+test('leads/[id] PATCH valida e normaliza edição parcial mantendo o filtro de proprietário', async () => {
+  let updated;
+  let filters;
+  setServerSupabaseClientOverride(createMockSupabase({ leads: {
+    maybeSingle: (state) => {
+      updated = state.updatedData;
+      filters = state.filters;
+      return Promise.resolve({ data: { id: leadId, nome: updated.nome }, error: null });
+    },
+  } }));
+  const req = createRequest(`http://localhost/api/leads/${leadId}`, {
+    method: 'PATCH', token: brokerToken(), body: { nome: '  Ana  ' },
+  });
+  const res = await patchLeadHandler(req, leadContext());
+  assert.equal(res.status, 200);
+  assert.equal(updated.nome, 'Ana');
+  assert.equal((await res.json()).lead.nome, 'Ana');
+  assert.deepEqual(filters, [{ col: 'id', val: leadId }, { col: 'corretor_id', val: 'corretor-1' }]);
+});
+
+for (const [data, expectedStatus] of [[{ id: leadId }, 200], [null, 404]]) {
+  test(`leads/[id] DELETE retorna ${expectedStatus} conforme o registro excluído`, async () => {
+    let deleted;
+    let filters;
+    setServerSupabaseClientOverride(createMockSupabase({ leads: {
+      maybeSingle: (state) => {
+        deleted = state.deleted;
+        filters = state.filters;
+        return Promise.resolve({ data, error: null });
+      },
+    } }));
+    const req = createRequest(`http://localhost/api/leads/${leadId}`, { method: 'DELETE', token: brokerToken() });
+    const res = await deleteLeadHandler(req, leadContext());
+    assert.equal(res.status, expectedStatus);
+    assert.equal(deleted, true);
+    assert.deepEqual(filters, [{ col: 'id', val: leadId }, { col: 'corretor_id', val: 'corretor-1' }]);
+  });
+}
