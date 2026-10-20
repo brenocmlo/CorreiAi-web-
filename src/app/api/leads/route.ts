@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server.js';
 import { getAuthFromRequest } from '../../../lib/api-auth.ts';
 import { inputToRow, rowToLead } from '../../../lib/leads-mapper.ts';
 import { ownerFilter, parseLeadDetails } from '../../../lib/lead-input.ts';

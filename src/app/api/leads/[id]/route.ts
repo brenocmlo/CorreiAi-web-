@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getAuthFromRequest } from '@/lib/api-auth';
-import { isUuid } from '@/lib/imoveis-input';
-import { parseLeadDetails } from '@/lib/lead-input';
-import { rowToLead } from '@/lib/leads-mapper';
-import { createServerSupabaseClient } from '@/lib/supabase';
-import { ETAPAS_FUNIL, type EtapaFunil } from '@/types/lead';
+import { NextRequest, NextResponse } from 'next/server.js';
+import { getAuthFromRequest } from '../../../../lib/api-auth.ts';
+import { isUuid } from '../../../../lib/imoveis-input.ts';
+import { parseLeadDetails } from '../../../../lib/lead-input.ts';
+import { rowToLead } from '../../../../lib/leads-mapper.ts';
+import { createServerSupabaseClient } from '../../../../lib/supabase.ts';
+import { ETAPAS_FUNIL, type EtapaFunil } from '../../../../types/lead.ts';
 type RouteContext = { params: Promise<{ id: string }> };
 const ETAPAS_VALIDAS = new Set<EtapaFunil>(ETAPAS_FUNIL.map((etapa) => etapa.id));
 
