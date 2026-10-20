@@ -10,6 +10,7 @@ const { POST: loginHandler } = await import('../src/app/api/auth/login/route.ts'
 const { POST: cadastroHandler } = await import('../src/app/api/auth/cadastro/route.ts');
 const { GET: getLeadsHandler, POST: postLeadsHandler } = await import('../src/app/api/leads/route.ts');
 const { POST: publicLeadHandler } = await import('../src/app/api/leads/public/route.ts');
+const { PATCH: patchLeadHandler, DELETE: deleteLeadHandler } = await import('../src/app/api/leads/[id]/route.ts');
 
 function createRequest(url, { method = 'GET', body = null, token = null } = {}) {
   const headers = new Headers();
@@ -58,6 +59,11 @@ function createMockSupabase(handlers = {}) {
           queryState.insertedData = data;
           return this;
         },
+        update(data) {
+          queryState.updatedData = data;
+          return this;
+        },
+        delete() { return this; },
         maybeSingle() {
           if (handler.maybeSingle) return handler.maybeSingle(queryState);
           return Promise.resolve({ data: handler.data ?? null, error: handler.error ?? null });
@@ -527,4 +533,39 @@ test('captura pública não insere lead quando não há corretor ativo', async (
   const res = await publicLeadHandler(req);
   assert.equal(res.status, 503);
   assert.equal(houveInsert, false);
+});
+
+test('edição de lead por ID aceita dados válidos do corretor', async () => {
+  const token = signToken({ uid: 'corretor-1', email: 'c@example.com', role: 'corretor', nome_completo: 'Corretor' });
+  const id = '123e4567-e89b-42d3-a456-426614174000';
+  let updated;
+  setServerSupabaseClientOverride(createMockSupabase({ leads: {
+    maybeSingle: (state) => {
+      updated = state.updatedData;
+      return { data: {
+        id, nome: 'Ana Silva', email: 'ana@example.com', telefone: '85999990000',
+        faixa_orcamento: 'Até R$ 300 mil', tipo_imovel: 'Casa', etapa: 'novo',
+        criado_em: '2026-10-20T12:00:00Z', atualizado_em: '2026-10-20T12:00:00Z',
+      }, error: null };
+    },
+  } }));
+  const req = createRequest(`http://localhost/api/leads/${id}`, {
+    method: 'PATCH', token, body: { telefone: '85988887777' },
+  });
+  const res = await patchLeadHandler(req, { params: Promise.resolve({ id }) });
+  assert.equal(res.status, 200);
+  assert.equal(updated.telefone, '85988887777');
+});
+
+test('exclusão de lead por ID distingue registro inexistente de excluído', async () => {
+  const token = signToken({ uid: 'corretor-1', email: 'c@example.com', role: 'corretor', nome_completo: 'Corretor' });
+  const id = '123e4567-e89b-42d3-a456-426614174000';
+  for (const [row, expectedStatus] of [[null, 404], [{ id }, 200]]) {
+    setServerSupabaseClientOverride(createMockSupabase({ leads: {
+      maybeSingle: () => ({ data: row, error: null }),
+    } }));
+    const req = createRequest(`http://localhost/api/leads/${id}`, { method: 'DELETE', token });
+    const res = await deleteLeadHandler(req, { params: Promise.resolve({ id }) });
+    assert.equal(res.status, expectedStatus);
+  }
 });

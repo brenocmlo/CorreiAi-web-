@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthFromRequest } from '@/lib/api-auth';
+import { isUuid } from '@/lib/imoveis-input';
+import { parseLeadDetails } from '@/lib/lead-input';
 import { rowToLead } from '@/lib/leads-mapper';
 import { createServerSupabaseClient } from '@/lib/supabase';
 import { ETAPAS_FUNIL, type EtapaFunil } from '@/types/lead';
@@ -99,7 +101,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   const supabase = createServerSupabaseClient();
   let query = supabase.from('leads').delete().eq('id', id);
   if (auth.role === 'corretor') query = query.eq('corretor_id', auth.uid);
-  const { error } = await query;
+  const { data, error } = await query.select('id').maybeSingle();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
