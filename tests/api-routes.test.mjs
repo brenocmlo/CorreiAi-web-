@@ -9,6 +9,7 @@ const { setServerSupabaseClientOverride } = await import('../src/lib/supabase.ts
 const { POST: loginHandler } = await import('../src/app/api/auth/login/route.ts');
 const { POST: cadastroHandler } = await import('../src/app/api/auth/cadastro/route.ts');
 const { GET: getLeadsHandler, POST: postLeadsHandler } = await import('../src/app/api/leads/route.ts');
+const { POST: publicLeadHandler } = await import('../src/app/api/leads/public/route.ts');
 
 function createRequest(url, { method = 'GET', body = null, token = null } = {}) {
   const headers = new Headers();
@@ -47,6 +48,10 @@ function createMockSupabase(handlers = {}) {
         },
         order(field, opts) {
           queryState.orderBy = { field, opts };
+          return this;
+        },
+        limit(count) {
+          queryState.limit = count;
           return this;
         },
         insert(data) {
@@ -468,4 +473,58 @@ test('leads cria lead associado ao corretor autenticado (201)', async () => {
   assert.equal(data.lead.faixaOrcamento, 'R$ 500 mil – R$ 800 mil');
   assert.equal(registroInserido.corretor_id, 'corretor-vip');
   assert.equal(registroInserido.etapa, 'novo');
+});
+
+test('captura pública rejeita corpo inválido sem acessar o banco', async () => {
+  for (const body of [null, [], {}, { nome: 'Ana' }]) {
+    const req = createRequest('http://localhost/api/leads/public', { method: 'POST', body });
+    const res = await publicLeadHandler(req);
+    assert.equal(res.status, 400);
+  }
+});
+
+test('captura pública atribui a corretor ativo e sempre inicia em Novo', async () => {
+  let filtros = [];
+  let inserido;
+  setServerSupabaseClientOverride(createMockSupabase({
+    perfis: {
+      execute: (state) => {
+        filtros = state.filters;
+        return { data: [{ id: 'corretor-ativo' }], error: null };
+      },
+    },
+    leads: {
+      single: (state) => {
+        inserido = state.insertedData[0];
+        return { data: {
+          id: 'lead-publico', ...inserido,
+          criado_em: '2026-10-20T12:00:00Z', atualizado_em: '2026-10-20T12:00:00Z',
+        }, error: null };
+      },
+    },
+  }));
+  const req = createRequest('http://localhost/api/leads/public', { method: 'POST', body: {
+    nome: 'Ana Silva', telefone: '85999990000', email: 'ana@example.com',
+    faixaOrcamento: 'Até R$ 300 mil', tipoImovel: 'Casa', etapa: 'fechado',
+  } });
+  const res = await publicLeadHandler(req);
+  assert.equal(res.status, 201);
+  assert.deepEqual(filtros, [{ col: 'role', val: 'corretor' }, { col: 'ativo', val: true }]);
+  assert.equal(inserido.corretor_id, 'corretor-ativo');
+  assert.equal(inserido.etapa, 'novo');
+});
+
+test('captura pública não insere lead quando não há corretor ativo', async () => {
+  let houveInsert = false;
+  setServerSupabaseClientOverride(createMockSupabase({
+    perfis: { execute: () => ({ data: [], error: null }) },
+    leads: { single: () => { houveInsert = true; return { data: null, error: null }; } },
+  }));
+  const req = createRequest('http://localhost/api/leads/public', { method: 'POST', body: {
+    nome: 'Ana Silva', telefone: '85999990000', email: 'ana@example.com',
+    faixaOrcamento: 'Até R$ 300 mil', tipoImovel: 'Casa',
+  } });
+  const res = await publicLeadHandler(req);
+  assert.equal(res.status, 503);
+  assert.equal(houveInsert, false);
 });
