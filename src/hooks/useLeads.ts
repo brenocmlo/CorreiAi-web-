@@ -9,25 +9,27 @@ export function useLeads() {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  const recarregar = useCallback(async () => {
-    setErro(null);
-    try {
-      const data = await fetchLeads();
+  const recarregar = useCallback(() => {
+    return fetchLeads().then((data) => {
+      setErro(null);
       setLeads(data);
-    } catch (e) {
+    }).catch((e: unknown) => {
       setErro(
         e instanceof Error
           ? e.message
           : 'Não foi possível carregar os leads. Verifique o Supabase e a tabela leads.'
       );
-    } finally {
+    }).finally(() => {
       setLoading(false);
-    }
+    });
   }, []);
 
   useEffect(() => {
-    setLoading(true);
     recarregar();
+    const onFocus = () => { void recarregar(); };
+    const interval = window.setInterval(() => { if (document.visibilityState === 'visible') void recarregar(); }, 20000);
+    window.addEventListener('focus', onFocus);
+    return () => { window.clearInterval(interval); window.removeEventListener('focus', onFocus); };
   }, [recarregar]);
 
   return { leads, loading, erro, recarregar };

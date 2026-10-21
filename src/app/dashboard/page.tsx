@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/hooks/useAuth';
 import { useImoveis } from '@/hooks/useImoveis';
 import ImovelCard from '@/components/ImovelCard';
-import { Users, TrendingUp, DollarSign, Calendar, Send, Home, Sparkles } from 'lucide-react';
+import { AssistantChat } from '@/components/assistant/AssistantChat';
+import { Users, TrendingUp, DollarSign, Calendar, Home, Sparkles } from 'lucide-react';
 
 interface Metricas {
   total: number;
@@ -136,78 +137,13 @@ function DashboardCorretor() {
   );
 }
 
-interface Message {
-  role: 'user' | 'assistant';
-  text: string;
-}
-
 function DashboardLead() {
   const { profile } = useAuth();
   const nomeExibicao = profile?.nome_completo || 'Cliente';
   const { imoveis, loading: loadingImoveis, fetchImoveis } = useImoveis();
   const [activeTab, setActiveTab] = useState<'imoveis' | 'chat'>('imoveis');
 
-  // Chat state
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      text: `Olá, ${nomeExibicao}! Sou o CorretorIA, assistente inteligente do CorreIA. 🏠\n\nEstou aqui para te ajudar a encontrar o seu imóvel ideal. Que tipo de imóvel você está procurando e qual o seu orçamento?`,
-    },
-  ]);
-  const [chatInput, setChatInput] = useState('');
-  const [chatLoading, setChatLoading] = useState(false);
-  const chatBottomRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    fetchImoveis();
-  }, [fetchImoveis]);
-
-  useEffect(() => {
-    if (activeTab === 'chat') {
-      chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages, activeTab]);
-
-  const enviarMensagemChat = async () => {
-    const text = chatInput.trim();
-    if (!text || chatLoading) return;
-
-    const novas: Message[] = [...messages, { role: 'user', text }];
-    setMessages(novas);
-    setChatInput('');
-    setChatLoading(true);
-
-    try {
-      const res = await fetch('/api/assistente', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: novas }),
-      });
-      const data = await res.json();
-      if (data.reply) {
-        setMessages((prev) => [...prev, { role: 'assistant', text: data.reply }]);
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          { role: 'assistant', text: 'Desculpe, ocorreu um erro ao obter a resposta. Tente de novo.' },
-        ]);
-      }
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', text: 'Erro de conexão. Verifique sua rede e envie novamente.' },
-      ]);
-    } finally {
-      setChatLoading(false);
-    }
-  };
-
-  const handleChatKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      enviarMensagemChat();
-    }
-  };
+  useEffect(() => { void fetchImoveis(); }, [fetchImoveis]);
 
   const imoveisDisponiveis = imoveis.filter((i) => i.status === 'disponivel');
 
@@ -289,68 +225,7 @@ function DashboardLead() {
             )}
           </div>
         ) : (
-          <div className="flex flex-col h-[550px] bg-slate-900/30 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
-            {/* Chat Header */}
-            <div className="bg-slate-900/80 px-6 py-4 border-b border-slate-800 flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <h4 className="text-sm font-semibold text-white">CorretorIA - Assistente Virtual</h4>
-            </div>
-
-            {/* Chat Message History */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {messages.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
-                      msg.role === 'user'
-                        ? 'bg-indigo-600 text-white rounded-br-none shadow-md'
-                        : 'bg-slate-800/80 text-slate-200 rounded-bl-none border border-slate-700/50 shadow-sm'
-                    }`}
-                  >
-                    {msg.text}
-                  </div>
-                </div>
-              ))}
-
-              {chatLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-slate-800/80 border border-slate-700/50 rounded-2xl rounded-bl-none px-4 py-3">
-                    <div className="flex gap-1.5">
-                      <span className="h-2 w-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="h-2 w-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="h-2 w-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div ref={chatBottomRef} />
-            </div>
-
-            {/* Chat Input Footer */}
-            <div className="bg-slate-900/80 p-4 border-t border-slate-800">
-              <div className="flex gap-2 max-w-4xl mx-auto">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={handleChatKeyDown}
-                  placeholder="Pergunte sobre imóveis, orçamentos, localizações..."
-                  disabled={chatLoading}
-                  className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
-                />
-                <button
-                  onClick={enviarMensagemChat}
-                  disabled={chatLoading || !chatInput.trim()}
-                  className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-xl px-4 py-3 transition-colors"
-                >
-                  <Send className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </div>
+          <AssistantChat embedded />
         )}
       </div>
     </main>

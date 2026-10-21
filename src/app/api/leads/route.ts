@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server.js';
 import { getAuthFromRequest } from '../../../lib/api-auth.ts';
 import { inputToRow, rowToLead } from '../../../lib/leads-mapper.ts';
-import { ownerFilter, parseLeadDetails } from '../../../lib/lead-input.ts';
+import { parseLeadDetails } from '../../../lib/lead-input.ts';
 import { createServerSupabaseClient } from '../../../lib/supabase.ts';
 import type { LeadInput } from '../../../types/lead.ts';
 
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ leads: (data ?? []).map(rowToLead) });
+  return NextResponse.json({ leads: (data ?? []).map((row) => rowToLead(row)) });
 }
 
 export async function POST(request: NextRequest) {

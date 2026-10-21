@@ -53,7 +53,11 @@ Para fins de avaliação de arquitetura, o projeto foi subdividido em módulos f
 
 ## Assistente virtual (Sprint 5)
 
-Configure `OPENROUTER_API_KEY` apenas no ambiente do servidor. `OPENROUTER_MODEL` é opcional e usa `openrouter/free` por padrão; escolha explicitamente outro modelo se a equipe aprovar custos. A rota `/api/assistente` mantém o histórico enviado pelo cliente, consulta imóveis disponíveis e registra o lead somente após identificar nome, e-mail e telefone completos. A migration `20261020210008_add_broker_active_status.sql` deve ser aplicada antes de publicar a captura pública de leads.
+Configure `OPENROUTER_API_KEY` apenas no ambiente do servidor. `OPENROUTER_MODEL` é opcional e usa `mistralai/mistral-nemo` por padrão, para a conversa e a extração do contato. Esse modelo cobra por token; o cliente prioriza os provedores mais baratos e aceita somente preços de até US$ 0,03 por milhão de tokens de entrada e US$ 0,03 por milhão de saída. Se nenhum provedor atender ao teto, a chamada falha em vez de usar um mais caro. Não há fallback automático para outro modelo. Veja [roteamento e teto de preço](https://openrouter.ai/docs/guides/routing/provider-selection). O teto se aplica ao NeMo; se a equipe alterar explicitamente o modelo pela variável, deve avaliar seus custos e limites.
+
+A página `/assistente` e a aba do dashboard do cliente compartilham a conversa. O servidor aplica filtros de orçamento, tipo, bairro, quartos e vagas ao portfólio disponível. Com nome, e-mail e telefone completos, registra o atendimento em Novo para um corretor ativo. A mesma conversa atualiza preferências, resumo e histórico no mesmo card, preservando etapa e responsável. Visitas são solicitações pendentes de confirmação pelo corretor. Veja o [fluxo, os limites e os testes do assistente](docs/assistant.md).
+
+Antes de publicar, aplique as migrations `20261020210008_add_broker_active_status.sql` e `20261020223347_add_assistant_qualification.sql` no ambiente de destino. A segunda adiciona campos opcionais e um índice por conversa, sem alterar leads existentes ou suas permissões.
 
 `GET /api/imoveis/recomendacoes?tipoImovel=Casa&bairro=Aldeota` expõe até cinco imóveis disponíveis, ordenados pela pontuação de tipo, faixa de orçamento e bairro. A consulta aceita também `faixaOrcamento` com um dos valores de `FAIXAS_ORCAMENTO`.
 

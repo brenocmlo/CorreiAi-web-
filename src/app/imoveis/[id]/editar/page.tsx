@@ -3,7 +3,7 @@
 import React, { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useImoveis, Imovel } from '@/hooks/useImoveis';
+import { useImoveis, Imovel, type ImovelInput } from '@/hooks/useImoveis';
 import { useAuth } from '@/hooks/useAuth';
 import ImovelForm from '@/components/ImovelForm';
 
@@ -35,7 +35,7 @@ export default function EditarImovelPage({ params }: { params: Promise<{ id: str
     loadData();
   }, [id, fetchImovelById, router]);
 
-  const handleUpdate = async (data: any) => {
+  const handleUpdate = async (data: ImovelInput) => {
     return await updateImovel(id, data);
   };
 

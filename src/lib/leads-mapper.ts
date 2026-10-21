@@ -1,4 +1,5 @@
 import type { EtapaFunil, Lead, LeadInput } from '@/types/lead';
+import type { Qualification } from '@/types/assistant';
 
 export interface LeadRow {
   id: string;
@@ -10,9 +11,10 @@ export interface LeadRow {
   etapa: EtapaFunil;
   criado_em: string;
   atualizado_em: string;
+  qualificacao?: Qualification | null;
 }
 
-export function rowToLead(row: LeadRow): Lead {
+export function rowToLead(row: LeadRow, includeHistory = false): Lead {
   return {
     id: row.id,
     nome: row.nome,
@@ -23,6 +25,7 @@ export function rowToLead(row: LeadRow): Lead {
     etapa: row.etapa,
     criadoEm: new Date(row.criado_em).getTime(),
     atualizadoEm: new Date(row.atualizado_em).getTime(),
+    ...(row.qualificacao ? { qualificacao: { ...row.qualificacao, historico: includeHistory ? row.qualificacao.historico : undefined } } : {}),
   };
 }
 

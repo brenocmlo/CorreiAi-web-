@@ -9,5 +9,6 @@ export async function POST(request: NextRequest) {
     path: '/',
     maxAge: 0,
   });
+  response.cookies.set('correia_atendimento', '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', path: '/', maxAge: 0 });
   return response;
 }

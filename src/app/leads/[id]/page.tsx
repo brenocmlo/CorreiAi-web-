@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import LeadForm from '@/components/leads/LeadForm';
+import { LeadQualification } from '@/components/leads/LeadQualification';
+import type { Qualification } from '@/types/assistant';
 import ConfirmDialog from '@/components/leads/ConfirmDialog';
 import { getLead, updateLead, deleteLead } from '@/lib/leads';
 import { ETAPAS_FUNIL, type LeadInput } from '@/types/lead';
@@ -16,6 +18,7 @@ export default function LeadDetalhePage() {
 
   const [valores, setValores] = useState<LeadInput | null>(null);
   const [etapaAtual, setEtapaAtual] = useState('');
+  const [qualificacao, setQualificacao] = useState<Qualification | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
@@ -25,7 +28,6 @@ export default function LeadDetalhePage() {
 
   useEffect(() => {
     if (!id) return;
-    setCarregando(true);
     getLead(id)
       .then((lead) => {
         if (!lead) {
@@ -40,6 +42,7 @@ export default function LeadDetalhePage() {
           tipoImovel: lead.tipoImovel,
         });
         setEtapaAtual(ETAPAS_FUNIL.find((e) => e.id === lead.etapa)?.label ?? lead.etapa);
+        setQualificacao(lead.qualificacao ?? null);
       })
       .catch(() => setErro('Erro ao carregar o lead.'))
       .finally(() => setCarregando(false));
@@ -123,6 +126,7 @@ export default function LeadDetalhePage() {
                 </button>
               </div>
 
+              {qualificacao && <LeadQualification value={qualificacao} />}
               <LeadForm
                 valores={valores}
                 onChange={handleChange}
