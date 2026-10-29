@@ -109,6 +109,18 @@ export function nextQuestion(
   )
     return entryFlow(q, text, true, previousQuestion(messages)).question;
   if (phoneQuestion(text)) return null;
+  if (
+    /medo|insegur|preocup|pesad/.test(text) &&
+    /parcela|financi|entrada|renda/.test(text)
+  )
+    return 'Você prefere comparar imóveis de menor valor ou entender melhor o financiamento?';
+  if (
+    factualQuestion(text) &&
+    /financiamento|entrada|parcelas?|juros/.test(text)
+  )
+    return properties.length
+      ? 'Quer comparar imóveis de menor valor dentro do seu limite?'
+      : 'Quer seguir com a busca de um imóvel ou esclarecer outra dúvida?';
   if (factualQuestion(text) && !wantsContact(text))
     return propertyQuestion(text) &&
       properties.length > 1 &&
@@ -330,7 +342,8 @@ export function directAnswer(
     return null;
   if (properties.length) {
     const budget = q.orcamentoMax !== null ? ' dentro do seu limite' : '';
-    const scope = context.mode === 'demo' ? 'deste catálogo de exemplo' : 'da imobiliária';
+    const scope =
+      context.mode === 'demo' ? 'deste catálogo de exemplo' : 'da imobiliária';
     return `Separei ${properties.length} ${properties.length === 1 ? 'opção' : 'opções'}${budget}${q.bairro ? ` em ${q.bairro}` : ''} ${scope}. Você pode comparar preço, localização e tamanho nos cartões.${question ? ' ' + question : ''}`;
   }
   if (

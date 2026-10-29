@@ -125,7 +125,7 @@ test('falha de consulta não é apresentada como ausência de imóveis', () => {
 test('dúvida informativa não dispara nova rodada de triagem', () => {
   const messages = [user('Como funciona financiamento?')],
     q = qualificationFrom(messages);
-  assert.equal(nextQuestion(messages, q, [], context), null);
+  assert.match(nextQuestion(messages, q, [], context), /busca|dúvida/i);
   const reply = directedReply(
     'O banco avalia renda e documentação. A aprovação depende da análise. Qual seu orçamento? E o bairro?',
     messages,
@@ -134,7 +134,8 @@ test('dúvida informativa não dispara nova rodada de triagem', () => {
     context,
   );
   assert.match(reply, /banco/);
-  assert.doesNotMatch(reply, /\?/);
+  assert.equal((reply.match(/\?/g) || []).length, 1);
+  assert.doesNotMatch(reply, /qual.{0,20}(?:orçamento|bairro|telefone)/i);
 });
 test('contato é pedido um campo por vez e só após intenção de falar com corretor', () => {
   const messages = [user('Quero falar com um corretor. Sou Ana Silva.')],
@@ -198,6 +199,40 @@ test('objeção recebe uma pergunta contextual sem reiniciar triagem', () => {
     nextQuestion(messages, q, [house], context),
     /qual dessas|nome|telefone/i,
   );
+});
+
+test('medo de parcela em pergunta aberta mantém próximo passo mesmo com resposta longa do modelo', () => {
+  const messages = [
+    user('Quero uma casa até 500 mil'),
+    bot('Qual opção você quer conhecer?'),
+    user(
+      'Gostei, mas tenho medo de a parcela ficar pesada. Como avaliar isso?',
+    ),
+  ];
+  const q = qualificationFrom(messages);
+  const answer =
+    'Entendo sua preocupação. O banco analisa sua renda, documentação e condições do financiamento. As condições variam conforme a instituição e seu perfil. '.repeat(
+      6,
+    );
+  const reply = directedReply(answer, messages, q, [house], context);
+  assert.equal((reply.match(/\?/g) || []).length, 1);
+  assert.match(reply, /menor valor|financiamento.*\?$/i);
+  assert.ok(reply.trim().split(/\s+/).length <= 80);
+  assert.doesNotMatch(reply, /qual.{0,20}(?:nome|telefone|bairro|orcamento)/i);
+});
+
+test('dúvida de financiamento oferece continuidade sem pedir conta nem vários dados', () => {
+  const messages = [user('Como funciona o financiamento?')],
+    q = qualificationFrom(messages);
+  const reply = directedReply(
+    'O banco analisa a proposta e os documentos. A aprovação depende da análise.',
+    messages,
+    q,
+    [],
+    context,
+  );
+  assert.equal((reply.match(/\?/g) || []).length, 1);
+  assert.match(reply, /busca|dúvida/i);
 });
 
 test('modelo não pode inventar telefone em uma resposta espontânea', () => {
@@ -309,7 +344,7 @@ test('texto longo do modelo é limitado a 80 palavras completas no chat', () => 
     context,
   );
   assert.ok(reply.trim().split(/\s+/).length <= 80);
-  assert.equal(reply.endsWith('.'), true);
+  assert.match(reply, /[.?]$/);
 });
 
 test('respostas curtas de tipo e orçamento conduzem a busca sem exigir login de corretor', () => {
