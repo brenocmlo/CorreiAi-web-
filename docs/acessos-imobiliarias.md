@@ -42,3 +42,14 @@ API, sessão e proxy consultam função/perfil e empresa ativos a cada requisiç
 Para a validação real autorizada: `node --env-file=.env.local scripts/validate-account-hierarchy.mjs --admin-id=<id verificado do administrador geral> --allow-production-fixtures`. O script usa o `JWT_SECRET` local somente para a sessão técnica do administrador já existente; não imprime tokens ou senhas. Cria empresas e corretores com marcadores exclusivos, valida a hierarquia e suspende os acessos técnicos ao final. Registra IDs para limpeza administrativa de clientes de teste em `.git/validation/account-hierarchy-production.json`.
 
 O script anterior `validate-catalog-isolation.mjs` registrava corretores publicamente e corresponde ao contrato antigo. Usar o teste de hierarquia para o fluxo atual.
+
+## Resultado em 29/10/2026
+
+- Código na main em `455a7ab`; deploy `dpl_GxKE8PmjCW7naDZQSfBtF6fVgRbM`, READY no domínio público.
+- 125 testes automatizados passaram; TypeScript, build de 30 rotas e ESLint dos arquivos alterados passaram. O build local utilizou chave pública fictícia somente para prerender; a integração real foi conferida separadamente no domínio publicado.
+- 47 checks reais passaram: cadastro público restrito a cliente; criação de duas imobiliárias com administradores; criação de três corretores; equipe e imóveis isolados; colega da mesma empresa vê o imóvel; outra empresa não vê/edita/recomenda; suspensão e reativação de corretor e empresa; JWT antigo bloqueado após suspensão.
+- O login da conta indicada por Gabriel abriu `/admin/imobiliarias` no Chrome, sem alteração de senha.
+- Após o teste, foram removidos por IDs, e-mails e marcadores exclusivos os seis perfis técnicos e as duas empresas técnicas. O imóvel técnico também foi removido. Consulta final confirmou zero fixtures restantes e preservação dos três imóveis antigos.
+- O painel está vazio, pronto para o administrador geral cadastrar a primeira imobiliária real. Os profissionais antigos sem vínculo permanecem preservados e sem acesso até regularização administrativa.
+
+Evidências locais sem credenciais: `.git/validation/hierarchy-tests.log`, `hierarchy-lint.log`, `hierarchy-build.log`, `hierarchy-vercel-build.log`, `hierarchy-production-tests.log` e `account-hierarchy-production.json`.

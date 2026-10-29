@@ -2,6 +2,8 @@
 
 Regra definida por Gabriel: conta nova começa com catálogo vazio. A conta vê imóveis de sua autoria ou vinculados à imobiliária registrada no seu perfil.
 
+Atualização de 29/10/2026: cadastro público exclusivo de clientes. O administrador geral libera imobiliárias e seus administradores; cada imobiliária cadastra a própria equipe. Perfis profissionais sem empresa ativa não têm acesso. Fluxo e validação em [acessos-imobiliarias.md](acessos-imobiliarias.md).
+
 ## Controles
 
 - Todas as APIs privadas consultam o perfil ativo e a permissão atual no banco; não aceitam vínculo de imobiliária enviado pelo navegador ou guardado em um JWT antigo.

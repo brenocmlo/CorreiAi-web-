@@ -6,6 +6,8 @@ O primeiro deploy usou main `8009b4c`. A atualização de isolamento de dados es
 
 Atualização de segurança publicada em 28/10/2026: `dpl_39mQRwUmvcgDR9cRvq9mjN9FtPoo`, READY, origem de código `6968cb6`. Build remoto aprovado e 43 checks reais passaram no domínio público, incluindo upload e isolamento entre contas.
 
+Atualização de hierarquia de acessos publicada em 29/10/2026: origem `455a7ab`, deployment `dpl_GxKE8PmjCW7naDZQSfBtF6fVgRbM`, READY. 125 testes locais e 47 checks reais passaram. Migration `20261029032636_brokerage_account_hierarchy.sql` aplicada e verificada no Supabase correto. Cadastro público somente de clientes; administrador geral libera imobiliárias, que cadastram os corretores. Ver [acessos-imobiliarias.md](acessos-imobiliarias.md).
+
 ## Variáveis de Production
 
 - `NEXT_PUBLIC_SUPABASE_URL`: projeto `sadnfebpklwgxerzgfqc`.
