@@ -95,8 +95,8 @@ export function HeroSection() {
                 {...reveal(0.08)}
                 className="font-display text-[2.4rem] font-semibold leading-[1.02] tracking-[-0.03em] text-[var(--shop-ink-text)] sm:text-[3rem] lg:text-[3.4rem]"
               >
-                Entre cem chaves,
-                <br />a sua já está separada.
+                Atendimento com IA.
+                <br />Sua imobiliária no controle.
               </motion.h1>
               {/* The reflection: just the seam, fading fast — a real glass
                   reflection dies within an inch of the surface, not a full
@@ -116,8 +116,8 @@ export function HeroSection() {
                     className="font-display text-[2.4rem] font-semibold leading-[1.02] tracking-[-0.03em] text-[var(--shop-brass)] opacity-[0.08] sm:text-[3rem] lg:text-[3.4rem]"
                     style={{ transform: 'scaleY(-1)' }}
                   >
-                    Entre cem chaves,
-                    <br />a sua já está separada.
+                    Atendimento com IA.
+                    <br />Sua imobiliária no controle.
                   </p>
                 </div>
               )}
@@ -127,9 +127,9 @@ export function HeroSection() {
               {...reveal(0.18)}
               className="mt-10 max-w-md text-[15px] leading-relaxed text-[var(--shop-text-dim)] sm:mt-12 sm:text-base"
             >
-              Converse com a CorreAI sobre o imóvel que você procura. Ela cruza sua busca com o
-              catálogo real da imobiliária e já separa as opções certas — antes de um corretor
-              entrar na conversa.
+              O CorreAI reúne assistente virtual, catálogo de imóveis e funil de leads para sua
+              equipe. Teste uma conversa e veja como a IA entende a busca, apresenta opções e
+              prepara o atendimento do corretor.
             </motion.p>
 
             <motion.div {...reveal(0.28)} className="mt-9">
@@ -137,7 +137,7 @@ export function HeroSection() {
                 className="group inline-flex items-center gap-2.5 rounded-[4px] bg-[var(--shop-signal)] px-6 py-3.5 text-sm font-semibold text-white transition-transform duration-100 hover:bg-[#5c80f4] active:scale-[0.97]"
               >
                 <MessageCircle className="h-4 w-4" strokeWidth={2} />
-                Falar com a IA
+                Experimentar a IA
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </OpenChatButton>
             </motion.div>
@@ -148,7 +148,7 @@ export function HeroSection() {
               </span>
               <span className="h-8 w-px bg-[var(--shop-brass)]/30" />
               <span className="max-w-[12rem] text-xs leading-snug text-[var(--shop-text-dim)]">
-                A IA está sempre na vitrine, pronta pra conversar quando você chegar.
+                Atendimento virtual para receber e organizar as buscas dos seus clientes.
               </span>
             </motion.div>
           </div>

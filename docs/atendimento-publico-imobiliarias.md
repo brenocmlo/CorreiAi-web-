@@ -1,5 +1,7 @@
 # Atendimento público por imobiliária
 
+A landing principal vende o sistema e abre uma [demonstração com imobiliárias fictícias](demonstracao-saas.md). O visitante pode testar sem link ou login. As regras abaixo descrevem o atendimento de empresas reais.
+
 ## Acesso do cliente
 
 O administrador da imobiliária entra em `/admin`, configura o telefone comercial, define um endereço e ativa **Página de atendimento para clientes**. Compartilha então `https://correiai.vercel.app/imobiliaria/SEU-ENDERECO`.

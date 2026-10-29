@@ -7,6 +7,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import AppShell from '@/components/AppShell';
 import LeadForm from '@/components/leads/LeadForm';
 import { LeadQualification } from '@/components/leads/LeadQualification';
+import { ClientPortal } from '@/components/client/ClientPortal';
 import type { Qualification } from '@/types/assistant';
 import ConfirmDialog from '@/components/leads/ConfirmDialog';
 import { getLead, updateLead, deleteLead } from '@/lib/leads';
@@ -124,6 +125,7 @@ export default function LeadDetalhePage() {
                 </button>
               </div>
 
+              <div className="mb-6"><ClientPortal staffLeadId={id}/></div>
               {qualificacao && <LeadQualification value={qualificacao} />}
               <LeadForm
                 valores={valores}

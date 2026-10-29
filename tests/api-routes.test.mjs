@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
-import test, { beforeEach, afterEach } from 'node:test';
+import test, { after, afterEach, beforeEach } from 'node:test';
 import bcrypt from 'bcryptjs';
 import { NextRequest } from 'next/server.js';
+import { createSuiteReporter } from './test-reporter.mjs';
 
 process.env.JWT_SECRET = 'segredo-de-teste-para-rotas-123456';
 const { signToken, verifyToken } = await import('../src/lib/jwt.ts');
@@ -16,6 +17,20 @@ const fixtureProfiles = new Map();
 const fixtureOrg = '33333333-3333-4333-8333-333333333333';
 const publicToken = () => signToken({uid:'lead-fixture',email:'lead@example.invalid',role:'lead',nome_completo:'Fixture'});
 beforeEach(() => { fixtureProfiles.clear(); setServerSupabaseClientOverride(createMockSupabase()); });
+
+const reporter = createSuiteReporter({
+  suiteKey: 'api-routes',
+  suiteTitle: 'Rotas de API (auth/login, auth/cadastro e leads)',
+  targetFile: 'src/app/api/auth/login/route.ts, src/app/api/auth/cadastro/route.ts, src/app/api/leads/route.ts',
+});
+
+after(() => {
+  reporter.exportReports();
+});
+
+afterEach(() => {
+  setServerSupabaseClientOverride(null);
+});
 
 function createRequest(url, { method = 'GET', body = null, token = null } = {}) {
   const headers = new Headers();
@@ -97,10 +112,6 @@ function createMockSupabase(handlers = {}) {
   };
 }
 
-afterEach(() => {
-  setServerSupabaseClientOverride(null);
-});
-
 // ==========================================
 // Testes de /api/auth/login
 // ==========================================
@@ -121,6 +132,15 @@ test('auth/login rejeita requisição com campos obrigatórios ausentes ou e-mai
     const data = await res.json();
     assert.match(data.error, /obrigatórios/i);
   }
+
+  reporter.record({
+    name: 'auth/login rejeita requisição com campos obrigatórios ausentes ou e-mail inválido (400)',
+    description: 'Verifica validação de payload no login (e-mail malformado ou senha ausente).',
+    input: payloadsInvalidos,
+    expected: 'Status HTTP 400 com mensagem "E-mail e senha são obrigatórios."',
+    result: 'Todos os 5 formatos inválidos retornaram HTTP 400 com mensagem de validação.',
+    status: 'PASSED',
+  });
 });
 
 test('auth/login rejeita credenciais inválidas quando usuário não existe (401)', async () => {
@@ -139,6 +159,15 @@ test('auth/login rejeita credenciais inválidas quando usuário não existe (401
   assert.equal(res.status, 401);
   const data = await res.json();
   assert.match(data.error, /incorretos/i);
+
+  reporter.record({
+    name: 'auth/login rejeita credenciais inválidas quando usuário não existe (401)',
+    description: 'Garante que tentativa de login com e-mail inexistente retorne 401 sem vazar detalhes.',
+    input: { email: 'inexistente@teste.com', senha: 'senha-qualquer' },
+    expected: 'Status HTTP 401 com erro "E-mail ou senha incorretos."',
+    result: 'HTTP 401 retornado corretamente com mensagem genérica de segurança.',
+    status: 'PASSED',
+  });
 });
 
 test('auth/login rejeita credenciais inválidas quando a senha está incorreta (401)', async () => {
@@ -170,6 +199,15 @@ test('auth/login rejeita credenciais inválidas quando a senha está incorreta (
   assert.equal(res.status, 401);
   const data = await res.json();
   assert.match(data.error, /incorretos/i);
+
+  reporter.record({
+    name: 'auth/login rejeita credenciais inválidas quando a senha está incorreta (401)',
+    description: 'Valida checagem criptográfica de senha via bcrypt.compare.',
+    input: { email: 'corretor@teste.com', senhaInformada: 'senha-errada' },
+    expected: 'Status HTTP 401 com erro "E-mail ou senha incorretos."',
+    result: 'HTTP 401 retornado e login bloqueado.',
+    status: 'PASSED',
+  });
 });
 
 test('auth/login autentica com sucesso e define o cookie auth_token (200)', async () => {
@@ -206,6 +244,15 @@ test('auth/login autentica com sucesso e define o cookie auth_token (200)', asyn
   assert.ok(authCookie);
   assert.ok(authCookie.value.length > 0);
   assert.equal(authCookie.httpOnly, true);
+
+  reporter.record({
+    name: 'auth/login autentica com sucesso e define o cookie auth_token (200)',
+    description: 'Valida login com sucesso, retorno HTTP 200 { ok: true } e geração do cookie seguro httpOnly.',
+    input: { email: 'corretor@teste.com', senha: 'senha-123' },
+    expected: 'Status HTTP 200 com { ok: true } e cookie auth_token configurado como httpOnly.',
+    result: 'Login concluído com sucesso e cookie auth_token definido com opções seguras.',
+    status: 'PASSED',
+  });
 });
 
 // ==========================================
@@ -218,9 +265,7 @@ test('auth/cadastro valida regras de registro e rejeita dados inválidos (400)',
     { nome_completo: '', email: 'ana@teste.com', cpf: '12345678901', senha: '123456', role: 'lead' },
     // Senha muito curta
     { nome_completo: 'Ana', email: 'ana@teste.com', cpf: '12345678901', senha: '123', role: 'lead' },
-    // Role administrativo proibido no cadastro público
     { nome_completo: 'Admin', email: 'admin@teste.com', cpf: '12345678901', senha: '123456', role: 'super_admin' },
-    // E-mail inválido
     { nome_completo: 'Ana', email: 'invalido', cpf: '12345678901', senha: '123456', role: 'lead' },
   ];
 
@@ -231,6 +276,15 @@ test('auth/cadastro valida regras de registro e rejeita dados inválidos (400)',
     const data = await res.json();
     assert.match(data.error, body.role && body.role !== 'lead' ? /exclusivo para clientes/i : /inválidos/i);
   }
+
+  reporter.record({
+    name: 'auth/cadastro valida regras de registro e rejeita dados inválidos (400)',
+    description: 'Garante que cadastros sem CRECI para corretor, senha fraca ou perfis administrativos proibidos sejam rejeitados.',
+    input: cadastrosInvalidos,
+    expected: 'Status HTTP 400 em todas as tentativas inválidas.',
+    result: 'Validação impediu o cadastro em todos os cenários com HTTP 400.',
+    status: 'PASSED',
+  });
 });
 
 test('auth/cadastro rejeita e-mail já cadastrado (409)', async () => {
@@ -257,6 +311,15 @@ test('auth/cadastro rejeita e-mail já cadastrado (409)', async () => {
   assert.equal(res.status, 409);
   const data = await res.json();
   assert.match(data.error, /já está sendo utilizado/i);
+
+  reporter.record({
+    name: 'auth/cadastro rejeita e-mail já cadastrado (409)',
+    description: 'Valida verificação de e-mail duplicado retornando conflito HTTP 409.',
+    input: { email: 'duplicado@teste.com' },
+    expected: 'Status HTTP 409 com erro "Este e-mail já está sendo utilizado por outra conta."',
+    result: 'HTTP 409 retornado e criação bloqueada.',
+    status: 'PASSED',
+  });
 });
 
 test('auth/cadastro cria perfil com sucesso e define o cookie auth_token (200)', async () => {
@@ -303,6 +366,15 @@ test('auth/cadastro cria perfil com sucesso e define o cookie auth_token (200)',
   const authCookie = res.cookies.get('auth_token');
   assert.ok(authCookie);
   assert.ok(authCookie.value.length > 0);
+
+  reporter.record({
+    name: 'auth/cadastro cria perfil com sucesso e define o cookie auth_token (200)',
+    description: 'Valida fluxo completo de cadastro: hash com bcrypt, inserção no banco e login automático com cookie.',
+    input: { nome: 'Mariana Lima', email: 'mariana@teste.com', role: 'corretor', creci: '54321-F' },
+    expected: 'Status HTTP 200 com { ok: true } e perfil inserido no Supabase.',
+    result: 'Perfil criado e autenticado com cookie de sessão válido.',
+    status: 'PASSED',
+  });
 });
 
 // ==========================================
@@ -321,6 +393,15 @@ test('leads bloqueia requisições sem autenticação em GET e POST (401)', asyn
   assert.equal(postRes.status, 401);
   const postData = await postRes.json();
   assert.match(postData.error, /não autenticado/i);
+
+  reporter.record({
+    name: 'leads bloqueia requisições sem autenticação em GET e POST (401)',
+    description: 'Garante que requisições sem cookie auth_token recebam 401 Não autenticado.',
+    input: { getReq: 'sem cookie', postReq: 'sem cookie' },
+    expected: 'HTTP 401 com erro "Não autenticado." para ambos os métodos.',
+    result: 'Tanto GET quanto POST bloquearam requisições não autenticadas.',
+    status: 'PASSED',
+  });
 });
 
 test('leads bloqueia acesso de usuários com perfil de lead (403)', async () => {
@@ -342,6 +423,15 @@ test('leads bloqueia acesso de usuários com perfil de lead (403)', async () => 
   assert.equal(postRes.status, 403);
   const postData = await postRes.json();
   assert.match(postData.error, /acesso negado/i);
+
+  reporter.record({
+    name: 'leads bloqueia acesso de usuários com perfil de lead (403)',
+    description: 'Valida controle de acesso baseado em papel (RBAC): usuários com role lead não acessam gestão de leads.',
+    input: { tokenRole: 'lead' },
+    expected: 'Status HTTP 403 com erro "Acesso negado." em GET e POST.',
+    result: 'HTTP 403 retornado corretamente impedindo acesso de clientes lead.',
+    status: 'PASSED',
+  });
 });
 
 test('leads filtra a listagem pelo corretor logado e retorna leads mapeados (200)', async () => {
@@ -388,6 +478,15 @@ test('leads filtra a listagem pelo corretor logado e retorna leads mapeados (200
   assert.equal(data.leads[0].faixaOrcamento, 'Até R$ 300 mil');
 
   assert.deepEqual(filtrosAplicados, [{ col: 'corretor_id', val: 'corretor-42' }]);
+
+  reporter.record({
+    name: 'leads filtra a listagem pelo corretor logado e retorna leads mapeados (200)',
+    description: 'Valida isolamento multitenant: corretores visualizam apenas leads onde corretor_id bate com seu uid.',
+    input: { corretorUid: 'corretor-42' },
+    expected: 'Filtro corretor_id = "corretor-42" aplicado na query do Supabase e leads retornados.',
+    result: `Filtro aplicado com sucesso: ${JSON.stringify(filtrosAplicados)}`,
+    status: 'PASSED',
+  });
 });
 
 test('leads de administrador também são privados por responsável (200)', async () => {
@@ -415,6 +514,14 @@ test('leads de administrador também são privados por responsável (200)', asyn
 
   const temFiltroCorretor = filtrosAplicados.some((f) => f.col === 'corretor_id');
   assert.equal(temFiltroCorretor, true);
+  reporter.record({
+    name: 'leads restringe por corretor_id quando o usuário é administrador (200)',
+    description: 'Valida que administradores de corretora possuem acesso restrito ao corretor responsável.',
+    input: { role: 'admin_corretora' },
+    expected: 'Filtro corretor_id aplicado na query.',
+    result: 'Consulta realizada com filtro do corretor responsável.',
+    status: 'PASSED',
+  });
 });
 
 test('leads valida payload na criação de novo lead e rejeita dados inválidos (400)', async () => {
@@ -442,6 +549,15 @@ test('leads valida payload na criação de novo lead e rejeita dados inválidos 
   assert.equal(res.status, 400);
   const data = await res.json();
   assert.match(data.error, /nome/i);
+
+  reporter.record({
+    name: 'leads valida payload na criação de novo lead e rejeita dados inválidos (400)',
+    description: 'Garante que tentativa de cadastro de lead sem nome obrigatório seja rejeitada com 400.',
+    input: payloadSemNome,
+    expected: 'Status HTTP 400 com erro indicando campo nome.',
+    result: 'HTTP 400 retornado e mensagem de erro informada ao cliente.',
+    status: 'PASSED',
+  });
 });
 
 test('leads cria lead associado ao corretor autenticado (201)', async () => {
@@ -496,6 +612,15 @@ test('leads cria lead associado ao corretor autenticado (201)', async () => {
   assert.equal(data.lead.faixaOrcamento, 'R$ 500 mil – R$ 800 mil');
   assert.equal(registroInserido.corretor_id, 'corretor-vip');
   assert.equal(registroInserido.etapa, 'novo');
+
+  reporter.record({
+    name: 'leads cria lead associado ao corretor autenticado (201)',
+    description: 'Valida criação de lead: dados normalizados, etapa inicial "novo" e corretor_id preenchido a partir do JWT do corretor logado.',
+    input: { nome: 'Beatriz Costa', telefone: '85988887777', corretorJwt: 'corretor-vip' },
+    expected: 'Status HTTP 201 com lead criado e corretor_id = "corretor-vip".',
+    result: `Lead criado com sucesso com ID lead-gerado-10 vinculado a corretor-vip.`,
+    status: 'PASSED',
+  });
 });
 
 test('captura anônima exige conta antes de registrar contato', async () => {

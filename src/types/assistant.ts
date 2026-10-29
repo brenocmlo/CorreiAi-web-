@@ -1,6 +1,8 @@
 export type ConversationMessage = { role: 'user' | 'assistant'; text: string };
 
 export interface AssistantContext {
+  mode?: 'demo';
+  demoSlug?: string;
   catalogState: 'available' | 'restricted' | 'unavailable';
   company: { nome: string; telefone: string | null } | null;
   restrictionReason?: 'login_required' | 'company_required' | 'admin_only';
@@ -18,6 +20,8 @@ export interface Qualification {
   tipoImovel: string | null;
   bairro: string | null;
   orcamentoMax: number | null;
+  orcamentoNaoDefinido?: boolean;
+  semPreferenciaBairro?: boolean;
   quartosMin: number | null;
   vagasMin: number | null;
   prazo: string | null;
@@ -49,6 +53,7 @@ export interface AssistantProperty {
 }
 
 export type CaptureStatus =
+  | 'demonstracao'
   | 'incompleto'
   | 'criado'
   | 'atualizado'
@@ -57,6 +62,7 @@ export type CaptureStatus =
   | 'indisponivel';
 export interface AssistantResponse {
   reply: string;
+  continuarEm?: { href: string; label: string };
   leadRegistrado: boolean;
   captura: CaptureStatus;
   qualificacao: Qualification;

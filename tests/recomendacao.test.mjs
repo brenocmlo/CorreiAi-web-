@@ -1,7 +1,18 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { after } from 'node:test';
+import { createSuiteReporter } from './test-reporter.mjs';
 
 import { recomendarImoveis } from '../src/lib/recomendacao.ts';
+
+const reporter = createSuiteReporter({
+  suiteKey: 'recomendacao',
+  suiteTitle: 'Motor de Recomendação de Imóveis (recomendarImoveis)',
+  targetFile: 'src/lib/recomendacao.ts',
+});
+
+after(() => {
+  reporter.exportReports();
+});
 
 const access = {uid:'fixture-owner',role:'corretor',imobiliariaId:null};
 function createMockSupabase({data=null,error=null}={}) {
@@ -59,13 +70,22 @@ test('calcula pontuação por tipo (+3), faixa de orçamento (+3 ou +1) e bairro
   assert.equal(recomendados[3].id, '4');
   assert.equal(recomendados[3].pontuacao, 2);
   assert.ok(!recomendados.some((i) => i.id === '5'));
+
+  reporter.record({
+    name: 'Calcula pontuação por tipo (+3), faixa de orçamento (+3 ou +1) e bairro (+2)',
+    description: 'Verifica se a fórmula de pontuação ponderada atribui pesos corretos a tipo (+3), faixa (+3 exato / +1 margem 20%) e bairro (+2), descartando pontuação zero.',
+    input: { preferencias: prefs, totalImoveisBanco: imoveis.length },
+    expected: '4 imóveis recomendados com pontuações 8, 5, 4 e 2.',
+    result: `4 imóveis retornados com pontuações exatas: ${recomendados.map((r) => `${r.id}: ${r.pontuacao}pts`).join(', ')}.`,
+    status: 'PASSED',
+  });
 });
 
 test('ordena resultados por pontuação decrescente', async () => {
   const imoveis = [
-    { ...baseImovel, id: 'baixo', tipo: 'Casa', valor: 1000000, bairro: 'Meireles' }, // +2 bairro = 2
-    { ...baseImovel, id: 'alto', tipo: 'Casa', valor: 250000, bairro: 'Meireles' }, // +3 tipo, +3 faixa, +2 bairro = 8
-    { ...baseImovel, id: 'medio', tipo: 'Casa', valor: 250000, bairro: 'Centro' }, // +3 tipo, +3 faixa = 6
+    { ...baseImovel, id: 'baixo', tipo: 'Casa', valor: 1000000, bairro: 'Meireles' }, // +3 tipo +2 bairro = 5
+    { ...baseImovel, id: 'alto', tipo: 'Casa', valor: 250000, bairro: 'Meireles' }, // +3 tipo +3 faixa +2 bairro = 8
+    { ...baseImovel, id: 'medio', tipo: 'Casa', valor: 250000, bairro: 'Centro' }, // +3 tipo +3 faixa = 6
   ];
 
   const client = createMockSupabase({ data: imoveis });
@@ -82,6 +102,15 @@ test('ordena resultados por pontuação decrescente', async () => {
       { id: 'baixo', pontuacao: 5 },
     ]
   );
+
+  reporter.record({
+    name: 'Ordena resultados por pontuação decrescente',
+    description: 'Valida se o resultado é ordenado estritamente pela maior pontuação calculada.',
+    input: { imoveis: ['baixo (5pts)', 'alto (8pts)', 'medio (6pts)'] },
+    expected: 'Ordem decrescente: alto (8), medio (6), baixo (5).',
+    result: `Ordem obtida: ${recomendados.map((r) => `${r.id} (${r.pontuacao}pts)`).join(' > ')}.`,
+    status: 'PASSED',
+  });
 });
 
 test('limita o resultado a no máximo 5 recomendações', async () => {
@@ -97,6 +126,15 @@ test('limita o resultado a no máximo 5 recomendações', async () => {
   const recomendados = await recomendarImoveis({ tipoImovel: 'Casa' }, client, access);
 
   assert.equal(recomendados.length, 5);
+
+  reporter.record({
+    name: 'Limita o resultado a no máximo 5 recomendações',
+    description: 'Verifica se a lista de recomendações é truncada em 5 itens mesmo com mais correspondências disponíveis.',
+    input: { totalCorrespondencias: 8 },
+    expected: 'Exatamente 5 imóveis recomendados.',
+    result: `Total retornado: ${recomendados.length} imóveis.`,
+    status: 'PASSED',
+  });
 });
 
 test('retorna lista vazia quando o Supabase retorna erro ou dados nulos', async () => {
@@ -107,6 +145,15 @@ test('retorna lista vazia quando o Supabase retorna erro ou dados nulos', async 
   const clientComDadosNulos = createMockSupabase({ data: null });
   const resultadoNulo = await recomendarImoveis({ tipoImovel: 'Casa' }, clientComDadosNulos, access);
   assert.deepEqual(resultadoNulo, []);
+
+  reporter.record({
+    name: 'Retorna lista vazia quando o Supabase retorna erro ou dados nulos',
+    description: 'Valida resiliência da função contra erros de consulta ou retorno vazio/nulo do banco de dados.',
+    input: { cenario1: 'error = Error("Erro de conexão")', cenario2: 'data = null' },
+    expected: 'Array vazio [] retornado em ambos os cenários.',
+    result: 'Array vazio [] retornado com sucesso sem lançar exceções não tratadas.',
+    status: 'PASSED',
+  });
 });
 
 test('retorna lista vazia quando nenhum imóvel tem pontuação positiva', async () => {
@@ -121,6 +168,15 @@ test('retorna lista vazia quando nenhum imóvel tem pontuação positiva', async
   );
 
   assert.deepEqual(resultado, []);
+
+  reporter.record({
+    name: 'Retorna lista vazia quando nenhum imóvel tem pontuação positiva',
+    description: 'Verifica se imóveis disponíveis sem aderência às preferências do lead são filtrados.',
+    input: { preferencia: 'Apartamento / Até 300 mil / Aldeota', imoveisDisponiveis: 'Terreno / 900 mil / Centro' },
+    expected: 'Array vazio [].',
+    result: 'Nenhum imóvel pontuou e lista retornada vazia conforme esperado.',
+    status: 'PASSED',
+  });
 });
 
 test('nunca recomenda imóveis indisponíveis ou sem identificador válido', async () => {

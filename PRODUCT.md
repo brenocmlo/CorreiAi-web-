@@ -9,7 +9,8 @@ web
 ## Users
 
 - **Corretores (real estate agents)** and **admins de corretora** — the logged-in operators. They manage a property catalog, a lead pipeline (Kanban funnel: Novo → Em atendimento → Visita agendada → Proposta → Fechado), and act on leads the AI assistant has already pre-qualified.
-- **Visitantes / leads** — people arriving at the public landing page looking for a property to buy or rent. They either fill a quick capture form or talk to the AI assistant directly. They are evaluating whether to trust this company with their housing search, not comparing CRM software.
+- **Imobiliárias avaliando o CorreAI** — buyers of the software arriving at `/`. They can try a working demo with example agencies, photos and property prices before using the platform.
+- **Visitantes / leads de cada imobiliária** — home buyers, renters or owners arriving at `/imobiliaria/{slug}`. They browse that agency's published inventory and can leave contact details for its team.
 
 ## Product Purpose
 
@@ -21,12 +22,13 @@ The differentiator confirmed by the user: **the AI does the pre-sales work, not 
 
 ## Operating Context
 
-- The generic landing page (`/`) introduces CorreAI. Each agency can activate its own visitor landing page at `/imobiliaria/{slug}` from `/admin` and share that exact URL with clients.
+- The main landing page (`/`) sells the CorreAI system. Its chat opens in demo mode, with two fictional agencies and seven example properties from a shared, versioned dataset (`src/lib/assistant-demo.ts`). Visitors can switch agencies, view photos/prices and test the conversation without login, a shared link or personal data. Demo mode never reads or writes real agencies, profiles or leads.
+- Each real agency can activate its own visitor landing page at `/imobiliaria/{slug}` from `/admin` and share that exact URL with clients.
 - The assistant opens in a chat dialog over the current page, with a full-height layout on mobile. The legacy `/assistente` URL opens this dialog and returns to the appropriate home page. Client accounts land on `/dashboard`.
 - `/api/imoveis` remains private. Public routes expose only available inventory and business contact of an active agency that explicitly enabled publication. A validated slug selects that agency; arbitrary company/owner IDs from request bodies never grant access. The generic landing and unlinked accounts have no global catalog.
 - The agency administrator configures the official business phone and public page in `/admin`. Published agency pages and their chat show the confirmed business number; a missing phone is reported as missing. A phone number alone does not establish that WhatsApp is available.
 - Visitors can browse and chat without a broker login. An optional quick name/email/phone form with contact authorization creates the lead in that agency's Kanban and supplies the chat with those details. This intake does not create a password, staff account or permission to use the internal CRM.
-- The landing's anonymous property showcase uses clearly illustrative example cards when the private catalog cannot be consulted.
+- The main landing's showcase and chat use the same explicitly illustrative examples. They never query the internal property API as an anonymous fallback.
 - Once a lead is captured, it lands in the agent's Kanban funnel (`/funil`) and lead list (`/leads`), where the agent moves it through stages and works it to close.
 - Agents separately manage the property catalog (`/imoveis`) — create, edit, mark status (disponível/vendido/alugado), delete with confirmation.
 

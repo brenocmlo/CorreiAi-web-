@@ -39,6 +39,12 @@ import { isSameOriginRequest } from '@/lib/request-origin';
 import { isUuid } from '@/lib/imoveis-input';
 import { boundedJson, RequestBodyError } from '@/lib/bounded-json';
 import { publicAttendanceLimit } from '@/lib/public-attendance-limit';
+import { asksForCatalog } from '@/lib/assistant-entry-flow';
+import { sharedAgencyLink } from '@/lib/assistant-shared-link';
+import { getPublicAgency } from '@/lib/public-agency';
+import { publicAgencyPath } from '@/lib/public-agency-path';
+import { getDemoAgency } from '@/lib/assistant-demo';
+import { demoAttendanceLimit } from '@/lib/assistant-demo-limit';
 import type {
   AssistantProperty,
   CaptureStatus,
@@ -149,6 +155,7 @@ export async function DELETE(request: NextRequest) {
     { ok: true },
     { headers: { 'Cache-Control': 'private, no-store' } },
   );
+  if (getDemoAgency(request.nextUrl.searchParams.get('demo'))) return response;
   response.cookies.set(ASSISTANT_COOKIE, '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -165,7 +172,10 @@ export async function POST(request: NextRequest) {
   try {
     body = await boundedJson(request, 262144);
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'JSON inválido.' }, { status: error instanceof RequestBodyError ? error.status : 400 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'JSON inválido.' },
+      { status: error instanceof RequestBodyError ? error.status : 400 },
+    );
   }
   if (!body || typeof body !== 'object' || !validMessages(body.messages))
     return NextResponse.json(
@@ -184,16 +194,29 @@ export async function POST(request: NextRequest) {
     ),
     session = assistantSession(request.cookies.get(ASSISTANT_COOKIE)?.value);
   try {
-    const scope = await assistantScope(request, session.hash);
+    const scope = await assistantScope(request, session.hash, last);
     const { auth, context, owner, hash } = scope;
+    if (scope.demoSlug) {
+      const limited = demoAttendanceLimit(request);
+      if (limited) return limited;
+    }
     if (scope.publicSlug && scope.companyId) {
-      const limited = await publicAttendanceLimit(request, scope.companyId, 'chat');
+      const limited = await publicAttendanceLimit(
+        request,
+        scope.companyId,
+        'chat',
+      );
       if (limited) return limited;
     }
     const [existing, catalog] = await Promise.all([
       hash && owner ? getAssistantLead(hash, owner) : Promise.resolve(null),
       context.catalogState === 'available'
-        ? catalogFor(scope.companyId)
+        ? scope.demoSlug
+          ? Promise.resolve({
+              data: getDemoAgency(scope.demoSlug)!.imoveis,
+              error: null,
+            })
+          : catalogFor(scope.companyId)
         : Promise.resolve({ data: [], error: null }),
     ]);
     if (catalog.error) context.catalogState = 'unavailable';
@@ -203,6 +226,11 @@ export async function POST(request: NextRequest) {
       context.catalogTypes = [...new Set(properties.map((p) => p.tipo))];
     }
     let q = qualificationFrom(messages, {}, existing?.qualificacao);
+    if (scope.demoSlug) {
+      q.nome = null;
+      q.email = null;
+      q.telefone = null;
+    }
     if (policy)
       return withSession(
         NextResponse.json({
@@ -219,7 +247,41 @@ export async function POST(request: NextRequest) {
         }),
         session.token,
       );
-    if (process.env.OPENROUTER_API_KEY && needsExtraction(q, last)) {
+    const sharedLink = !scope.publicSlug && !scope.demoSlug
+      ? sharedAgencyLink(last, request.nextUrl.origin)
+      : null;
+    if (sharedLink) {
+      const agency = sharedLink.valid
+        ? await getPublicAgency(sharedLink.slug)
+        : null;
+      return withSession(
+        NextResponse.json({
+          reply: agency
+            ? `Esse é o atendimento público de ${agency.nome}. Abra o botão abaixo para ver as ofertas dessa imobiliária e conversar com ela, sem login de corretor.`
+            : 'Não consegui verificar uma página pública ativa nesse endereço. Você pode confirmar o link de atendimento com a imobiliária?',
+          ...(agency
+            ? {
+                continuarEm: {
+                  href: publicAgencyPath(agency.public_slug),
+                  label: `Abrir atendimento de ${agency.nome}`,
+                },
+              }
+            : {}),
+          leadRegistrado: false,
+          captura: 'sem_alteracao',
+          qualificacao: q,
+          imoveis: [],
+          contexto: context,
+          sugestoes: agency ? [] : ['Não tenho esse link'],
+        }),
+        session.token,
+      );
+    }
+    if (
+      !scope.demoSlug &&
+      process.env.OPENROUTER_API_KEY &&
+      needsExtraction(q, last)
+    ) {
       const raw = await openRouterChat(extractionMessages(messages), 350);
       let extracted: unknown = {};
       try {
@@ -277,7 +339,14 @@ export async function POST(request: NextRequest) {
             (p) => p.id !== selectedMatch.id,
           ),
         ].slice(0, 3)
-      : selectPortfolio(properties, q).slice(0, 3);
+      : asksForCatalog(last) &&
+          !q.tipoImovel &&
+          !q.bairro &&
+          q.orcamentoMax === null &&
+          q.objetivo !== 'alugar' &&
+          q.objetivo !== 'vender'
+        ? properties.slice(0, 3)
+        : selectPortfolio(properties, q).slice(0, 3);
     if (
       q.imovelInteresseId &&
       !matches.some((p) => p.id === q.imovelInteresseId)
@@ -299,12 +368,16 @@ export async function POST(request: NextRequest) {
           [
             {
               role: 'system',
-              content: conversationPrompt(
-                q,
-                matches,
-                context.catalogState === 'available',
-                last,
-              ),
+              content:
+                (scope.demoSlug
+                  ? 'Esta é uma demonstração comercial do sistema CorreAI. As empresas, imóveis e valores são fictícios. Não solicite dados pessoais nem afirme cadastro, contato ou visita real.\n'
+                  : '') +
+                conversationPrompt(
+                  q,
+                  matches,
+                  context.catalogState === 'available',
+                  last,
+                ),
             },
             ...messages.map((m) => ({ role: m.role, content: m.text })),
           ],
@@ -320,7 +393,9 @@ export async function POST(request: NextRequest) {
       }
     }
     reply = directedReply(reply, messages, q, matches, context);
-    let captura: CaptureStatus = 'indisponivel';
+    let captura: CaptureStatus = scope.demoSlug
+      ? 'demonstracao'
+      : 'indisponivel';
     try {
       if (hash && owner)
         captura = await saveAssistantLead(
@@ -333,7 +408,7 @@ export async function POST(request: NextRequest) {
       aviso =
         'Não consegui salvar o atendimento no funil agora. O envio ao corretor não foi confirmado; tente novamente.';
     }
-    if (!owner && wantsContact(last))
+    if (!scope.demoSlug && !owner && wantsContact(last))
       aviso = scope.publicSlug
         ? 'A imobiliária ainda está preparando a equipe de atendimento. Use o telefone comercial para falar com ela.'
         : 'Para encaminhar o atendimento, entre em uma conta vinculada à imobiliária.';
@@ -344,9 +419,11 @@ export async function POST(request: NextRequest) {
         captura,
         qualificacao: q,
         imoveis: matches.map((row) =>
-          scope.publicSlug
-            ? presentPublicProperty(row, scope.publicSlug)
-            : presentImovel(row),
+          scope.demoSlug
+            ? row
+            : scope.publicSlug
+              ? presentPublicProperty(row, scope.publicSlug)
+              : presentImovel(row),
         ),
         contexto: context,
         sugestoes: turnSuggestions(messages, q, matches, context),

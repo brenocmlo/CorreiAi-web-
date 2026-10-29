@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   X,
+  FileText,
 } from 'lucide-react';
 import { homeForRole } from '@/lib/auth-policy';
 import { useAuth } from '@/hooks/useAuth';
@@ -50,7 +51,10 @@ export default function Sidebar() {
     ...(isAdmin ? [{ href: '/admin', label: 'Equipe', icon: ShieldCheck }] : []),
   ];
 
-  const navLinksLead: NavItem[] = [{ href: '/dashboard', label: 'Início', icon: LayoutDashboard }];
+  const navLinksLead: NavItem[] = [
+    { href: '/dashboard', label: 'Início', icon: LayoutDashboard },
+    { href: '/cliente', label: 'Meu atendimento', icon: FileText },
+  ];
   const navLinksSuperAdmin: NavItem[] = [
     { href: '/admin/imobiliarias', label: 'Imobiliárias', icon: Building },
   ];

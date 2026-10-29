@@ -11,8 +11,36 @@ import {
 } from './public-agency';
 import { publicSessionHash } from './assistant-public-session';
 import type { AssistantContext } from '../types/assistant';
+import { getDemoAgency, demoAgencyMention } from './assistant-demo';
 
-export async function assistantScope(request: NextRequest, cookieHash: string) {
+export async function assistantScope(
+  request: NextRequest,
+  cookieHash: string,
+  latestMessage = '',
+) {
+  if (
+    request.nextUrl.searchParams.has('demo') &&
+    !request.nextUrl.searchParams.has('imobiliaria')
+  ) {
+    const requested = getDemoAgency(request.nextUrl.searchParams.get('demo'));
+    if (!requested) throw new PublicAgencyNotFound();
+    const agency = getDemoAgency(demoAgencyMention(latestMessage)) ?? requested;
+    const context: AssistantContext = {
+      mode: 'demo',
+      demoSlug: agency.slug,
+      catalogState: 'available',
+      company: { nome: agency.nome, telefone: null },
+    };
+    return {
+      auth: null,
+      context,
+      companyId: null,
+      publicSlug: null,
+      demoSlug: agency.slug,
+      owner: null,
+      hash: null,
+    };
+  }
   if (request.nextUrl.searchParams.has('imobiliaria')) {
     const agency = await getPublicAgency(
       request.nextUrl.searchParams.get('imobiliaria'),
@@ -29,6 +57,7 @@ export async function assistantScope(request: NextRequest, cookieHash: string) {
       context,
       companyId: agency.id,
       publicSlug: agency.public_slug,
+      demoSlug: null,
       owner: await publicAgencyOwner(agency.id),
       hash: publicSessionHash(cookieHash, agency.id),
     };
@@ -40,6 +69,7 @@ export async function assistantScope(request: NextRequest, cookieHash: string) {
     context,
     companyId: auth?.imobiliariaId ?? null,
     publicSlug: null,
+    demoSlug: null,
     owner: auth ? await assistantOwner(auth) : null,
     hash: auth
       ? createHash('sha256')

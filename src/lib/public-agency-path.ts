@@ -12,5 +12,5 @@ export function publicAgencySlug(pathname: string): string | null {
 }
 export const publicAgencyPath = (slug: string) =>
   `/imobiliaria/${encodeURIComponent(slug)}`;
-export const assistantApiUrl = (slug?: string | null) =>
-  `/api/assistente${slug ? `?imobiliaria=${encodeURIComponent(slug)}` : ''}`;
+export const assistantApiUrl = (slug?: string | null, demoSlug?: string | null) =>
+  `/api/assistente${slug ? `?imobiliaria=${encodeURIComponent(slug)}` : demoSlug ? `?demo=${encodeURIComponent(demoSlug)}` : ''}`;

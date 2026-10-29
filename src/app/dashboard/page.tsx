@@ -144,6 +144,13 @@ function DashboardLead() {
           Conversar com a CorreAI
         </OpenChatButton>
       </header>
+      <Link
+        href="/cliente"
+        className="rounded-2xl border border-indigo-100 bg-indigo-50 p-5 text-indigo-700 shadow-sm hover:bg-indigo-100 transition-colors"
+      >
+        <span className="block font-semibold">Meu atendimento →</span>
+        <span className="mt-1 block text-sm text-indigo-600/80">Acesse seu convite, documentos e mensagens com o corretor.</span>
+      </Link>
       <section aria-label="Imóveis disponíveis">
         <h2 className="mb-4 text-lg font-bold text-slate-900">Imóveis para você</h2>
         {error ? (

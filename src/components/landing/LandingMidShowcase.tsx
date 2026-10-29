@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ArrowUpRight } from 'lucide-react';
+import { DEMO_AGENCIES } from '@/lib/assistant-demo';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger);
@@ -54,92 +55,14 @@ function imovelParaCard(imovel: ImovelPublico): Card {
   };
 }
 
-// Cada imobiliária tem catálogo próprio e privado (isolamento multi-tenant).
-// A vitrine só mostra imóveis que o corretor marcou explicitamente como
-// "destaque na landing" (GET /api/imoveis/destaque, público). Sem nenhum
-// destaque cadastrado ainda, cai nestas fichas ilustrativas.
-const ILLUSTRATIVE_CARDS: Card[] = [
-  {
-    id: 'apt-1',
-    tipo: 'Apartamento',
-    titulo: 'Apartamento com varanda gourmet',
-    descricao: 'Planta inteligente, iluminação natural e localização prática.',
-    preco: 'R$ 980.000',
-    area: '84 m²',
-    tag: 'Ideal para viver bem',
-    imagem: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: 'house-1',
-    tipo: 'Casa',
-    titulo: 'Casa com quintal e área gourmet',
-    descricao: 'Ambientes integrados, espaço para família e conforto no dia a dia.',
-    preco: 'R$ 1.250.000',
-    area: '145 m²',
-    tag: 'Famílias em expansão',
-    imagem: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: 'apt-2',
-    tipo: 'Apartamento',
-    titulo: 'Apartamento perto do metrô',
-    descricao: 'Conveniência e mobilidade para quem tem rotina acelerada.',
-    preco: 'R$ 690.000',
-    area: '62 m²',
-    tag: 'Primeiro imóvel',
-    imagem: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: 'house-2',
-    tipo: 'Casa',
-    titulo: 'Casa em condomínio com segurança',
-    descricao: 'Tranquilidade, lazer e áreas pensadas para crianças e pets.',
-    preco: 'R$ 1.480.000',
-    area: '170 m²',
-    tag: 'Tranquilidade garantida',
-    imagem: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: 'apt-3',
-    tipo: 'Apartamento',
-    titulo: 'Apartamento com vista e lazer',
-    descricao: 'Varanda ampla, áreas comuns completas e acabamento moderno.',
-    preco: 'R$ 1.120.000',
-    area: '93 m²',
-    tag: 'Casais e lifestyle',
-    imagem: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: 'house-3',
-    tipo: 'Casa',
-    titulo: 'Casa térrea com integração total',
-    descricao: 'Conforto térmico, circulação fluida e cozinha integrada.',
-    preco: 'R$ 1.620.000',
-    area: '200 m²',
-    tag: 'Começo de vida novo',
-    imagem: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: 'apt-4',
-    tipo: 'Apartamento',
-    titulo: 'Apartamento moderno e silencioso',
-    descricao: 'Planta bem distribuída com excelente ventilação.',
-    preco: 'R$ 740.000',
-    area: '70 m²',
-    tag: 'Praticidade',
-    imagem: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: 'house-4',
-    tipo: 'Casa',
-    titulo: 'Casa com iluminação natural',
-    descricao: 'Espaços abertos e um quintal perfeito para receber amigos.',
-    preco: 'R$ 1.900.000',
-    area: '230 m²',
-    tag: 'Receber com estilo',
-    imagem: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=600&q=80',
-  },
-];
+// A vitrine e a IA usam os mesmos dados fictícios de demonstração quando não
+// há nenhum imóvel marcado como destaque (GET /api/imoveis/destaque, público).
+// A vitrine e a IA usam os mesmos dados fictícios de demonstração.
+const ILLUSTRATIVE_CARDS: Card[] = DEMO_AGENCIES.flatMap(agency => agency.imoveis.map(property => ({
+  id: property.id, tipo: property.tipo, titulo: property.tipo+' em '+property.bairro, descricao: property.descricao || '',
+  preco: property.valor.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}),
+  area: property.metragem+' m²', tag: agency.nome, imagem: property.imagem_url || agency.imagem,
+})));
 
 // Ângulos e quedas fixos (não aleatórios) para a fileira não parecer uma
 // grade impressa — cada ficha pende como se alguém tivesse colado à mão.
@@ -218,12 +141,13 @@ export function LandingMidShowcase() {
           className="rounded-[3px] border border-[var(--shop-brass)]/20 bg-[var(--shop-panel)] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.6)] sm:p-8"
         >
           <h2 className="font-display max-w-xl text-2xl font-semibold leading-tight text-[var(--shop-ink-text)] sm:text-3xl">
-            Fichas coladas no vidro.
+            Um catálogo para cada imobiliária.
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-[var(--shop-text-dim)]">
-            Imóveis que corretores escolheram destacar na vitrine. O catálogo completo de cada
-            imobiliária fica no link de atendimento que ela compartilha com você. Arraste para o
-            lado para ver todas as fichas.
+Imóveis que corretores escolheram destacar na vitrine. Sem nenhum destaque
+            cadastrado, estes são os mesmos imóveis fictícios que a IA usa na demonstração —
+            escolha uma imobiliária no chat e teste buscas por tipo, bairro e orçamento. Arraste
+            para o lado para ver todas as fichas.
           </p>
 
           <div className="mt-8">

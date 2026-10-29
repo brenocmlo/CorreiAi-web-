@@ -7,6 +7,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ArrowUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAssistant } from '@/contexts/AssistantContext';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger);
@@ -109,6 +110,7 @@ const MarqueeRow = () => (
 );
 
 export function CinematicFooter() {
+  const { openChat } = useAssistant();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const linksRef = useRef<HTMLDivElement>(null);
@@ -179,17 +181,18 @@ export function CinematicFooter() {
             ref={headingRef}
             className="font-display max-w-xl text-4xl font-semibold leading-[1.05] tracking-[-0.02em] text-[var(--shop-ink-text)] sm:text-6xl"
           >
-            A vitrine está aberta.
+            Veja o CorreAI em ação.
           </h2>
 
           <div ref={linksRef} className="mt-10 flex w-full flex-col items-center gap-5">
             <div className="flex w-full flex-wrap justify-center gap-3">
               <MagneticButton
-                as={Link}
-                href="/cadastro"
+                as="button"
+                type="button"
+                onClick={openChat}
                 className="flex items-center gap-2.5 rounded-[4px] bg-[var(--shop-brass)] px-8 py-4 text-sm font-semibold text-[#171206] hover:bg-[#e8cc6c]"
               >
-                Começar grátis
+                Testar a demonstração
               </MagneticButton>
               <MagneticButton
                 as={Link}
