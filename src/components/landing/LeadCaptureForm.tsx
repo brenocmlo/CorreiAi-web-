@@ -60,7 +60,7 @@ export function LeadCaptureForm() {
       }
 
       setSuccess(true);
-      router.push('/assistente');
+      setTimeout(() => router.push('/assistente'), 1800);
     } catch {
       setError('Não foi possível enviar. Tente novamente.');
     } finally {
@@ -190,7 +190,7 @@ export function LeadCaptureForm() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || success}
           className="group mt-1 flex w-full items-center justify-center gap-2 rounded-full bg-white py-3 text-sm font-semibold text-[#0a0400] transition hover:scale-[1.01] hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? (

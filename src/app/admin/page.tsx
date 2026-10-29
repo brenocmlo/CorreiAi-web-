@@ -99,8 +99,8 @@ export default function AdminPage() {
               ))}
             </div>
           ) : (
-            <div className="bg-slate-900/40 border border-slate-800 rounded-2xl overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="bg-slate-900/40 border border-slate-800 rounded-2xl overflow-x-auto">
+              <table className="w-full min-w-[640px] text-sm">
                 <thead>
                   <tr className="border-b border-slate-800 text-left">
                     <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase">Nome</th>
