@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import test, { afterEach } from 'node:test';
 import { NextRequest } from 'next/server';
 
+process.env.JWT_SECRET='recommendation-route-test-secret-32-chars';
+const { signToken } = await import('../src/lib/jwt.ts');
+const token=signToken({uid:'fixture-owner',role:'corretor',email:'fixture@example.invalid',nome_completo:'Fixture'});
 const { GET } = await import('../src/app/api/imoveis/recomendacoes/route.ts');
 const { setServerSupabaseClientOverride } = await import('../src/lib/supabase.ts');
 
@@ -10,6 +13,7 @@ afterEach(() => setServerSupabaseClientOverride(null));
 function mockDatabase(rows) {
   return {
     from(table) {
+      if (table==='perfis') return {select(){return this},eq(){return this},maybeSingle(){return Promise.resolve({data:{id:'fixture-owner',role:'corretor',ativo:true,imobiliaria_id:null},error:null})}};
       assert.equal(table, 'imoveis');
       const query = {
         select() { return this; },
@@ -34,7 +38,7 @@ test('API de recomendações retorna somente imóveis disponíveis do banco', as
     { id: 'casa-2', tipo: 'casa', endereco: 'Rua B', bairro: 'Aldeota', valor: 250000, status: 'vendido' },
   ];
   setServerSupabaseClientOverride(mockDatabase(rows));
-  const req = new NextRequest('http://localhost/api/imoveis/recomendacoes?tipoImovel=Casa&bairro=Aldeota');
+  const req = new NextRequest('http://localhost/api/imoveis/recomendacoes?tipoImovel=Casa&bairro=Aldeota',{headers:{Cookie:`auth_token=${token}`}});
   const res = await GET(req);
   assert.equal(res.status, 200);
   const data = await res.json();

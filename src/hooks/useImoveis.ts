@@ -130,11 +130,7 @@ export function useImoveis() {
 
       if (uploadError) throw uploadError;
 
-      const { data } = supabase.storage
-        .from(IMOVEIS_STORAGE_BUCKET)
-        .getPublicUrl(path);
-
-      return data.publicUrl;
+      return `/api/imoveis/imagem?path=${encodeURIComponent(path)}`;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao enviar imagem.');
       return null;

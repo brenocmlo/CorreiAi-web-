@@ -10,8 +10,7 @@ export const config = {
     '/funil',
     '/admin',
     '/admin/:path*',
-    '/imoveis/novo',
-    '/imoveis/:id/editar',
+    '/imoveis/:path*',
   ],
 };
 

@@ -3,7 +3,7 @@ import { getAuthFromRequest } from '@/lib/api-auth';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
-  const auth = getAuthFromRequest(request);
+  const auth = await getAuthFromRequest(request);
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
   }
@@ -11,14 +11,17 @@ export async function GET(request: NextRequest) {
   if (auth.role !== 'admin_corretora' && auth.role !== 'super_admin') {
     return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
   }
+  if (auth.role !== 'super_admin' && !auth.imobiliariaId) return NextResponse.json({ error: 'Imobiliária não vinculada.' }, { status: 403 });
 
   const supabase = createServerSupabaseClient();
 
-  const { data: usuarios, error } = await supabase
+  let usersQuery = supabase
     .from('perfis')
     .select('id, nome_completo, email, cpf, creci, role, criado_em')
     .in('role', ['corretor', 'admin_corretora'])
     .order('criado_em', { ascending: false });
+  if (auth.role !== 'super_admin') usersQuery = usersQuery.eq('imobiliaria_id', auth.imobiliariaId);
+  const { data: usuarios, error } = await usersQuery;
 
   if (error) {
     return NextResponse.json({ error: 'Erro ao buscar usuários' }, { status: 500 });
@@ -26,7 +29,7 @@ export async function GET(request: NextRequest) {
 
   const { data: leads } = await supabase
     .from('leads')
-    .select('corretor_id');
+    .select('corretor_id').in('corretor_id', (usuarios ?? []).map(u => u.id));
 
   const leadsPorUsuario: Record<string, number> = {};
   if (leads) {
@@ -46,7 +49,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const auth = getAuthFromRequest(request);
+  const auth = await getAuthFromRequest(request);
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
   }
@@ -54,6 +57,7 @@ export async function PATCH(request: NextRequest) {
   if (auth.role !== 'admin_corretora' && auth.role !== 'super_admin') {
     return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
   }
+  if (auth.role !== 'super_admin' && !auth.imobiliariaId) return NextResponse.json({ error: 'Imobiliária não vinculada.' }, { status: 403 });
 
   const { userId, role } = await request.json();
 
@@ -67,14 +71,17 @@ export async function PATCH(request: NextRequest) {
 
   const supabase = createServerSupabaseClient();
 
-  const { error } = await supabase
+  let updateQuery = supabase
     .from('perfis')
     .update({ role })
-    .eq('id', userId);
+    .eq('id', userId).in('role', ['corretor', 'admin_corretora']);
+  if (auth.role !== 'super_admin') updateQuery = updateQuery.eq('imobiliaria_id', auth.imobiliariaId);
+  const { error, data } = await updateQuery.select('id').maybeSingle();
 
   if (error) {
     return NextResponse.json({ error: 'Erro ao atualizar permissão' }, { status: 500 });
   }
+  if (!data) return NextResponse.json({ error: 'Usuário não encontrado.' }, { status: 404 });
 
   return NextResponse.json({ success: true });
 }

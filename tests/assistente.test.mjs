@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import test, { afterEach } from 'node:test';
 import { randomUUID } from 'node:crypto';
 import { NextRequest } from 'next/server';
+process.env.JWT_SECRET='assistant-test-secret-with-at-least-32-characters';
+const { signToken } = await import('../src/lib/jwt.ts');
+let authCookie = '';
 const { POST, GET, DELETE } = await import('../src/app/api/assistente/route.ts');
 const { setServerSupabaseClientOverride } = await import('../src/lib/supabase.ts');
 const originalFetch = globalThis.fetch;
@@ -16,11 +19,12 @@ afterEach(() => {
   setServerSupabaseClientOverride(null);
 });
 function request(messages, { cookie, imovelId, origin } = {}) {
-  return new NextRequest('http://localhost/api/assistente', { method:'POST', headers:{'Content-Type':'application/json', ...(cookie?{Cookie:cookie}:{}), ...(origin?{Origin:origin}:{})}, body:JSON.stringify({messages,...(imovelId?{imovelId}:{})}) });
+  return new NextRequest('http://localhost/api/assistente', { method:'POST', headers:{'Content-Type':'application/json', Cookie:[authCookie,cookie].filter(Boolean).join('; '), ...(origin?{Origin:origin}:{})}, body:JSON.stringify({messages,...(imovelId?{imovelId}:{})}) });
 }
 function database({ properties = [], unavailable = false } = {}) {
   const leads = [];
   const owner = randomUUID();
+  authCookie = `auth_token=${signToken({uid:owner,email:'broker@example.invalid',nome_completo:'Fixture',role:'corretor'})}`;
   const db = {
     leads, owner,
     from(table) {
@@ -31,8 +35,8 @@ function database({ properties = [], unavailable = false } = {}) {
         update(row){action='update';payload=row;return this},
         execute(single) {
           if(unavailable && table==='leads' && action==='insert')return {data:null,error:{code:'500'}};
-          if(table==='perfis')return {data:[{id:owner}],error:null};
-          if(table==='imoveis')return {data:properties,error:null};
+          if(table==='perfis')return {data:single?{id:owner,role:'corretor',ativo:true,imobiliaria_id:null}:[{id:owner}],error:null};
+          if(table==='imoveis')return {data:properties.filter(p=>filters.every(([key,value])=>(key==='proprietario_id'?(p[key]??owner):p[key])===value)),error:null};
           let rows=leads.filter(row=>filters.every(([key,value])=>row[key]===value));
           if(action==='insert'){
             const row={id:randomUUID(),...payload};leads.push(row);rows=[row];
@@ -111,17 +115,17 @@ test('contato completo cria lead Novo, resumo e cookie privado sem expor IDs int
 test('mesma conversa atualiza triagem sem duplicar nem regredir funil/proprietário',async()=>{
   const db=database();provider([JSON.stringify({nome:'Ana Silva'}),'Recebi sua preferência.']);
   const first=await POST(request([user(contact)]));const cookie=cookieOf(first);
-  const row=db.leads[0];row.etapa='fechado';row.corretor_id='corretor-responsavel';
+  const row=db.leads[0];row.etapa='fechado';
   const second=await POST(request([user('Agora quero apartamento até 500 mil.')],{cookie}));
   const data=await second.json();
   assert.equal(data.captura,'atualizado');assert.equal(db.leads.length,1);
   assert.equal(row.qualificacao.tipoImovel,'Apartamento');assert.equal(row.qualificacao.orcamentoMax,500000);
-  assert.equal(row.etapa,'fechado');assert.equal(row.corretor_id,'corretor-responsavel');
+  assert.equal(row.etapa,'fechado');assert.equal(row.corretor_id,db.owner);
 });
 test('sessão nova não recupera nem sobrescreve dados de outra conversa',async()=>{
   const db=database();provider([JSON.stringify({nome:'Ana Silva'}),'Recebi sua busca.']);
   const first=await POST(request([user(contact)]));
-  const own=await GET(new NextRequest('http://localhost/api/assistente',{headers:{Cookie:cookieOf(first)}}));
+  const own=await GET(new NextRequest('http://localhost/api/assistente',{headers:{Cookie:authCookie+'; '+cookieOf(first)}}));
   assert.equal((await own.json()).atendimento.email,'ana@example.com');
   const anonymous=await GET(new NextRequest('http://localhost/api/assistente'));
   assert.equal((await anonymous.json()).atendimento,null);
@@ -164,7 +168,7 @@ test('falha de gravação não é apresentada como cadastro concluído',async()=
 });
 test('reiniciar conversa apaga apenas o cookie, preservando registro do corretor',async()=>{
   const db=database();provider([JSON.stringify({nome:'Ana Silva'}),'Olá.']);
-  const first=await POST(request([user(contact)]));const response=await DELETE(new NextRequest('http://localhost/api/assistente',{method:'DELETE',headers:{Cookie:cookieOf(first)}}));
+  const first=await POST(request([user(contact)]));const response=await DELETE(new NextRequest('http://localhost/api/assistente',{method:'DELETE',headers:{Cookie:authCookie+'; '+cookieOf(first)}}));
   assert.equal(response.status,200);assert.ok(response.headers.get('set-cookie').includes('Max-Age=0'));assert.equal(db.leads.length,1);
 });
 
@@ -201,4 +205,21 @@ test('resposta longa do modelo não invalida o próximo turno da conversa',async
   assert.ok(data.reply.split(/\s+/).length<=130);
   const next=await POST(request([user('Quero uma casa'),{role:'assistant',text:data.reply},user('Preciso trabalhar de casa')],{cookie:cookieOf(first)}));
   assert.equal(next.status,200);
+});
+
+
+test('visitante não consulta portfólio nem encaminha contato para corretor global',async()=>{
+  const foreign = {id:randomUUID(),tipo:'casa',bairro:'Centro',endereco:'Rua privada',valor:200000,status:'disponivel'};
+  const db=database({properties:[foreign]});authCookie='';
+  const calls=provider(['{}','Posso entender sua busca.']);
+  const result=await POST(request([user(contact)])); const data=await result.json();
+  assert.equal(result.status,200);assert.deepEqual(data.imoveis,[]);assert.equal(db.leads.length,0);
+  assert.ok(!calls[1].body.messages[0].content.includes(foreign.id));
+});
+
+test('assistente autenticado não envia imóvel de outro proprietário ao provedor',async()=>{
+  const foreign={id:randomUUID(),proprietario_id:randomUUID(),tipo:'casa',bairro:'Centro',endereco:'Rua privada',valor:200000,status:'disponivel'};
+  database({properties:[foreign]});const calls=provider();
+  const data=await (await POST(request([user('Quero casa até 300 mil')]))).json();
+  assert.deepEqual(data.imoveis,[]);assert.ok(!calls[1].body.messages[0].content.includes(foreign.id));
 });

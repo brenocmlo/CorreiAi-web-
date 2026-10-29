@@ -4,7 +4,7 @@ import { getAuthFromRequest } from '@/lib/api-auth';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
-  const auth = getAuthFromRequest(request);
+  const auth = await getAuthFromRequest(request);
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
   }
@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
   if (auth.role !== 'admin_corretora' && auth.role !== 'super_admin') {
     return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
   }
+  if (!auth.imobiliariaId) return NextResponse.json({ error: 'Vincule o administrador a uma imobiliária antes de cadastrar corretores.' }, { status: 403 });
 
   try {
     const { nome_completo, email, cpf, creci, senha } = await request.json();
@@ -69,6 +70,7 @@ export async function POST(request: NextRequest) {
           creci,
           senha_hash,
           role: 'corretor',
+          imobiliaria_id: auth.imobiliariaId,
         },
       ])
       .select()

@@ -6,7 +6,7 @@ import { createServerSupabaseClient } from '@/lib/supabase';
 import { IMOVEIS_STORAGE_BUCKET } from '@/lib/supabase-config';
 
 export async function POST(request: NextRequest) {
-  const auth = getAuthFromRequest(request);
+  const auth = await getAuthFromRequest(request);
   if (!auth) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   if (auth.role === 'lead') return NextResponse.json({ error: 'Sem permissão.' }, { status: 403 });
 

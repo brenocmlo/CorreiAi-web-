@@ -9,7 +9,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 const ETAPAS_VALIDAS = new Set<EtapaFunil>(ETAPAS_FUNIL.map((etapa) => etapa.id));
 
 export async function GET(request: NextRequest, context: RouteContext) {
-  const auth = getAuthFromRequest(request);
+  const auth = await getAuthFromRequest(request);
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   if (!isUuid(id)) return NextResponse.json({ error: 'ID inválido.' }, { status: 400 });
   const supabase = createServerSupabaseClient();
   let query = supabase.from('leads').select('*').eq('id', id);
-  if (auth.role === 'corretor') query = query.eq('corretor_id', auth.uid);
+  query = query.eq('corretor_id', auth.uid);
   const { data, error } = await query.maybeSingle();
 
   if (error) {
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const auth = getAuthFromRequest(request);
+  const auth = await getAuthFromRequest(request);
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
@@ -76,7 +76,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     .from('leads')
     .update(updatePayload)
     .eq('id', id);
-  if (auth.role === 'corretor') query = query.eq('corretor_id', auth.uid);
+  query = query.eq('corretor_id', auth.uid);
   const { data, error } = await query.select('*').maybeSingle();
 
   if (error) {
@@ -90,7 +90,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
-  const auth = getAuthFromRequest(request);
+  const auth = await getAuthFromRequest(request);
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
@@ -100,7 +100,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   if (!isUuid(id)) return NextResponse.json({ error: 'ID inválido.' }, { status: 400 });
   const supabase = createServerSupabaseClient();
   let query = supabase.from('leads').delete().eq('id', id);
-  if (auth.role === 'corretor') query = query.eq('corretor_id', auth.uid);
+  query = query.eq('corretor_id', auth.uid);
   const { data, error } = await query.select('id').maybeSingle();
 
   if (error) {

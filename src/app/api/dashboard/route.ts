@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthFromRequest } from '@/lib/api-auth';
 import { createServerSupabaseClient } from '@/lib/supabase';
+import { scopeCatalog } from '@/lib/catalog-access';
 
 export async function GET(request: NextRequest) {
-  const auth = getAuthFromRequest(request);
+  const auth = await getAuthFromRequest(request);
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
   }
@@ -35,9 +36,9 @@ export async function GET(request: NextRequest) {
 
   const taxaConversao = total > 0 ? Math.round((fechados / total) * 100) : 0;
 
-  const { data: imoveis, error: imoveisError } = await supabase
+  const { data: imoveis, error: imoveisError } = await scopeCatalog(supabase
     .from('imoveis')
-    .select('tipo, valor')
+    .select('tipo, valor'), auth)
     .eq('status', 'disponivel');
 
   let faturamentoEstimado = 0;

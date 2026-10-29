@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       .eq('email', email)
       .maybeSingle();
 
-    if (error || !perfil) {
+    if (error || !perfil || perfil.ativo !== true) {
       return NextResponse.json(
         { error: 'E-mail ou senha incorretos.' },
         { status: 401 }

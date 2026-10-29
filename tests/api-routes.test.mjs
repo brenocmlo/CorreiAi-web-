@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import { NextRequest } from 'next/server.js';
 
 process.env.JWT_SECRET = 'segredo-de-teste-para-rotas-123456';
-const { signToken } = await import('../src/lib/jwt.ts');
+const { signToken, verifyToken } = await import('../src/lib/jwt.ts');
 const { setServerSupabaseClientOverride } = await import('../src/lib/supabase.ts');
 const { POST: loginHandler } = await import('../src/app/api/auth/login/route.ts');
 const { POST: cadastroHandler } = await import('../src/app/api/auth/cadastro/route.ts');
@@ -12,12 +12,19 @@ const { GET: getLeadsHandler, POST: postLeadsHandler } = await import('../src/ap
 const { POST: publicLeadHandler } = await import('../src/app/api/leads/public/route.ts');
 const { GET: getLeadHandler, PATCH: patchLeadHandler, DELETE: deleteLeadHandler } = await import('../src/app/api/leads/[id]/route.ts');
 
+const fixtureProfiles = new Map();
+const fixtureOrg = '33333333-3333-4333-8333-333333333333';
+const publicToken = () => signToken({uid:'lead-fixture',email:'lead@example.invalid',role:'lead',nome_completo:'Fixture'});
+beforeEach(() => { fixtureProfiles.clear(); setServerSupabaseClientOverride(createMockSupabase()); });
+
 function createRequest(url, { method = 'GET', body = null, token = null } = {}) {
   const headers = new Headers();
   if (body !== null) {
     headers.set('Content-Type', 'application/json');
   }
   if (token) {
+    const claims = verifyToken(token);
+    fixtureProfiles.set(claims.uid, {id:claims.uid,role:claims.role,ativo:true,imobiliaria_id:claims.role === 'lead' ? fixtureOrg : null});
     headers.set('cookie', `auth_token=${token}`);
   }
   return new NextRequest(url, {
@@ -68,6 +75,7 @@ function createMockSupabase(handlers = {}) {
           return this;
         },
         maybeSingle() {
+          if (table === 'perfis' && queryState.selectFields === 'id,role,ativo,imobiliaria_id') return Promise.resolve({data:fixtureProfiles.get(queryState.filters.find(f=>f.col==='id')?.val)??null,error:null});
           if (handler.maybeSingle) return handler.maybeSingle(queryState);
           return Promise.resolve({ data: handler.data ?? null, error: handler.error ?? null });
         },
@@ -142,6 +150,7 @@ test('auth/login rejeita credenciais inválidas quando a senha está incorreta (
             id: 'corretor-1',
             email: 'corretor@teste.com',
             senha_hash: hashCorreto,
+            ativo: true,
             role: 'corretor',
             nome_completo: 'Corretor Silva',
           },
@@ -171,6 +180,7 @@ test('auth/login autentica com sucesso e define o cookie auth_token (200)', asyn
             id: 'corretor-1',
             email: 'corretor@teste.com',
             senha_hash: hashCorreto,
+            ativo: true,
             role: 'corretor',
             nome_completo: 'Corretor Silva',
           },
@@ -376,7 +386,7 @@ test('leads filtra a listagem pelo corretor logado e retorna leads mapeados (200
   assert.deepEqual(filtrosAplicados, [{ col: 'corretor_id', val: 'corretor-42' }]);
 });
 
-test('leads não restringe por corretor_id quando o usuário é administrador (200)', async () => {
+test('leads de administrador também são privados por responsável (200)', async () => {
   const tokenAdmin = signToken({
     uid: 'admin-1',
     email: 'admin@teste.com',
@@ -400,7 +410,7 @@ test('leads não restringe por corretor_id quando o usuário é administrador (2
   assert.equal(res.status, 200);
 
   const temFiltroCorretor = filtrosAplicados.some((f) => f.col === 'corretor_id');
-  assert.equal(temFiltroCorretor, false);
+  assert.equal(temFiltroCorretor, true);
 });
 
 test('leads valida payload na criação de novo lead e rejeita dados inválidos (400)', async () => {
@@ -484,11 +494,11 @@ test('leads cria lead associado ao corretor autenticado (201)', async () => {
   assert.equal(registroInserido.etapa, 'novo');
 });
 
-test('captura pública rejeita corpo inválido sem acessar o banco', async () => {
+test('captura anônima exige conta antes de registrar contato', async () => {
   for (const body of [null, [], {}, { nome: 'Ana' }]) {
     const req = createRequest('http://localhost/api/leads/public', { method: 'POST', body });
     const res = await publicLeadHandler(req);
-    assert.equal(res.status, 400);
+    assert.equal(res.status, 401);
   }
 });
 
@@ -512,13 +522,13 @@ test('captura pública atribui a corretor ativo e sempre inicia em Novo', async 
       },
     },
   }));
-  const req = createRequest('http://localhost/api/leads/public', { method: 'POST', body: {
+  const req = createRequest('http://localhost/api/leads/public', { method: 'POST', token: publicToken(), body: {
     nome: 'Ana Silva', telefone: '85999990000', email: 'ana@example.com',
     faixaOrcamento: 'Até R$ 300 mil', tipoImovel: 'Casa', etapa: 'fechado',
   } });
   const res = await publicLeadHandler(req);
   assert.equal(res.status, 201);
-  assert.deepEqual(filtros, [{ col: 'role', val: 'corretor' }, { col: 'ativo', val: true }]);
+  assert.deepEqual(filtros, [{ col: 'role', val: 'corretor' }, { col: 'ativo', val: true }, { col: 'imobiliaria_id', val: fixtureOrg }]);
   assert.equal(inserido.corretor_id, 'corretor-ativo');
   assert.equal(inserido.etapa, 'novo');
 });
@@ -529,7 +539,7 @@ test('captura pública não insere lead quando não há corretor ativo', async (
     perfis: { execute: () => ({ data: [], error: null }) },
     leads: { single: () => { houveInsert = true; return { data: null, error: null }; } },
   }));
-  const req = createRequest('http://localhost/api/leads/public', { method: 'POST', body: {
+  const req = createRequest('http://localhost/api/leads/public', { method: 'POST', token: publicToken(), body: {
     nome: 'Ana Silva', telefone: '85999990000', email: 'ana@example.com',
     faixaOrcamento: 'Até R$ 300 mil', tipoImovel: 'Casa',
   } });

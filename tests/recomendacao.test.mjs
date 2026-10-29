@@ -3,38 +3,14 @@ import test from 'node:test';
 
 import { recomendarImoveis } from '../src/lib/recomendacao.ts';
 
-function createMockSupabase({ data = null, error = null } = {}) {
-  const query = {
-    ilike() {
-      return this;
-    },
-    then(onFulfilled) {
-      return Promise.resolve({ data, error }).then(onFulfilled);
-    },
-  };
-
-  return {
-    from(table) {
-      assert.equal(table, 'imoveis');
-      return {
-        select() {
-          return {
-            eq(field, value) {
-              assert.equal(field, 'status');
-              assert.equal(value, 'disponivel');
-              return {
-                order(orderField, { ascending }) {
-                  assert.equal(orderField, 'valor');
-                  assert.equal(ascending, true);
-                  return query;
-                },
-              };
-            },
-          };
-        },
-      };
-    },
-  };
+const access = {uid:'fixture-owner',role:'corretor',imobiliariaId:null};
+function createMockSupabase({data=null,error=null}={}) {
+  const query = { select(){return this}, eq(field,value){
+    if(field==='proprietario_id') assert.equal(value,access.uid);
+    else { assert.equal(field,'status'); assert.equal(value,'disponivel'); }
+    return this;
+  }, order(){return this}, then(resolve){return Promise.resolve({data,error}).then(resolve)} };
+  return {from(table){assert.equal(table,'imoveis');return query}};
 }
 
 const baseImovel = {
@@ -71,7 +47,7 @@ test('calcula pontuação por tipo (+3), faixa de orçamento (+3 ou +1) e bairro
     bairro: 'Aldeota',
   };
 
-  const recomendados = await recomendarImoveis(prefs, client);
+  const recomendados = await recomendarImoveis(prefs, client, access);
 
   assert.equal(recomendados.length, 4);
   assert.equal(recomendados[0].id, '1');
@@ -95,7 +71,7 @@ test('ordena resultados por pontuação decrescente', async () => {
   const client = createMockSupabase({ data: imoveis });
   const recomendados = await recomendarImoveis(
     { tipoImovel: 'Casa', faixaOrcamento: 'Até R$ 300 mil', bairro: 'Meireles' },
-    client
+    client, access
   );
 
   assert.deepEqual(
@@ -118,18 +94,18 @@ test('limita o resultado a no máximo 5 recomendações', async () => {
   }));
 
   const client = createMockSupabase({ data: imoveis });
-  const recomendados = await recomendarImoveis({ tipoImovel: 'Casa' }, client);
+  const recomendados = await recomendarImoveis({ tipoImovel: 'Casa' }, client, access);
 
   assert.equal(recomendados.length, 5);
 });
 
 test('retorna lista vazia quando o Supabase retorna erro ou dados nulos', async () => {
   const clientComErro = createMockSupabase({ error: new Error('Erro de conexão com o banco') });
-  const resultadoErro = await recomendarImoveis({ tipoImovel: 'Casa' }, clientComErro);
+  const resultadoErro = await recomendarImoveis({ tipoImovel: 'Casa' }, clientComErro, access);
   assert.deepEqual(resultadoErro, []);
 
   const clientComDadosNulos = createMockSupabase({ data: null });
-  const resultadoNulo = await recomendarImoveis({ tipoImovel: 'Casa' }, clientComDadosNulos);
+  const resultadoNulo = await recomendarImoveis({ tipoImovel: 'Casa' }, clientComDadosNulos, access);
   assert.deepEqual(resultadoNulo, []);
 });
 
@@ -141,7 +117,7 @@ test('retorna lista vazia quando nenhum imóvel tem pontuação positiva', async
   const client = createMockSupabase({ data: imoveis });
   const resultado = await recomendarImoveis(
     { tipoImovel: 'Apartamento', faixaOrcamento: 'Até R$ 300 mil', bairro: 'Aldeota' },
-    client
+    client, access
   );
 
   assert.deepEqual(resultado, []);
@@ -155,7 +131,7 @@ test('nunca recomenda imóveis indisponíveis ou sem identificador válido', asy
     { ...baseImovel, id: '', tipo: 'Casa', status: 'disponivel' },
   ];
   const client = createMockSupabase({ data: imoveis });
-  const resultado = await recomendarImoveis({ tipoImovel: 'Casa' }, client);
+  const resultado = await recomendarImoveis({ tipoImovel: 'Casa' }, client, access);
   assert.deepEqual(resultado.map((item) => item.id), ['disponivel']);
 });
 

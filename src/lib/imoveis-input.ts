@@ -61,7 +61,7 @@ export function parseImovelInput(value: unknown, options: { partial?: boolean } 
         data[field] = raw;
       }
     } else if (field === 'imagem_url') {
-      if (raw !== null && (typeof raw !== 'string' || !/^https:\/\//.test(raw))) return { error: 'URL da imagem inválida.' };
+      if (raw !== null && (typeof raw !== 'string' || (!/^https:\/\//.test(raw) && !raw.startsWith('/api/imoveis/imagem?path=')))) return { error: 'URL da imagem inválida.' };
       data.imagem_url = raw;
     } else if (field === 'descricao') {
       if (raw !== null && typeof raw !== 'string') return { error: 'Descrição inválida.' };
