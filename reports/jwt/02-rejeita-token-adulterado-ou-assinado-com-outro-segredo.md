@@ -2,7 +2,7 @@
 
 - **Suíte:** Autenticação JWT (signToken e verifyToken)
 - **Arquivo testado:** `src/lib/jwt.ts`
-- **Data/Hora:** 29/10/2026, 13:00:35
+- **Data/Hora:** 29/10/2026, 18:08:44
 - **Status:** ✅ APROVADO
 
 ---
@@ -13,7 +13,7 @@ Garante que assinaturas adulteradas ou tokens gerados com outra chave secreta di
 ## 2. Dados de Entrada
 ```json
 {
-  "tokenAdulterado": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJjb3JyZXRvci11dWlkLTEyMyIsImVtYWlsIjoiY29ycmV0b3JAZXhlbXBsby5jb20iLCJyb2xlIjoiY29ycmV0b3IiLCJub21lX2NvbXBsZXRvIjoiQ2FybG9zIFNpbHZhIiwiaWF0IjoxNzkzMjg5NjM1LCJleHAiOjE3OTMzMTg0MzV9.Xj7R4i_htdEY7vtr6jwfFUesOMIqlIWsOKHzwabcdef",
+  "tokenAdulterado": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJjb3JyZXRvci11dWlkLTEyMyIsImVtYWlsIjoiY29ycmV0b3JAZXhlbXBsby5jb20iLCJyb2xlIjoiY29ycmV0b3IiLCJub21lX2NvbXBsZXRvIjoiQ2FybG9zIFNpbHZhIiwiaWF0IjoxNzkzMzA4MTI0LCJleHAiOjE3OTMzMzY5MjR9.c-IS_nQL0kQygWUbHPry7-JsoVxZsvnS-cY0Tabcdef",
   "tokenOutroSegredo": "jwt.sign(..., \"outro-segredo\")"
 }
 ```

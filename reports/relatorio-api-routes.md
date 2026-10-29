@@ -1,7 +1,7 @@
 # Relatório Geral da Suíte: Rotas de API (auth/login, auth/cadastro e leads)
 
 - **Componente / Arquivo testado:** `src/app/api/auth/login/route.ts, src/app/api/auth/cadastro/route.ts, src/app/api/leads/route.ts`
-- **Data de Execução:** 29/10/2026, 13:00:36
+- **Data de Execução:** 29/10/2026, 18:08:45
 - **Total de Testes:** 13
 - **Aprovados:** 13
 - **Reprovados:** 0

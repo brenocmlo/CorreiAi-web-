@@ -1,7 +1,7 @@
 # Relatório Geral da Suíte: Autenticação JWT (signToken e verifyToken)
 
 - **Componente / Arquivo testado:** `src/lib/jwt.ts`
-- **Data de Execução:** 29/10/2026, 13:00:35
+- **Data de Execução:** 29/10/2026, 18:08:44
 - **Total de Testes:** 5
 - **Aprovados:** 5
 - **Reprovados:** 0
@@ -26,7 +26,7 @@
 - **Status:** ✅ Aprovado
 - **Objetivo:** Valida se signToken gera um token JWT decodificável por verifyToken com todos os campos intactos.
 - **Esperado:** Token assinado em string decodificado com os mesmos valores de uid, email, role e nome_completo.
-- **Obtido:** Token gerado e validado com sucesso. Decodificado: {"uid":"corretor-uuid-123","email":"corretor@exemplo.com","role":"corretor","nome_completo":"Carlos Silva","iat":1793289635,"exp":1793318435}
+- **Obtido:** Token gerado e validado com sucesso. Decodificado: {"uid":"corretor-uuid-123","email":"corretor@exemplo.com","role":"corretor","nome_completo":"Carlos Silva","iat":1793308124,"exp":1793336924}
 
 ### 2. Rejeita token adulterado ou assinado com outro segredo
 - **Status:** ✅ Aprovado

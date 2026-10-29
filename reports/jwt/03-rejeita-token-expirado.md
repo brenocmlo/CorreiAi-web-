@@ -2,7 +2,7 @@
 
 - **Suíte:** Autenticação JWT (signToken e verifyToken)
 - **Arquivo testado:** `src/lib/jwt.ts`
-- **Data/Hora:** 29/10/2026, 13:00:35
+- **Data/Hora:** 29/10/2026, 18:08:44
 - **Status:** ✅ APROVADO
 
 ---

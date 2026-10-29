@@ -2,7 +2,7 @@
 
 - **Suíte:** Rotas de API (auth/login, auth/cadastro e leads)
 - **Arquivo testado:** `src/app/api/auth/login/route.ts, src/app/api/auth/cadastro/route.ts, src/app/api/leads/route.ts`
-- **Data/Hora:** 29/10/2026, 13:00:36
+- **Data/Hora:** 29/10/2026, 18:08:45
 - **Status:** ✅ APROVADO
 
 ---

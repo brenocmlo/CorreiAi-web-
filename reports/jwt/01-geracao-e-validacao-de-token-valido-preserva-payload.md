@@ -2,7 +2,7 @@
 
 - **Suíte:** Autenticação JWT (signToken e verifyToken)
 - **Arquivo testado:** `src/lib/jwt.ts`
-- **Data/Hora:** 29/10/2026, 13:00:35
+- **Data/Hora:** 29/10/2026, 18:08:44
 - **Status:** ✅ APROVADO
 
 ---
@@ -24,7 +24,7 @@ Valida se signToken gera um token JWT decodificável por verifyToken com todos o
 Token assinado em string decodificado com os mesmos valores de uid, email, role e nome_completo.
 
 ## 4. Resultado Obtido
-Token gerado e validado com sucesso. Decodificado: {"uid":"corretor-uuid-123","email":"corretor@exemplo.com","role":"corretor","nome_completo":"Carlos Silva","iat":1793289635,"exp":1793318435}
+Token gerado e validado com sucesso. Decodificado: {"uid":"corretor-uuid-123","email":"corretor@exemplo.com","role":"corretor","nome_completo":"Carlos Silva","iat":1793308124,"exp":1793336924}
 
 ---
 _Relatório gerado automaticamente pela suíte de testes do CorreIA._

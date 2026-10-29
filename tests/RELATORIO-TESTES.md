@@ -247,4 +247,13 @@ node --experimental-strip-types --test tests/*.test.mjs
 
 ---
 
+## 5. Povoamento e Validação em Produção
+
+Para consultar o relatório de povoamento com dados fictícios de corretores, imóveis com imagens e leads no ambiente de produção (`https://correiai.vercel.app`), consulte o documento dedicado:
+- [`tests/RELATORIO-POVOAMENTO-PRODUCAO.md`](RELATORIO-POVOAMENTO-PRODUCAO.md)
+- Script de povoamento: [`tests/povoar-banco.mjs`](povoar-banco.mjs)
+- Script de verificação: [`tests/verificar-banco.mjs`](verificar-banco.mjs)
+
+---
+
 _Relatório compilado e validado automaticamente na pasta `tests/` do repositório CorreIA._
