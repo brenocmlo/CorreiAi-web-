@@ -7,7 +7,15 @@ export async function assistantContext(
   access: CatalogAccess | null,
 ): Promise<AssistantContext> {
   if (!access || access.role === 'super_admin' || !access.imobiliariaId)
-    return { catalogState: 'restricted', company: null };
+    return {
+      catalogState: 'restricted',
+      company: null,
+      restrictionReason: !access
+        ? 'login_required'
+        : access.role === 'super_admin'
+          ? 'admin_only'
+          : 'company_required',
+    };
   const { data, error } = await createServerSupabaseClient()
     .from('imobiliarias')
     .select('id,nome,telefone,ativo')

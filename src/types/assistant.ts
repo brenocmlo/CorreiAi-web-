@@ -3,6 +3,10 @@ export type ConversationMessage = { role: 'user' | 'assistant'; text: string };
 export interface AssistantContext {
   catalogState: 'available' | 'restricted' | 'unavailable';
   company: { nome: string; telefone: string | null } | null;
+  restrictionReason?: 'login_required' | 'company_required' | 'admin_only';
+  publicSlug?: string;
+  catalogCount?: number;
+  catalogTypes?: string[];
 }
 
 export interface Qualification {
@@ -44,7 +48,13 @@ export interface AssistantProperty {
   status: string;
 }
 
-export type CaptureStatus = 'incompleto' | 'criado' | 'atualizado' | 'nao_autorizado' | 'indisponivel';
+export type CaptureStatus =
+  | 'incompleto'
+  | 'criado'
+  | 'atualizado'
+  | 'nao_autorizado'
+  | 'sem_alteracao'
+  | 'indisponivel';
 export interface AssistantResponse {
   reply: string;
   leadRegistrado: boolean;

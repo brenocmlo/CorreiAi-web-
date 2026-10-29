@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createHash } from 'node:crypto';
 import { openRouterChat, OpenRouterError } from '@/lib/openrouter';
 import {
   normalize,
@@ -14,22 +13,32 @@ import {
 import {
   ASSISTANT_COOKIE,
   assistantSession,
-  assistantOwner,
   getAssistantLead,
   saveAssistantLead,
 } from '@/lib/assistant-store';
-import { assistantContext } from '@/lib/assistant-context';
+import { assistantScope } from '@/lib/assistant-scope';
+import {
+  inspectAssistantMessage,
+  messagePolicyReply,
+} from '@/lib/assistant-message-policy';
+import { withAssistantSession as withSession } from '@/lib/assistant-public-session';
+import {
+  PublicAgencyNotFound,
+  presentPublicProperty,
+} from '@/lib/public-agency';
 import {
   directAnswer,
   directedReply,
   turnSuggestions,
   wantsContact,
+  propertyQuestion,
 } from '@/lib/assistant-turn';
 import { createServerSupabaseClient } from '@/lib/supabase';
-import { getAuthFromRequest } from '@/lib/api-auth';
 import { presentImovel } from '@/lib/private-images';
 import { isSameOriginRequest } from '@/lib/request-origin';
 import { isUuid } from '@/lib/imoveis-input';
+import { boundedJson, RequestBodyError } from '@/lib/bounded-json';
+import { publicAttendanceLimit } from '@/lib/public-attendance-limit';
 import type {
   AssistantProperty,
   CaptureStatus,
@@ -37,14 +46,6 @@ import type {
   Qualification,
 } from '@/types/assistant';
 
-const accountSessionHash = (
-  hash: string,
-  uid: string,
-  companyId: string | null,
-) =>
-  createHash('sha256')
-    .update(`${uid}:${companyId ?? 'sem-vinculo'}:${hash}`)
-    .digest('hex');
 function validMessages(value: unknown): value is ConversationMessage[] {
   return (
     Array.isArray(value) &&
@@ -61,17 +62,6 @@ function validMessages(value: unknown): value is ConversationMessage[] {
     ) &&
     value.at(-1).role === 'user'
   );
-}
-function withSession(response: NextResponse, token: string) {
-  response.headers.set('Cache-Control', 'private, no-store');
-  response.cookies.set(ASSISTANT_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    path: '/',
-    maxAge: 60 * 60 * 24 * 7,
-  });
-  return response;
 }
 async function catalogFor(companyId: string | null) {
   if (!companyId) return { data: [], error: null };
@@ -109,24 +99,16 @@ function needsExtraction(q: Qualification, text: string) {
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await getAuthFromRequest(request),
-      context = await assistantContext(auth);
     const token = request.cookies.get(ASSISTANT_COOKIE)?.value;
-    const owner = auth ? await assistantOwner(auth) : null;
+    const scope = await assistantScope(request, assistantSession(token).hash);
+    const { context, owner, hash } = scope;
     const lead =
-      token && /^[A-Za-z0-9_-]{43}$/.test(token) && auth && owner
-        ? await getAssistantLead(
-            accountSessionHash(
-              assistantSession(token).hash,
-              auth.uid,
-              auth.imobiliariaId,
-            ),
-            owner,
-          )
+      token && /^[A-Za-z0-9_-]{43}$/.test(token) && hash && owner
+        ? await getAssistantLead(hash, owner)
         : null;
     const catalog =
       lead?.qualificacao && context.catalogState === 'available'
-        ? await catalogFor(auth?.imobiliariaId ?? null)
+        ? await catalogFor(scope.companyId)
         : { data: [], error: null };
     if (catalog.error) context.catalogState = 'unavailable';
     return NextResponse.json(
@@ -139,12 +121,21 @@ export async function GET(request: NextRequest) {
               lead.qualificacao,
             )
               .slice(0, 3)
-              .map(presentImovel)
+              .map((row) =>
+                scope.publicSlug
+                  ? presentPublicProperty(row, scope.publicSlug)
+                  : presentImovel(row),
+              )
           : [],
       },
       { headers: { 'Cache-Control': 'private, no-store' } },
     );
-  } catch {
+  } catch (error) {
+    if (error instanceof PublicAgencyNotFound)
+      return NextResponse.json(
+        { error: 'Página da imobiliária não encontrada.' },
+        { status: 404 },
+      );
     return NextResponse.json(
       { error: 'Não foi possível recuperar a conversa.' },
       { status: 503 },
@@ -172,9 +163,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Origem inválida.' }, { status: 403 });
   let body: Record<string, unknown>;
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'JSON inválido.' }, { status: 400 });
+    body = await boundedJson(request, 262144);
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'JSON inválido.' }, { status: error instanceof RequestBodyError ? error.status : 400 });
   }
   if (!body || typeof body !== 'object' || !validMessages(body.messages))
     return NextResponse.json(
@@ -186,25 +177,48 @@ export async function POST(request: NextRequest) {
     (typeof body.imovelId !== 'string' || !isUuid(body.imovelId))
   )
     return NextResponse.json({ error: 'Imóvel inválido.' }, { status: 400 });
-  const messages = body.messages,
-    last = messages.at(-1)!.text,
+  const last = body.messages.at(-1)!.text;
+  const policy = inspectAssistantMessage(last);
+  const messages = body.messages.filter(
+      (message) => !inspectAssistantMessage(message.text),
+    ),
     session = assistantSession(request.cookies.get(ASSISTANT_COOKIE)?.value);
   try {
-    const auth = await getAuthFromRequest(request),
-      context = await assistantContext(auth);
-    const owner = auth ? await assistantOwner(auth) : null,
-      hash = auth
-        ? accountSessionHash(session.hash, auth.uid, auth.imobiliariaId)
-        : null;
+    const scope = await assistantScope(request, session.hash);
+    const { auth, context, owner, hash } = scope;
+    if (scope.publicSlug && scope.companyId) {
+      const limited = await publicAttendanceLimit(request, scope.companyId, 'chat');
+      if (limited) return limited;
+    }
     const [existing, catalog] = await Promise.all([
       hash && owner ? getAssistantLead(hash, owner) : Promise.resolve(null),
       context.catalogState === 'available'
-        ? catalogFor(auth?.imobiliariaId ?? null)
+        ? catalogFor(scope.companyId)
         : Promise.resolve({ data: [], error: null }),
     ]);
     if (catalog.error) context.catalogState = 'unavailable';
     const properties = (catalog.data ?? []) as AssistantProperty[];
+    if (context.catalogState === 'available') {
+      context.catalogCount = properties.length;
+      context.catalogTypes = [...new Set(properties.map((p) => p.tipo))];
+    }
     let q = qualificationFrom(messages, {}, existing?.qualificacao);
+    if (policy)
+      return withSession(
+        NextResponse.json({
+          reply: messagePolicyReply(policy),
+          leadRegistrado: false,
+          captura: 'sem_alteracao',
+          qualificacao: q,
+          imoveis: [],
+          contexto: context,
+          sugestoes:
+            context.catalogState === 'available'
+              ? ['Quero comprar', 'Quero alugar', 'Quero anunciar']
+              : ['Como escolher um imóvel?'],
+        }),
+        session.token,
+      );
     if (process.env.OPENROUTER_API_KEY && needsExtraction(q, last)) {
       const raw = await openRouterChat(extractionMessages(messages), 350);
       let extracted: unknown = {};
@@ -244,7 +258,26 @@ export async function POST(request: NextRequest) {
       !properties.some((p) => p.id === q.imovelInteresseId)
     )
       q.imovelInteresseId = null;
-    const matches = selectPortfolio(properties, q).slice(0, 3);
+    const selectedProperty = properties.find(
+      (p) => p.id === q.imovelInteresseId,
+    );
+    const selectedMatch =
+      selectedProperty &&
+      q.objetivo !== 'alugar' &&
+      q.objetivo !== 'vender' &&
+      (selectPortfolio([selectedProperty], q).length ||
+        (!q.tipoImovel && !q.bairro && q.orcamentoMax === null) ||
+        propertyQuestion(last))
+        ? selectedProperty
+        : null;
+    const matches = selectedMatch
+      ? [
+          selectedMatch,
+          ...selectPortfolio(properties, q).filter(
+            (p) => p.id !== selectedMatch.id,
+          ),
+        ].slice(0, 3)
+      : selectPortfolio(properties, q).slice(0, 3);
     if (
       q.imovelInteresseId &&
       !matches.some((p) => p.id === q.imovelInteresseId)
@@ -301,15 +334,20 @@ export async function POST(request: NextRequest) {
         'Não consegui salvar o atendimento no funil agora. O envio ao corretor não foi confirmado; tente novamente.';
     }
     if (!owner && wantsContact(last))
-      aviso =
-        'Para encaminhar o atendimento, entre em uma conta vinculada à imobiliária.';
+      aviso = scope.publicSlug
+        ? 'A imobiliária ainda está preparando a equipe de atendimento. Use o telefone comercial para falar com ela.'
+        : 'Para encaminhar o atendimento, entre em uma conta vinculada à imobiliária.';
     return withSession(
       NextResponse.json({
         reply,
         leadRegistrado: captura === 'criado',
         captura,
         qualificacao: q,
-        imoveis: matches.map(presentImovel),
+        imoveis: matches.map((row) =>
+          scope.publicSlug
+            ? presentPublicProperty(row, scope.publicSlug)
+            : presentImovel(row),
+        ),
         contexto: context,
         sugestoes: turnSuggestions(messages, q, matches, context),
         ...(aviso ? { aviso } : {}),
@@ -317,6 +355,11 @@ export async function POST(request: NextRequest) {
       session.token,
     );
   } catch (error) {
+    if (error instanceof PublicAgencyNotFound)
+      return NextResponse.json(
+        { error: 'Página da imobiliária não encontrada.' },
+        { status: 404 },
+      );
     const limited = error instanceof OpenRouterError && error.status === 429;
     const timeout =
       error instanceof Error &&

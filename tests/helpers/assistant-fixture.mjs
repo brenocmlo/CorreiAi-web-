@@ -98,6 +98,10 @@ export function assistantFixture() {
   const db = {
     state,
     calls,
+    async rpc(name) {
+      if (name !== 'consume_public_attendance') throw new Error(`Unexpected RPC: ${name}`);
+      return { data: true, error: null };
+    },
     from(table) {
       let operation = 'read',
         payload,

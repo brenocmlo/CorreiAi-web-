@@ -4,9 +4,14 @@ import type {
   ConversationMessage,
   Qualification,
 } from '../types/assistant';
-import { normalize } from './assistant-qualification';
+import { normalize, parseMoney } from './assistant-qualification';
+import {
+  inspectAssistantMessage,
+  messagePolicyReply,
+} from './assistant-message-policy';
 import { conciseReply, groundedReply } from './assistant-prompt';
 import { formatPhone, phoneDigits, phoneLink } from './phone';
+import { assistantRestriction } from './assistant-restriction';
 
 const latest = (messages: ConversationMessage[]) =>
   normalize(messages.at(-1)?.text ?? '');
@@ -36,6 +41,14 @@ const phoneQuestion = (text: string) =>
   /(?:telefone|whatsapp|numero|contato).{0,25}(?:imobiliaria|corretora|empresa)|(?:imobiliaria|corretora|empresa).{0,25}(?:telefone|whatsapp|numero|contato)/.test(
     text,
   );
+export const propertyQuestion = (value: string) => {
+  const text = normalize(value);
+  return (
+  /valor|preco|quartos|vagas|metragem|endereco|bairro|area/.test(text) &&
+  /\?|^(?:qual|quais|quanto|quantos|quantas|onde)/.test(text) &&
+  !/condominio|iptu|financi|parcela|entrada|taxa/.test(text)
+  );
+};
 
 export function nextQuestion(
   messages: ConversationMessage[],
@@ -53,14 +66,42 @@ export function nextQuestion(
     /(?:nao.{0,15}(?:quero|mais).{0,15}pergunt|pare de perguntar)/.test(text)
   )
     return null;
-  if (factualQuestion(text) && !wantsContact(text)) return null;
+  if (factualQuestion(text) && !wantsContact(text))
+    return propertyQuestion(text) &&
+      properties.length > 1 &&
+      !q.imovelInteresseId
+      ? 'Sobre qual dos imóveis abaixo você quer saber?'
+      : null;
+  if (
+    context.catalogState === 'available' &&
+    context.catalogCount === 0 &&
+    !wantsContact(text) &&
+    !q.contatoSolicitado
+  )
+    return null;
+  if (
+    context.catalogTypes &&
+    q.tipoImovel &&
+    !context.catalogTypes.some(
+      (type) => normalize(type) === normalize(q.tipoImovel!),
+    ) &&
+    !wantsContact(text) &&
+    !q.contatoSolicitado
+  )
+    return 'Você gostaria de ver outro tipo de imóvel ou prefere falar com um corretor?';
   if (/caro|fora do (?:meu )?orcamento|nao (?:consigo|posso) pagar/.test(text))
     return 'Você prefere reduzir o valor buscando outra localização ou menos espaço?';
   if (/nao sei|indecis|estou perdid/.test(text))
     return 'O que mais importa na sua rotina para escolher o imóvel?';
   if (
     context.catalogState !== 'available' &&
-    (q.tipoImovel || q.orcamentoMax || q.bairro)
+    (q.objetivo ||
+      q.tipoImovel ||
+      q.orcamentoMax ||
+      q.bairro ||
+      q.visitaSolicitada ||
+      q.contatoSolicitado ||
+      wantsContact(text))
   )
     return null;
   if (q.visitaSolicitada) {
@@ -95,6 +136,8 @@ export function nextQuestion(
     return 'Você procura casa, apartamento ou outro tipo de imóvel?';
   if (q.orcamentoMax === null)
     return 'Qual é o valor máximo que você pretende investir?';
+  if (!q.bairro && q.tipoImovel && !properties.length)
+    return 'Você consideraria outro tipo de imóvel dentro desse valor?';
   if (!q.bairro) return 'Em qual bairro você procura?';
   return 'Você aceitaria considerar outros bairros?';
 }
@@ -116,6 +159,20 @@ export function directAnswer(
     );
   if (closing(text))
     return 'Claro! Fique à vontade para voltar quando quiser. Sua busca pode continuar por aqui.';
+  if (
+    context.catalogState === 'restricted' &&
+    (phoneQuestion(text) ||
+      (searchQuestion(text) && !factualQuestion(text)) ||
+      (!factualQuestion(text) &&
+        !frustrated(text) &&
+        (q.objetivo ||
+          q.tipoImovel ||
+          q.orcamentoMax ||
+          q.bairro ||
+          q.visitaSolicitada ||
+          wantsContact(text))))
+  )
+    return assistantRestriction(context.restrictionReason).message;
   if (phoneQuestion(text)) {
     const phone = phoneDigits(context.company?.telefone);
     return phone
@@ -124,19 +181,56 @@ export function directAnswer(
   }
   if (frustrated(text))
     return context.catalogState === 'restricted'
-      ? 'Vou considerar os critérios que você já informou. O catálogo é privado e exige uma conta vinculada à imobiliária para consultar as opções.'
+      ? `Vou considerar os critérios que você já informou. ${assistantRestriction(context.restrictionReason).message}`
       : 'Vou considerar os critérios que você já informou, sem pedir tudo novamente. Podemos seguir com sua busca ou esclarecer uma dúvida específica.';
+  if (context.catalogState === 'available' && propertyQuestion(text)) {
+    const property =
+      properties.find((p) => p.id === q.imovelInteresseId) ??
+      (properties.length === 1 ? properties[0] : null);
+    if (!property)
+      return properties.length
+        ? `Os cartões mostram os preços e detalhes confirmados das opções.${question ? ' ' + question : ''}`
+        : 'Não tenho um imóvel selecionado com essas informações na busca atual. Podemos ajustar a busca ou consultar a equipe da imobiliária.';
+    if (/preco|valor/.test(text))
+      return `O valor cadastrado para este imóvel é ${property.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}.${q.orcamentoMax !== null && property.valor > q.orcamentoMax ? ' Esse valor está acima do limite que você informou; vou manter seu orçamento na busca.' : ' Você pode conferir os demais detalhes no cartão.'}`;
+    if (/endereco/.test(text))
+      return `O endereço cadastrado é ${property.endereco}, no bairro ${property.bairro}.`;
+    if (/bairro/.test(text))
+      return `Este imóvel fica no bairro ${property.bairro}. O endereço cadastrado é ${property.endereco}.`;
+    const field = /quartos/.test(text)
+      ? { value: property.quartos, label: 'quartos' }
+      : /vagas/.test(text)
+        ? { value: property.vagas, label: 'vagas' }
+        : { value: property.metragem, label: 'metragem em m²' };
+    return field.value == null
+      ? `O cadastro não informa ${field.label} deste imóvel. A equipe precisa confirmar esse detalhe.`
+      : `No cadastro deste imóvel constam ${field.value} ${field.label}.`;
+  }
+  if (
+    context.catalogState === 'available' &&
+    context.catalogCount === 0 &&
+    !factualQuestion(text) &&
+    !wantsContact(text) &&
+    !q.contatoSolicitado
+  )
+    return 'No momento, a imobiliária está sem imóveis disponíveis no catálogo. Posso ajudar a definir sua busca ou preparar o atendimento com a equipe para acompanhar novas opções.';
+  if (
+    context.catalogState === 'available' &&
+    context.catalogTypes &&
+    q.tipoImovel &&
+    !context.catalogTypes.some(
+      (type) => normalize(type) === normalize(q.tipoImovel!),
+    ) &&
+    !factualQuestion(text) &&
+    !wantsContact(text) &&
+    !q.contatoSolicitado
+  )
+    return `Não encontrei ${q.tipoImovel.toLowerCase()} disponível no catálogo desta imobiliária no momento.${question ? ' ' + question : ''}`;
   if (
     /caro|fora do (?:meu )?orcamento|nao (?:consigo|posso) pagar/.test(text) &&
     !factualQuestion(text)
   )
     return `${q.orcamentoMax ? 'Vou manter o limite que você informou.' : 'Podemos respeitar um limite confortável para você.'} Podemos comparar opções mais econômicas, sem prometer descontos.${question ? ' ' + question : ''}`;
-  if (
-    context.catalogState === 'restricted' &&
-    searchQuestion(text) &&
-    !factualQuestion(text)
-  )
-    return 'Posso esclarecer suas dúvidas por aqui. Para consultar imóveis privados, entre em uma conta vinculada à imobiliária. Isso mantém cada catálogo separado.';
   if (context.catalogState === 'unavailable' && !factualQuestion(text))
     return 'Não consegui consultar os imóveis agora. A consulta está temporariamente indisponível; isso não significa que a imobiliária esteja sem opções.';
   if (q.objetivo === 'alugar' && !factualQuestion(text))
@@ -164,16 +258,13 @@ export function directAnswer(
   if (
     context.catalogState === 'available' &&
     q.tipoImovel &&
-    q.orcamentoMax !== null &&
-    q.bairro
+    q.orcamentoMax !== null
   )
     return (
-      'Não encontrei um imóvel que atenda a todos esses critérios no catálogo atual. ' +
+      `Não encontrei ${q.tipoImovel.toLowerCase()} até ${q.orcamentoMax.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}${q.bairro ? ` em ${q.bairro}` : ''} no catálogo atual. Vou manter seu limite. ` +
       (question ?? 'Podemos ajustar a busca quando você quiser.')
     );
-  return question
-    ? `Vamos focar no que falta para encontrar uma opção. ${question}`
-    : null;
+  return question;
 }
 
 export function directedReply(
@@ -183,6 +274,8 @@ export function directedReply(
   properties: AssistantProperty[],
   context: AssistantContext,
 ): string {
+  const unsafeOutput = inspectAssistantMessage(reply);
+  if (unsafeOutput === 'technical') return messagePolicyReply('technical');
   const text = messages.at(-1)?.text ?? '';
   const grounded = groundedReply(
     reply,
@@ -196,6 +289,21 @@ export function directedReply(
     value
       .split(/(?<=[.!?])\s+|\n+/)
       .filter((sentence) => !sentence.includes('?'))
+      .filter((sentence) => {
+        const amounts =
+          sentence.match(/r\$\s*\d[\d.,]*(?:\s*(?:milhao|milhoes|mil))?/gi) ??
+          [];
+        return amounts.every((amount) => {
+          const value = parseMoney(amount.replace(/[.,]+$/, ''));
+          return (
+            properties.some((p) => p.valor === value) ||
+            (value === q.orcamentoMax &&
+              /orcamento|teto|limite|investir|nao encontrei.{0,80}ate/.test(
+                normalize(sentence),
+              ))
+          );
+        });
+      })
       .filter((sentence) => {
         const phones =
           sentence.match(
@@ -216,7 +324,9 @@ export function directedReply(
         withoutQuestions(
           directAnswer(messages, q, properties, context) ?? '',
         ) ||
-        'Posso continuar ajudando com sua busca.',
+        (properties.length
+          ? 'Os valores confirmados estão nos cartões. Outros custos precisam ser confirmados pela equipe.'
+          : 'Posso continuar ajudando com sua busca.'),
       question,
     ]
       .filter(Boolean)
@@ -235,11 +345,15 @@ export function turnSuggestions(
   if (closing(text)) return [];
   if (context.catalogState !== 'available')
     return ['Como funciona o financiamento?', 'Como escolher um imóvel?'];
+  if (context.catalogCount === 0) return ['Quero falar com um corretor'];
+  if(q.tipoImovel&&context.catalogTypes&&!context.catalogTypes.some(type=>normalize(type)===normalize(q.tipoImovel!)))
+    return [...context.catalogTypes.slice(0,2).map(type=>`Quero ver ${type}`),'Quero falar com um corretor'];
   if (!q.objetivo) return ['Quero comprar', 'Quero alugar', 'Quero anunciar'];
   if (!q.tipoImovel) return ['Procuro casa', 'Procuro apartamento'];
   if (properties.length)
     return ['Quero falar com um corretor', 'Quero ajustar minha busca'];
   if (q.bairro)
     return ['Posso ver outros bairros', 'Quero falar com um corretor'];
+  if(q.tipoImovel&&q.orcamentoMax!==null)return ['Quero falar com um corretor'];
   return [];
 }

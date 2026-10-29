@@ -121,6 +121,10 @@ test('visitante e cliente sem vínculo não recebem imóveis ou telefone de empr
     assert.deepEqual(data.imoveis, []);
     assert.equal(data.contexto.catalogState, 'restricted');
     assert.equal(data.contexto.company, null);
+    assert.equal(
+      data.contexto.restrictionReason,
+      id ? 'company_required' : 'login_required',
+    );
     assert.doesNotMatch(data.reply, /Não encontrei/);
   }
 });

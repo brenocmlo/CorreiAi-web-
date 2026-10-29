@@ -311,3 +311,45 @@ test('texto longo do modelo é limitado a 80 palavras completas no chat', () => 
   assert.ok(reply.trim().split(/\s+/).length <= 80);
   assert.equal(reply.endsWith('.'), true);
 });
+
+test('respostas curtas de tipo e orçamento explicam o login antes de continuar a busca privada', () => {
+  const messages = [
+    user('Quero comprar'),
+    bot('Você procura casa ou apartamento?'),
+    user('Casa'),
+    bot('Qual seu orçamento máximo para a compra?'),
+    user('500.000'),
+  ];
+  for (const size of [1, 3, 5]) {
+    const history = messages.slice(0, size),
+      q = qualificationFrom(history);
+    const reply = directAnswer(history, q, [], {
+      catalogState: 'restricted',
+      company: null,
+      restrictionReason: 'login_required',
+    });
+    assert.equal(typeof reply, 'string');
+    assert.match(reply, /entr[ae]|login/i);
+    assert.match(reply, /vinculad/i);
+    assert.equal(
+      nextQuestion(history, q, [], {
+        catalogState: 'restricted',
+        company: null,
+      }),
+      null,
+    );
+  }
+});
+
+test('conta sem empresa recebe orientação de vínculo, sem pedido inútil de login', () => {
+  const messages = [user('Mostre os valores dos imóveis')],
+    q = qualificationFrom(messages);
+  const reply = directAnswer(messages, q, [], {
+    catalogState: 'restricted',
+    company: null,
+    restrictionReason: 'company_required',
+  });
+  assert.match(reply, /conta.*sem vínculo|conta.*não.*vinculad/i);
+  assert.match(reply, /administrador|equipe da imobiliária/i);
+  assert.doesNotMatch(reply, /entre em uma conta|faça login/i);
+});
