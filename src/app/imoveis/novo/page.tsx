@@ -10,7 +10,7 @@ import ImovelForm from '@/components/ImovelForm';
 export default function NovoImovelPage() {
   const { profile, loading: authLoading, isLead } = useAuth();
   const router = useRouter();
-  const { createImovel, uploadImagem, loading } = useImoveis();
+  const { createImovel, uploadImagem, loading, error } = useImoveis();
 
   useEffect(() => {
     if (!authLoading && profile && isLead) {
@@ -45,6 +45,7 @@ export default function NovoImovelPage() {
         onSubmit={createImovel}
         onUploadImage={uploadImagem}
         isLoading={loading} 
+        error={error}
       />
     </div>
   );

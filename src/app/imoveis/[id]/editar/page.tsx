@@ -11,7 +11,7 @@ export default function EditarImovelPage({ params }: { params: Promise<{ id: str
   const router = useRouter();
   const { id } = use(params);
   const { profile, loading: authLoading, isLead } = useAuth();
-  const { fetchImovelById, updateImovel, uploadImagem, loading } = useImoveis();
+  const { fetchImovelById, updateImovel, uploadImagem, loading, error } = useImoveis();
   const [imovel, setImovel] = useState<Imovel | null>(null);
   const [isFetching, setIsFetching] = useState(true);
 
@@ -27,8 +27,6 @@ export default function EditarImovelPage({ params }: { params: Promise<{ id: str
       const data = await fetchImovelById(id);
       if (data) {
         setImovel(data);
-      } else {
-        router.push('/imoveis');
       }
       setIsFetching(false);
     };
@@ -68,8 +66,10 @@ export default function EditarImovelPage({ params }: { params: Promise<{ id: str
           onSubmit={handleUpdate} 
           onUploadImage={uploadImagem}
           isLoading={loading} 
+          error={error}
         />
       )}
+      {!imovel && <div role="alert" className="rounded-xl border border-red-500/30 p-4 text-red-200">{error || 'Não foi possível encontrar o imóvel.'} <Link href="/imoveis" className="underline">Voltar à lista</Link></div>}
     </div>
   );
 }

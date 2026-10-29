@@ -16,8 +16,7 @@ export default function Navbar() {
     pathname === '/' ||
     pathname === '/login' ||
     pathname === '/cadastro' ||
-    pathname === '/cadastro/lead' ||
-    pathname === '/assistente'
+    pathname === '/cadastro/lead'
   ) {
     return null;
   }
@@ -38,11 +37,11 @@ export default function Navbar() {
     ...(isAdmin ? [{ href: '/admin', label: 'Admin' }] : []),
   ];
 
-  const navLinksLead = [{ href: '/dashboard', label: 'Início' }];
+  const navLinksLead = [{ href: '/assistente', label: 'Assistente' }, { href: '/dashboard', label: 'Início' }];
 
   const navLinks = profile?.role === 'super_admin' ? [{ href: '/admin/imobiliarias', label: 'Imobiliárias' }] : isLead ? navLinksLead : navLinksCorretor;
   const prepareLogout = () => {
-    setMenuAberto(false);
+    // O formulário mobile precisa continuar conectado ao DOM até o envio nativo.
     try { sessionStorage.removeItem('correia-assistente'); } catch { /* Armazenamento opcional. */ }
   };
 
@@ -100,6 +99,10 @@ export default function Navbar() {
           {/* Botão Menu Mobile */}
           <div className="md:hidden flex items-center">
             <button
+              type="button"
+              aria-label={menuAberto ? 'Fechar menu' : 'Abrir menu'}
+              aria-expanded={menuAberto}
+              aria-controls="menu-mobile"
               onClick={() => setMenuAberto(!menuAberto)}
               className="text-slate-400 hover:text-white focus:outline-none p-2"
             >
@@ -117,7 +120,7 @@ export default function Navbar() {
 
       {/* Menu Mobile */}
       {menuAberto && (
-        <div className="md:hidden border-t border-slate-800 bg-slate-900">
+        <div id="menu-mobile" className="md:hidden border-t border-slate-800 bg-slate-900">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             {navLinks.map((link) => {
               const isAtivo = pathname === link.href;

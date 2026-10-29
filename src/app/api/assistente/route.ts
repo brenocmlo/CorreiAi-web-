@@ -10,6 +10,7 @@ import { getAuthFromRequest } from '@/lib/api-auth';
 import { scopeCatalog } from '@/lib/catalog-access';
 import { presentImovel } from '@/lib/private-images';
 import { createHash } from 'node:crypto';
+import { isSameOriginRequest } from '@/lib/request-origin';
 
 function accountSessionHash(hash: string, uid: string) {
   return createHash('sha256').update(`${uid}:${hash}`).digest('hex');
@@ -18,11 +19,6 @@ function accountSessionHash(hash: string, uid: string) {
 function validMessages(value: unknown): value is ConversationMessage[] {
   return Array.isArray(value) && value.length > 0 && value.length <= 30 && value.every((m) => m && typeof m === 'object' &&
     (m.role === 'user' || m.role === 'assistant') && typeof m.text === 'string' && m.text.trim().length > 0 && m.text.length <= 2000) && value.at(-1).role === 'user';
-}
-
-function sameOrigin(request: NextRequest) {
-  const origin = request.headers.get('origin');
-  return !origin || origin === request.nextUrl.origin;
 }
 
 function withSession(response: NextResponse, token: string) {
@@ -46,14 +42,14 @@ export async function GET(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  if (!sameOrigin(request)) return NextResponse.json({ error: 'Origem inválida.' }, { status: 403 });
+  if (!isSameOriginRequest(request)) return NextResponse.json({ error: 'Origem inválida.' }, { status: 403 });
   const response = NextResponse.json({ ok: true });
   response.cookies.set(ASSISTANT_COOKIE, '', { path: '/', maxAge: 0 });
   return response;
 }
 
 export async function POST(request: NextRequest) {
-  if (!sameOrigin(request)) return NextResponse.json({ error: 'Origem inválida.' }, { status: 403 });
+  if (!isSameOriginRequest(request)) return NextResponse.json({ error: 'Origem inválida.' }, { status: 403 });
   let body: Record<string, unknown>;
   try { body = await request.json(); } catch { return NextResponse.json({ error: 'JSON inválido.' }, { status: 400 }); }
   if (!body || typeof body !== 'object' || !validMessages(body.messages)) return NextResponse.json({ error: 'Histórico da conversa inválido.' }, { status: 400 });

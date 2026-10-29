@@ -1,11 +1,18 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useImoveis } from '@/hooks/useImoveis';
 import { useAuth } from '@/hooks/useAuth';
 import ImovelCard from '@/components/ImovelCard';
 import ConfirmModal from '@/components/ConfirmModal';
+
+function PropertySaveNotice() {
+  const result = useSearchParams().get('resultado');
+  if (result !== 'cadastrado' && result !== 'atualizado') return null;
+  return <p role="status" className="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-emerald-200">Imóvel {result} com sucesso!</p>;
+}
 
 export default function ImoveisPage() {
   const { isCorretor } = useAuth();
@@ -13,6 +20,7 @@ export default function ImoveisPage() {
   
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [imovelToDelete, setImovelToDelete] = useState<string | null>(null);
+  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     fetchImoveis();
@@ -25,7 +33,8 @@ export default function ImoveisPage() {
 
   const handleConfirmDelete = async () => {
     if (imovelToDelete) {
-      await deleteImovel(imovelToDelete);
+      const deleted = await deleteImovel(imovelToDelete);
+      if (deleted) setSuccess('Imóvel excluído com sucesso.');
       setDeleteModalOpen(false);
       setImovelToDelete(null);
     }
@@ -50,14 +59,17 @@ export default function ImoveisPage() {
         )}
       </div>
 
+      <Suspense fallback={null}><PropertySaveNotice /></Suspense>
+      {success && <p role="status" className="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-emerald-200">{success}</p>}
       {error ? (
         <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-6 text-red-200">
           {error}
           <button onClick={() => fetchImoveis()} className="ml-4 underline">Tentar novamente</button>
         </div>
       ) : loading && imoveis.length === 0 ? (
-        <div className="flex justify-center py-20">
+        <div role="status" className="flex flex-col items-center gap-4 py-20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          <p className="text-slate-300">Carregando imóveis...</p>
         </div>
       ) : imoveis.length === 0 ? (
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-12 text-center">
