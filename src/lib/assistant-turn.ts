@@ -6,12 +6,16 @@ import type {
 } from '../types/assistant';
 import { normalize } from './assistant-qualification';
 import { conciseReply, groundedReply } from './assistant-prompt';
-import { formatPhone, phoneDigits } from './phone';
+import { formatPhone, phoneDigits, phoneLink } from './phone';
 
 const latest = (messages: ConversationMessage[]) =>
   normalize(messages.at(-1)?.text ?? '');
 const closing = (text: string) =>
   /(?:obrigad[oa].{0,15}(?:vou pensar|so isso)|vou pensar|volto depois|por enquanto e so|ate mais|tchau)/.test(
+    text,
+  );
+const frustrated = (text: string) =>
+  /ja disse|ja falei|nao quero repetir|pare de perguntar|nao entendeu/.test(
     text,
   );
 export const wantsContact = (text: string) =>
@@ -42,6 +46,8 @@ export function nextQuestion(
   const text = latest(messages);
   if (
     closing(text) ||
+    frustrated(text) ||
+    /(?:outros clientes|outros atendimentos|dados.{0,25}outr)/.test(text) ||
     phoneQuestion(text) ||
     !q.permiteContato ||
     /(?:nao.{0,15}(?:quero|mais).{0,15}pergunt|pare de perguntar)/.test(text)
@@ -116,6 +122,15 @@ export function directAnswer(
       ? `O telefone oficial da ${context.company!.nome} é ${formatPhone(phone)}. Você também pode usar o botão de ligação no chat.`
       : 'O telefone oficial da imobiliária ainda não está cadastrado neste atendimento. Não tenho um número confirmado para informar.';
   }
+  if (frustrated(text))
+    return context.catalogState === 'restricted'
+      ? 'Vou considerar os critérios que você já informou. O catálogo é privado e exige uma conta vinculada à imobiliária para consultar as opções.'
+      : 'Vou considerar os critérios que você já informou, sem pedir tudo novamente. Podemos seguir com sua busca ou esclarecer uma dúvida específica.';
+  if (
+    /caro|fora do (?:meu )?orcamento|nao (?:consigo|posso) pagar/.test(text) &&
+    !factualQuestion(text)
+  )
+    return `${q.orcamentoMax ? 'Vou manter o limite que você informou.' : 'Podemos respeitar um limite confortável para você.'} Podemos comparar opções mais econômicas, sem prometer descontos.${question ? ' ' + question : ''}`;
   if (
     context.catalogState === 'restricted' &&
     searchQuestion(text) &&
@@ -146,7 +161,12 @@ export function directAnswer(
     return null;
   if (properties.length)
     return `Encontrei ${properties.length} ${properties.length === 1 ? 'imóvel compatível' : 'imóveis compatíveis'} no catálogo da sua imobiliária. Veja os detalhes nos cartões abaixo.${question ? ' ' + question : ''}`;
-  if (q.tipoImovel && q.orcamentoMax !== null && q.bairro)
+  if (
+    context.catalogState === 'available' &&
+    q.tipoImovel &&
+    q.orcamentoMax !== null &&
+    q.bairro
+  )
     return (
       'Não encontrei um imóvel que atenda a todos esses critérios no catálogo atual. ' +
       (question ?? 'Podemos ajustar a busca quando você quiser.')
@@ -183,10 +203,10 @@ export function directedReply(
           ) ?? [];
         return phones.every(
           (phone) =>
-            phoneDigits(phone) === phoneDigits(context.company?.telefone),
+            phoneLink(phone) === phoneLink(context.company?.telefone ?? ''),
         );
       })
-      .join('\n\n')
+      .join(' ')
       .trim();
   const answer = withoutQuestions(grounded);
   const question = nextQuestion(messages, q, properties, context);
@@ -201,6 +221,7 @@ export function directedReply(
     ]
       .filter(Boolean)
       .join('\n\n'),
+    80,
   );
 }
 

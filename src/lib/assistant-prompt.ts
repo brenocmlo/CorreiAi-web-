@@ -148,9 +148,9 @@ export function groundedReply(reply: string, q: Qualification, properties: Assis
   return reply;
 }
 
-export function conciseReply(reply: string): string {
+export function conciseReply(reply: string, maxWords = 130): string {
   const wordCount = (text: string) => text.trim().split(/\s+/).length;
-  if (reply.length <= 1800 && wordCount(reply) <= 130) return reply;
+  if (reply.length <= 1800 && wordCount(reply) <= maxWords) return reply;
   // O limite do provider nem sempre é respeitado; o histórico da API aceita 2000 caracteres por mensagem.
   const sentences = (reply.match(/[\s\S]*?[.!?](?=\s|$)/g) ?? []).map((s) => s.trim()).filter((s) => s && !/^\d+[.)]$/.test(s));
   const question = sentences.findLast((s) => s.endsWith('?') && s.length <= 250 && wordCount(s) <= 35);
@@ -158,7 +158,7 @@ export function conciseReply(reply: string): string {
   for (const sentence of sentences) {
     if (sentence === question) continue;
     const candidate = [...selected, sentence, ...(question ? [question] : [])].join(' ');
-    if (candidate.length > 1800 || wordCount(candidate) > 130) break;
+    if (candidate.length > 1800 || wordCount(candidate) > maxWords) break;
     selected.push(sentence);
   }
   if (question) selected.push(question);

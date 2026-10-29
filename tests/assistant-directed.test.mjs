@@ -243,8 +243,71 @@ test('preferência de visita responde à pergunta anterior sem nova extração',
 });
 
 test('ruído e IPTU ausentes no cadastro não recebem garantias do modelo', () => {
-  const messages = [user('Essa casa é silenciosa e qual o IPTU?')], q = qualificationFrom(messages);
-  const reply = directedReply('A casa é silenciosa. O IPTU custa R$ 800.', messages, q, [house], context);
+  const messages = [user('Essa casa é silenciosa e qual o IPTU?')],
+    q = qualificationFrom(messages);
+  const reply = directedReply(
+    'A casa é silenciosa. O IPTU custa R$ 800.',
+    messages,
+    q,
+    [house],
+    context,
+  );
   assert.match(reply, /não informa.*ruído.*IPTU/i);
-  assert.doesNotMatch(reply,/R\$ 800|casa é silenciosa/);
+  assert.doesNotMatch(reply, /R\$ 800|casa é silenciosa/);
+});
+
+test('frustração com histórico privado não vira catálogo vazio', () => {
+  const messages = [
+    user('Quero comprar casa no Centro até 300 mil'),
+    user('Já disse o bairro e orçamento. Não quero repetir perguntas.'),
+  ];
+  const q = qualificationFrom(messages);
+  const reply = directAnswer(messages, q, [], {
+    catalogState: 'restricted',
+    company: null,
+  });
+  assert.doesNotMatch(reply, /Não encontrei|\?/i);
+  assert.match(reply, /catálogo.*privado|vinculad/i);
+});
+
+test('objeção não sugere aumentar o orçamento', () => {
+  const messages = [
+      user('Quero comprar casa até 300 mil'),
+      user('Achei caro, não quero aumentar meu orçamento'),
+    ],
+    q = qualificationFrom(messages);
+  const reply = directAnswer(messages, q, [house], context);
+  assert.match(reply, /manter.*limite|respeitar.*limite/i);
+  assert.equal((reply.match(/\?/g) || []).length, 1);
+});
+
+test('telefone brasileiro com código do país mantém o número oficial na resposta', () => {
+  const messages = [user('Qual o telefone da imobiliária?')],
+    q = qualificationFrom(messages),
+    ctx = {
+      ...context,
+      company: { ...context.company, telefone: '5585999990000' },
+    };
+  const reply = directedReply(
+    directAnswer(messages, q, [], ctx),
+    messages,
+    q,
+    [],
+    ctx,
+  );
+  assert.match(reply, /\(85\) 99999-0000/);
+});
+
+test('texto longo do modelo é limitado a 80 palavras completas no chat', () => {
+  const messages = [user('Como funciona o financiamento?')],
+    q = qualificationFrom(messages);
+  const reply = directedReply(
+    'A documentação depende da análise do banco. '.repeat(20),
+    messages,
+    q,
+    [],
+    context,
+  );
+  assert.ok(reply.trim().split(/\s+/).length <= 80);
+  assert.equal(reply.endsWith('.'), true);
 });
