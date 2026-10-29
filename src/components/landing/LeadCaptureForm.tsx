@@ -14,6 +14,15 @@ const selectClass =
 const chevron =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='rgba(243,239,230,0.45)'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E\")";
 
+function formatTelefone(value: string): string {
+  const digitos = value.replace(/\D/g, '').slice(0, 11);
+  if (!digitos) return '';
+  if (digitos.length <= 2) return `(${digitos}`;
+  if (digitos.length <= 6) return `(${digitos.slice(0, 2)}) ${digitos.slice(2)}`;
+  if (digitos.length <= 10) return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 6)}-${digitos.slice(6)}`;
+  return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 7)}-${digitos.slice(7)}`;
+}
+
 export function LeadCaptureForm() {
   const [nome, setNome] = useState('');
   const [telefone, setTelefone] = useState('');
@@ -82,9 +91,11 @@ export function LeadCaptureForm() {
           <Field label="Telefone">
             <input
               value={telefone}
-              onChange={(e) => setTelefone(e.target.value)}
+              onChange={(e) => setTelefone(formatTelefone(e.target.value))}
               placeholder="(11) 90000-0000"
               type="tel"
+              inputMode="numeric"
+              maxLength={15}
               className={inputClass}
               required
             />
