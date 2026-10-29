@@ -45,6 +45,7 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
     status: initialData?.status || 'disponivel',
     imagem_url: initialData?.imagem_url || null,
     descricao: initialData?.descricao || null,
+    destaque_landing: initialData?.destaque_landing ?? false,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -89,10 +90,10 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
     <form
       onSubmit={handleSubmit}
       noValidate
-      className="space-y-6 bg-slate-800 p-6 md:p-8 rounded-xl border border-slate-700"
+      className="space-y-6 bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm"
     >
-      <div className="mb-6 border-b border-slate-700 pb-6">
-        <label className="block text-sm font-medium text-slate-300 mb-2">
+      <div className="mb-6 border-b border-slate-200 pb-6">
+        <label className="block text-sm font-medium text-slate-700 mb-2">
           Foto Principal do Imóvel
         </label>
         <div className="flex items-center gap-4">
@@ -104,15 +105,15 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
                 setImageFile(e.target.files[0]);
               }
             }}
-            className="block w-full text-sm text-slate-400
+            className="block w-full text-sm text-slate-500
               file:mr-4 file:py-2.5 file:px-4
               file:rounded-lg file:border-0
               file:text-sm file:font-semibold
-              file:bg-slate-700 file:text-slate-300
-              hover:file:bg-slate-600 transition-colors"
+              file:bg-slate-100 file:text-slate-700
+              hover:file:bg-slate-200 transition-colors"
           />
           {formData.imagem_url && !imageFile && (
-            <div className="text-sm text-slate-400 truncate w-32">
+            <div className="text-sm text-slate-500 truncate w-32">
               (Imagem atual salva)
             </div>
           )}
@@ -159,6 +160,26 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
             placeholder="Destaques do imóvel, acabamento, vizinhança..."
           />
         </Field>
+
+        <div className="md:col-span-2 flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <input
+            type="checkbox"
+            id="destaque_landing"
+            name="destaque_landing"
+            checked={formData.destaque_landing ?? false}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, destaque_landing: e.target.checked }))
+            }
+            className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 bg-white text-brand-primary focus:ring-brand-primary"
+          />
+          <label htmlFor="destaque_landing" className="text-sm text-slate-700">
+            <span className="block font-medium text-slate-900">Destacar na página inicial</span>
+            <span className="block text-slate-500">
+              Mostra este imóvel na vitrine pública da landing, visível para qualquer visitante
+              sem login. Deixe desmarcado para manter só no seu catálogo privado.
+            </span>
+          </label>
+        </div>
 
         <Field label="Bairro" htmlFor="bairro" required error={erros.bairro}>
           <Input
@@ -220,7 +241,7 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
         </div>
       </div>
 
-      <div className="pt-6 border-t border-slate-700 flex justify-end gap-4">
+      <div className="pt-6 border-t border-slate-200 flex justify-end gap-4">
         <Button type="button" variant="secondary" onClick={() => router.back()}>
           Cancelar
         </Button>

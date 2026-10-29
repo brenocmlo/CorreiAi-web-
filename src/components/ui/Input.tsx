@@ -1,7 +1,7 @@
 import React, { forwardRef } from 'react';
 
 export const fieldControlClassName =
-  'w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-brand-primary rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-primary transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed';
+  'w-full bg-white border border-slate-300 hover:border-slate-400 focus:border-brand-primary rounded-lg px-4 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-primary transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed';
 
 export const Input = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   ({ className = '', ...props }, ref) => (
@@ -38,7 +38,7 @@ export function Field({ label, htmlFor, error, hint, required, className = '', c
   return (
     <div className={className}>
       {label && (
-        <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-300 mb-2">
+        <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-700 mb-2">
           {label}
           {required && <span className="text-danger"> *</span>}
         </label>

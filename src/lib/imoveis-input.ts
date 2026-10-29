@@ -9,13 +9,15 @@ export interface ImovelPayload {
   status: 'disponivel' | 'vendido' | 'alugado';
   imagem_url?: string | null;
   descricao?: string | null;
+  destaque_landing?: boolean;
 }
 
 type Result = { data: Partial<ImovelPayload>; error?: never } | { error: string; data?: never };
+type ImovelField = Record<string, string | number | boolean | null>;
 
 const TIPOS = new Set<ImovelPayload['tipo']>(['casa', 'apartamento', 'terreno', 'comercial']);
 const STATUS = new Set<ImovelPayload['status']>(['disponivel', 'vendido', 'alugado']);
-const CAMPOS = ['tipo', 'endereco', 'bairro', 'valor', 'metragem', 'quartos', 'vagas', 'status', 'imagem_url', 'descricao'] as const;
+const CAMPOS = ['tipo', 'endereco', 'bairro', 'valor', 'metragem', 'quartos', 'vagas', 'status', 'imagem_url', 'descricao', 'destaque_landing'] as const;
 
 export const COLUNAS_PUBLICAS_IMOVEL =
   'id,tipo,endereco,bairro,valor,metragem,quartos,vagas,status,criado_em,imagem_url,descricao';
@@ -30,7 +32,7 @@ export function parseImovelInput(value: unknown, options: { partial?: boolean } 
   }
 
   const input = value as Record<string, unknown>;
-  const data: Record<string, string | number | null> = {};
+  const data: ImovelField = {};
   const required = options.partial ? [] : ['tipo', 'endereco', 'bairro', 'valor', 'status'];
 
   for (const field of required) {
@@ -66,6 +68,9 @@ export function parseImovelInput(value: unknown, options: { partial?: boolean } 
     } else if (field === 'descricao') {
       if (raw !== null && typeof raw !== 'string') return { error: 'Descrição inválida.' };
       data.descricao = typeof raw === 'string' && raw.trim() ? raw.trim() : null;
+    } else if (field === 'destaque_landing') {
+      if (typeof raw !== 'boolean') return { error: 'Destaque na landing inválido.' };
+      data.destaque_landing = raw;
     }
   }
 

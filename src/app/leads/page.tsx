@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AppShell from '@/components/AppShell';
 import LeadCard from '@/components/leads/LeadCard';
 import ConfirmDialog from '@/components/leads/ConfirmDialog';
 import { useAuth } from '@/hooks/useAuth';
@@ -42,27 +43,27 @@ export default function LeadsPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black text-slate-100">
+      <AppShell>
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
                 Leads
               </h1>
-              <p className="text-sm text-slate-400 mt-1">
-                RF06.1 — Listagem com opções de editar e excluir cada registro
+              <p className="text-sm text-slate-500 mt-1">
+                Gestão do funil de vendas — edite ou exclua cada registro
               </p>
             </div>
             <div className="flex gap-3">
               <Link
                 href="/funil"
-                className="px-4 py-2.5 rounded-xl border border-slate-700 text-sm font-medium text-slate-300 hover:bg-slate-800 transition"
+                className="px-4 py-2.5 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
               >
                 Ver funil (Kanban)
               </Link>
               <Link
                 href="/leads/novo"
-                className="px-4 py-2.5 rounded-xl bg-brand-primary hover:bg-brand-primary-hover text-sm font-semibold text-white transition"
+                className="px-4 py-2.5 rounded-lg bg-brand-primary hover:bg-brand-primary-hover text-sm font-semibold text-white transition shadow-sm"
               >
                 Novo lead
               </Link>
@@ -70,24 +71,24 @@ export default function LeadsPage() {
           </div>
 
           {erro && (
-            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400">
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
               {erro}
             </div>
           )}
 
           {erroExclusao && (
-            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400">
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
               {erroExclusao}
             </div>
           )}
 
           {loading ? (
             <div className="flex justify-center py-20">
-              <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+              <div className="w-12 h-12 border-4 border-slate-200 border-t-brand-primary rounded-full animate-spin" />
             </div>
           ) : leads.length === 0 ? (
-            <div className="text-center py-16 bg-slate-900/40 border border-slate-800 rounded-2xl">
-              <p className="text-slate-400">Nenhum lead cadastrado ainda.</p>
+            <div className="text-center py-16 bg-white border border-slate-200 rounded-2xl">
+              <p className="text-slate-500">Nenhum lead cadastrado ainda.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -114,7 +115,7 @@ export default function LeadsPage() {
           onConfirmar={handleConfirmarExclusao}
           onCancelar={() => setLeadExcluir(null)}
         />
-      </div>
+      </AppShell>
     </ProtectedRoute>
   );
 }

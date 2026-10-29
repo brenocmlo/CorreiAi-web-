@@ -16,7 +16,7 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 export function Card({ padding = 'md', className = '', children, ...props }: CardProps) {
   return (
     <div
-      className={`bg-slate-800 border border-slate-700 rounded-xl ${paddingClasses[padding]} ${className}`}
+      className={`bg-white border border-slate-200 rounded-xl shadow-sm ${paddingClasses[padding]} ${className}`}
       {...props}
     >
       {children}
@@ -26,7 +26,7 @@ export function Card({ padding = 'md', className = '', children, ...props }: Car
 
 export function CardFooter({ className = '', children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={`bg-slate-900/50 p-4 border-t border-slate-700 ${className}`} {...props}>
+    <div className={`bg-slate-50 p-4 border-t border-slate-200 ${className}`} {...props}>
       {children}
     </div>
   );

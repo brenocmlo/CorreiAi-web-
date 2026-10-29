@@ -12,10 +12,10 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'bg-brand-primary hover:bg-brand-primary-hover text-white shadow-lg shadow-brand-primary/20',
-  secondary: 'bg-slate-700 hover:bg-slate-600 text-slate-100',
-  danger: 'bg-danger hover:bg-danger-hover text-white',
-  ghost: 'bg-transparent hover:bg-slate-800 text-slate-300 hover:text-white',
+  primary: 'bg-brand-primary hover:bg-brand-primary-hover text-white shadow-sm',
+  secondary: 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50',
+  danger: 'bg-danger hover:bg-danger-hover text-white shadow-sm',
+  ghost: 'bg-transparent hover:bg-slate-100 text-slate-600 hover:text-slate-900',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -42,7 +42,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         disabled={disabled || isLoading}
-        className={`inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${variantClasses[variant]} ${sizeClasses[size]} ${fullWidth ? 'w-full' : ''} ${className}`}
+        className={`inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed ${variantClasses[variant]} ${sizeClasses[size]} ${fullWidth ? 'w-full' : ''} ${className}`}
         {...props}
       >
         {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}

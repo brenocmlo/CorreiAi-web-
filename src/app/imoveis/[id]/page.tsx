@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useImoveis, Imovel } from '@/hooks/useImoveis';
 import { useAuth } from '@/hooks/useAuth';
 import ConfirmModal from '@/components/ConfirmModal';
+import AppShell from '@/components/AppShell';
 import { useRouter } from 'next/navigation';
 
 export default function DetalheImovelPage({ params }: { params: Promise<{ id: string }> }) {
@@ -12,10 +13,10 @@ export default function DetalheImovelPage({ params }: { params: Promise<{ id: st
   const { id } = use(params);
   const { fetchImovelById, deleteImovel } = useImoveis();
   const { isCorretor, isLead } = useAuth();
-  
+
   const [imovel, setImovel] = useState<Imovel | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   useEffect(() => {
@@ -41,7 +42,7 @@ export default function DetalheImovelPage({ params }: { params: Promise<{ id: st
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary"></div>
       </div>
     );
   }
@@ -49,121 +50,123 @@ export default function DetalheImovelPage({ params }: { params: Promise<{ id: st
   if (!imovel) return null;
 
   return (
-    <div className="p-6 md:p-8 max-w-5xl mx-auto">
-      <div className="mb-6 flex items-center justify-between">
-        <Link 
-          href={isLead ? "/dashboard" : "/imoveis"}
-          className="text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
-        >
-          &larr; {isLead ? "Voltar para o painel" : "Voltar para listagem"}
-        </Link>
-        
-        {isCorretor && (
-          <div className="flex gap-3">
-            <Link
-              href={`/imoveis/${imovel.id}/editar`}
-              className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
-            >
-              Editar Imóvel
-            </Link>
-            <button
-              onClick={() => setDeleteModalOpen(true)}
-              className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-            >
-              Excluir
-            </button>
-          </div>
-        )}
-      </div>
+    <AppShell>
+      <div className="p-6 md:p-8 max-w-5xl mx-auto">
+        <div className="mb-6 flex items-center justify-between">
+          <Link
+            href={isLead ? "/dashboard" : "/imoveis"}
+            className="text-sm font-medium text-brand-primary hover:text-brand-primary-hover transition-colors flex items-center gap-1"
+          >
+            &larr; {isLead ? "Voltar para o painel" : "Voltar para listagem"}
+          </Link>
 
-      <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-xl">
-        {/* Imagem Hero do Imóvel */}
-        <div className="relative w-full h-64 md:h-96 border-b border-slate-700 bg-slate-900 flex items-center justify-center">
-          {imovel.imagem_url ? (
-            <img 
-              src={imovel.imagem_url} 
-              alt={`Foto de ${imovel.tipo} em ${imovel.bairro}`}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center text-slate-500 opacity-50">
-              <svg className="w-16 h-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-              <span className="text-sm font-medium uppercase tracking-widest">Sem Foto Principal</span>
+          {isCorretor && (
+            <div className="flex gap-3">
+              <Link
+                href={`/imoveis/${imovel.id}/editar`}
+                className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+              >
+                Editar Imóvel
+              </Link>
+              <button
+                onClick={() => setDeleteModalOpen(true)}
+                className="px-4 py-2 text-sm font-medium text-white bg-danger hover:bg-danger-hover rounded-lg transition-colors"
+              >
+                Excluir
+              </button>
             </div>
           )}
         </div>
 
-        {/* Header do Imóvel */}
-        <div className="p-6 md:p-8 border-b border-slate-700">
-          <div className="flex justify-between items-start mb-4">
-            <span className="inline-block px-3 py-1 bg-blue-500/20 text-blue-400 text-xs font-semibold rounded-full uppercase tracking-wider">
-              {imovel.tipo}
-            </span>
-            <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${
-              imovel.status === 'disponivel' ? 'bg-green-500/20 text-green-400' :
-              imovel.status === 'vendido' ? 'bg-red-500/20 text-red-400' :
-              'bg-yellow-500/20 text-yellow-400'
-            }`}>
-              {imovel.status.toUpperCase()}
-            </span>
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+          {/* Imagem Hero do Imóvel */}
+          <div className="relative w-full h-64 md:h-96 border-b border-slate-200 bg-slate-100 flex items-center justify-center">
+            {imovel.imagem_url ? (
+              <img
+                src={imovel.imagem_url}
+                alt={`Foto de ${imovel.tipo} em ${imovel.bairro}`}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center text-slate-400">
+                <svg className="w-16 h-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span className="text-sm font-medium uppercase tracking-widest">Sem Foto Principal</span>
+              </div>
+            )}
           </div>
-          
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(imovel.valor)}
-          </h1>
-          <p className="text-lg text-slate-400">
-            {imovel.endereco}, {imovel.bairro}
-          </p>
-        </div>
 
-        {/* Detalhes */}
-        <div className="p-6 md:p-8 bg-slate-800/50">
-          <h3 className="text-xl font-semibold text-white mb-6">Características do Imóvel</h3>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700 text-center">
-              <span className="block text-slate-400 text-sm mb-1">Quartos</span>
-              <span className="block text-2xl font-bold text-white">{imovel.quartos || '-'}</span>
-            </div>
-            
-            <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700 text-center">
-              <span className="block text-slate-400 text-sm mb-1">Vagas</span>
-              <span className="block text-2xl font-bold text-white">{imovel.vagas || '-'}</span>
-            </div>
-            
-            <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700 text-center">
-              <span className="block text-slate-400 text-sm mb-1">Metragem</span>
-              <span className="block text-2xl font-bold text-white">
-                {imovel.metragem ? `${imovel.metragem} m²` : '-'}
+          {/* Header do Imóvel */}
+          <div className="p-6 md:p-8 border-b border-slate-200">
+            <div className="flex justify-between items-start mb-4">
+              <span className="inline-block px-3 py-1 bg-blue-50 text-blue-600 text-xs font-semibold rounded-full uppercase tracking-wider">
+                {imovel.tipo}
+              </span>
+              <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${
+                imovel.status === 'disponivel' ? 'bg-green-50 text-green-600' :
+                imovel.status === 'vendido' ? 'bg-red-50 text-red-600' :
+                'bg-yellow-50 text-yellow-600'
+              }`}>
+                {imovel.status.toUpperCase()}
               </span>
             </div>
 
-            <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700 text-center">
-              <span className="block text-slate-400 text-sm mb-1">Cadastrado em</span>
-              <span className="block text-lg font-bold text-white mt-1">
-                {new Date(imovel.criado_em).toLocaleDateString('pt-BR')}
-              </span>
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
+              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(imovel.valor)}
+            </h1>
+            <p className="text-lg text-slate-500">
+              {imovel.endereco}, {imovel.bairro}
+            </p>
+          </div>
+
+          {/* Detalhes */}
+          <div className="p-6 md:p-8 bg-slate-50">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6">Características do Imóvel</h3>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="bg-white p-4 rounded-lg border border-slate-200 text-center">
+                <span className="block text-slate-500 text-sm mb-1">Quartos</span>
+                <span className="block text-2xl font-bold text-slate-900">{imovel.quartos || '-'}</span>
+              </div>
+
+              <div className="bg-white p-4 rounded-lg border border-slate-200 text-center">
+                <span className="block text-slate-500 text-sm mb-1">Vagas</span>
+                <span className="block text-2xl font-bold text-slate-900">{imovel.vagas || '-'}</span>
+              </div>
+
+              <div className="bg-white p-4 rounded-lg border border-slate-200 text-center">
+                <span className="block text-slate-500 text-sm mb-1">Metragem</span>
+                <span className="block text-2xl font-bold text-slate-900">
+                  {imovel.metragem ? `${imovel.metragem} m²` : '-'}
+                </span>
+              </div>
+
+              <div className="bg-white p-4 rounded-lg border border-slate-200 text-center">
+                <span className="block text-slate-500 text-sm mb-1">Cadastrado em</span>
+                <span className="block text-lg font-bold text-slate-900 mt-1">
+                  {new Date(imovel.criado_em).toLocaleDateString('pt-BR')}
+                </span>
+              </div>
             </div>
           </div>
+
+          {imovel.descricao && (
+            <div className="p-6 md:p-8 border-t border-slate-200">
+              <h3 className="text-xl font-semibold text-slate-900 mb-4">Descrição</h3>
+              <p className="text-slate-600 leading-relaxed whitespace-pre-line">{imovel.descricao}</p>
+            </div>
+          )}
         </div>
 
-        {imovel.descricao && (
-          <div className="p-6 md:p-8 border-t border-slate-700">
-            <h3 className="text-xl font-semibold text-white mb-4">Descrição</h3>
-            <p className="text-slate-300 leading-relaxed whitespace-pre-line">{imovel.descricao}</p>
-          </div>
-        )}
+        <ConfirmModal
+          isOpen={deleteModalOpen}
+          title="Excluir Imóvel"
+          message="Tem certeza que deseja excluir este imóvel? Esta ação não pode ser desfeita."
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteModalOpen(false)}
+        />
       </div>
-
-      <ConfirmModal
-        isOpen={deleteModalOpen}
-        title="Excluir Imóvel"
-        message="Tem certeza que deseja excluir este imóvel? Esta ação não pode ser desfeita."
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteModalOpen(false)}
-      />
-    </div>
+    </AppShell>
   );
 }

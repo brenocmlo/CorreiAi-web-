@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AppShell from '@/components/AppShell';
 import LeadForm from '@/components/leads/LeadForm';
 import { LeadQualification } from '@/components/leads/LeadQualification';
 import type { Qualification } from '@/types/assistant';
@@ -83,36 +84,33 @@ export default function LeadDetalhePage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black text-slate-100">
+      <AppShell>
         <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <Link
             href="/leads"
-            className="text-sm text-slate-500 hover:text-indigo-400 transition mb-6 inline-block"
+            className="text-sm text-slate-500 hover:text-brand-primary transition mb-6 inline-block"
           >
             ← Voltar para leads
           </Link>
 
           {carregando ? (
             <div className="flex justify-center py-20">
-              <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+              <div className="w-12 h-12 border-4 border-slate-200 border-t-brand-primary rounded-full animate-spin" />
             </div>
           ) : naoEncontrado ? (
-            <div className="text-center py-16 bg-slate-900/40 border border-slate-800 rounded-2xl">
-              <p className="text-slate-400">Lead não encontrado.</p>
-              <Link href="/leads" className="text-indigo-400 mt-4 inline-block hover:underline">
+            <div className="text-center py-16 bg-white border border-slate-200 rounded-2xl">
+              <p className="text-slate-500">Lead não encontrado.</p>
+              <Link href="/leads" className="text-brand-primary mt-4 inline-block hover:underline">
                 Voltar à listagem
               </Link>
             </div>
           ) : valores ? (
-            <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl">
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
                 <div>
-                  <h1 className="text-2xl font-extrabold text-white">Editar lead</h1>
-                  <p className="text-sm text-slate-400 mt-1">
-                    RF06.2 — Edição · RF06.3 — Exclusão com confirmação
-                  </p>
+                  <h1 className="text-2xl font-bold text-slate-900">Editar lead</h1>
                   {etapaAtual && (
-                    <p className="text-xs text-indigo-400 mt-2">
+                    <p className="text-xs text-brand-primary mt-2">
                       Etapa no funil: <span className="font-semibold">{etapaAtual}</span>
                     </p>
                   )}
@@ -120,7 +118,7 @@ export default function LeadDetalhePage() {
                 <button
                   type="button"
                   onClick={() => setDialogExcluir(true)}
-                  className="shrink-0 px-4 py-2 text-sm font-medium text-red-400 border border-red-500/30 rounded-xl hover:bg-red-500/10 transition"
+                  className="shrink-0 px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition"
                 >
                   Excluir lead
                 </button>
@@ -138,7 +136,7 @@ export default function LeadDetalhePage() {
 
               <Link
                 href="/funil"
-                className="block text-center text-sm text-slate-500 hover:text-indigo-400 mt-6 transition"
+                className="block text-center text-sm text-slate-500 hover:text-brand-primary mt-6 transition"
               >
                 Mover no funil (Kanban) →
               </Link>
@@ -154,7 +152,7 @@ export default function LeadDetalhePage() {
           onConfirmar={handleExcluir}
           onCancelar={() => setDialogExcluir(false)}
         />
-      </div>
+      </AppShell>
     </ProtectedRoute>
   );
 }

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AppShell from '@/components/AppShell';
 import { useAuth } from '@/hooks/useAuth';
 import { useImoveis } from '@/hooks/useImoveis';
 import ImovelCard from '@/components/ImovelCard';
@@ -68,45 +69,33 @@ function DashboardCorretor() {
     },
   ];
 
-  const coresBorda: Record<string, string> = {
-    indigo: 'border-indigo-500/30',
-    amber: 'border-amber-500/30',
-    emerald: 'border-emerald-500/30',
-    purple: 'border-purple-500/30',
-    cyan: 'border-cyan-500/30',
-  };
-
   const coresIcone: Record<string, string> = {
-    indigo: 'bg-indigo-500/10 text-indigo-400',
-    amber: 'bg-amber-500/10 text-amber-400',
-    emerald: 'bg-emerald-500/10 text-emerald-400',
-    purple: 'bg-purple-500/10 text-purple-400',
-    cyan: 'bg-cyan-500/10 text-cyan-400',
+    indigo: 'bg-indigo-50 text-indigo-600',
+    amber: 'bg-amber-50 text-amber-600',
+    emerald: 'bg-emerald-50 text-emerald-600',
+    purple: 'bg-purple-50 text-purple-600',
+    cyan: 'bg-cyan-50 text-cyan-600',
   };
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="relative overflow-hidden bg-slate-900/40 border border-slate-800 rounded-2xl p-8 mb-8 shadow-xl">
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-          Olá,{' '}
-          <span className="bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">
-            {nomeExibicao}
-          </span>
-          !
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+          Olá, {nomeExibicao}
         </h2>
-        <p className="text-sm text-slate-400 mt-2 max-w-xl">
+        <p className="text-sm text-slate-500 mt-1">
           Área do corretor — gerencie leads, funil e imóveis.
         </p>
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-5 flex flex-wrap gap-3">
           <Link
             href="/leads"
-            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold text-white transition"
+            className="px-4 py-2.5 rounded-lg bg-brand-primary hover:bg-brand-primary-hover text-sm font-semibold text-white transition shadow-sm"
           >
             Ver leads
           </Link>
           <Link
             href="/funil"
-            className="px-4 py-2 rounded-xl border border-slate-700 text-sm font-medium text-slate-300 hover:bg-slate-800 transition"
+            className="px-4 py-2.5 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
           >
             Funil (Kanban)
           </Link>
@@ -117,7 +106,7 @@ function DashboardCorretor() {
         {cards.map((card) => (
           <div
             key={card.label}
-            className={`bg-slate-900/30 border ${coresBorda[card.cor]} rounded-2xl p-5`}
+            className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm"
           >
             <div
               className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${coresIcone[card.cor]} mb-3`}
@@ -126,9 +115,9 @@ function DashboardCorretor() {
             </div>
             <p className="text-xs text-slate-500 font-medium mb-1">{card.label}</p>
             {loading ? (
-              <div className="h-6 w-16 bg-slate-800 animate-pulse rounded mt-1" />
+              <div className="h-6 w-16 bg-slate-100 animate-pulse rounded mt-1" />
             ) : (
-              <p className="text-xl font-bold text-white tracking-tight">{card.valor}</p>
+              <p className="text-xl font-bold text-slate-900 tracking-tight">{card.valor}</p>
             )}
           </div>
         ))}
@@ -150,33 +139,29 @@ function DashboardLead() {
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6">
       {/* Header do Lead */}
-      <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
-            Olá,{' '}
-            <span className="bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
-              {nomeExibicao}
-            </span>
-            !
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            Olá, {nomeExibicao}!
           </h2>
-          <p className="text-sm text-slate-400 mt-1">
-            Seja bem-vindo ao CorreIA. Explore imóveis disponíveis ou converse com nosso assistente inteligente.
+          <p className="text-sm text-slate-500 mt-1">
+            Seja bem-vindo ao CorreAI. Explore imóveis disponíveis ou converse com nosso assistente inteligente.
           </p>
         </div>
-        <div className="text-xs text-slate-500 bg-slate-900/80 px-4 py-2.5 rounded-xl border border-slate-800 self-stretch sm:self-auto flex flex-col gap-1">
-          <div><span className="font-semibold text-slate-400">E-mail:</span> {profile?.email}</div>
-          {profile?.cpf && <div><span className="font-semibold text-slate-400">CPF:</span> {profile.cpf}</div>}
+        <div className="text-xs text-slate-500 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200 self-stretch sm:self-auto flex flex-col gap-1">
+          <div><span className="font-semibold text-slate-600">E-mail:</span> {profile?.email}</div>
+          {profile?.cpf && <div><span className="font-semibold text-slate-600">CPF:</span> {profile.cpf}</div>}
         </div>
       </div>
 
       {/* Tabs Selector */}
-      <div className="flex border-b border-slate-800 gap-2">
+      <div className="flex border-b border-slate-200 gap-2">
         <button
           onClick={() => setActiveTab('imoveis')}
           className={`flex items-center gap-2 px-5 py-3 border-b-2 font-medium text-sm transition-colors ${
             activeTab === 'imoveis'
-              ? 'border-indigo-500 text-indigo-400 font-semibold'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? 'border-brand-primary text-brand-primary font-semibold'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
           <Home className="h-4 w-4" />
@@ -186,8 +171,8 @@ function DashboardLead() {
           onClick={() => setActiveTab('chat')}
           className={`flex items-center gap-2 px-5 py-3 border-b-2 font-medium text-sm transition-colors ${
             activeTab === 'chat'
-              ? 'border-indigo-500 text-indigo-400 font-semibold'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? 'border-brand-primary text-brand-primary font-semibold'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
           <Sparkles className="h-4 w-4" />
@@ -200,21 +185,21 @@ function DashboardLead() {
         {activeTab === 'imoveis' ? (
           <div>
             <div className="mb-4">
-              <h3 className="text-lg font-bold text-white">Catálogo de Imóveis</h3>
-              <p className="text-xs text-slate-400">Imóveis prontos para visitação e compra</p>
+              <h3 className="text-lg font-bold text-slate-900">Catálogo de Imóveis</h3>
+              <p className="text-xs text-slate-500">Imóveis prontos para visitação e compra</p>
             </div>
 
             {loadingImoveis && imoveisDisponiveis.length === 0 ? (
               <div className="flex justify-center py-20">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500"></div>
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-primary"></div>
               </div>
             ) : imoveisDisponiveis.length === 0 ? (
-              <div className="bg-slate-900/20 border border-slate-800 rounded-xl p-12 text-center">
-                <div className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-500 text-xl">
+              <div className="bg-white border border-slate-200 rounded-xl p-12 text-center">
+                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400 text-xl">
                   🏠
                 </div>
-                <h4 className="text-white font-medium mb-1">Nenhum imóvel disponível</h4>
-                <p className="text-xs text-slate-400">Não há imóveis disponíveis no catálogo no momento.</p>
+                <h4 className="text-slate-900 font-medium mb-1">Nenhum imóvel disponível</h4>
+                <p className="text-xs text-slate-500">Não há imóveis disponíveis no catálogo no momento.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -237,9 +222,9 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black text-slate-100">
+      <AppShell>
         {isLead ? <DashboardLead /> : <DashboardCorretor />}
-      </div>
+      </AppShell>
     </ProtectedRoute>
   );
 }

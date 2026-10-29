@@ -32,6 +32,7 @@ export interface Imovel {
   criado_em: string;
   imagem_url?: string | null;
   descricao?: string | null;
+  destaque_landing?: boolean;
 }
 
 export type ImovelInput = Omit<Imovel, 'id' | 'criado_em'>;

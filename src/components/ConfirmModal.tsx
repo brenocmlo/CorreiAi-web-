@@ -33,7 +33,7 @@ export default function ConfirmModal({
         </>
       }
     >
-      <p className="text-slate-300 text-sm">{message}</p>
+      <p className="text-slate-600 text-sm">{message}</p>
     </Modal>
   );
 }

@@ -43,16 +43,16 @@ export function Modal({ isOpen, onClose, title, children, footer, maxWidth = 'sm
       <div
         role="dialog"
         aria-modal="true"
-        className={`relative w-full ${maxWidthClasses[maxWidth]} bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl`}
+        className={`relative w-full ${maxWidthClasses[maxWidth]} bg-white border border-slate-200 rounded-2xl p-6 shadow-xl`}
       >
         {title && (
           <div className="flex items-start justify-between gap-4 mb-2">
-            <h2 className="text-lg font-bold text-white">{title}</h2>
+            <h2 className="text-lg font-bold text-slate-900">{title}</h2>
             <button
               type="button"
               onClick={onClose}
               aria-label="Fechar"
-              className="text-slate-500 hover:text-white transition-colors"
+              className="text-slate-400 hover:text-slate-900 transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
