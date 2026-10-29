@@ -28,4 +28,14 @@ O teste publicado é separado: `node scripts/validate-catalog-isolation.mjs --or
 
 Uma reversão de código não deve reabrir grants nem tornar o bucket público. Ajustar o código preservando o isolamento; a migration é aditiva e não remove dados.
 
+## Resultado de 28/10/2026
+
+- 114 testes automatizados passaram. TypeScript e build local de 28 rotas passaram; ESLint dos arquivos alterados sem erros, com um aviso preexistente sobre `<img>` na landing.
+- Supabase: quatro tabelas com RLS, grants de leitura/escrita direta revogados para anon/authenticated, bucket de imagens privado. Os 15 perfis originais e os três imóveis existentes foram preservados.
+- Deploy de segurança pela CLI: `dpl_39mQRwUmvcgDR9cRvq9mjN9FtPoo`, READY no domínio público.
+- 43 checks publicados passaram: duas contas começam vazias; autoria e vínculo falsificados não concedem acesso; consulta/edição/exclusão de outra conta retornam 404; recomendações, leads e Kanban isolados; quatro tabelas negam o SDK público; PNG enviado, vinculado, baixado por assinatura e bloqueado na URL pública.
+- O lead e o imóvel de validação foram removidos pelas APIs dos respectivos donos. As duas contas técnicas foram desativadas no banco. Um PNG sintético privado de 68 bytes permanece na pasta da conta técnica; o caminho está registrado somente no relatório local para eventual limpeza administrativa.
+
+Relatórios locais: `.git/validation/catalog-isolation-production.json`, `security-production-tests.log`, `security-final-smoke.json`, `security-tests.log`, `security-build.log` e `security-lint.log`. Não contêm senhas, cookies ou chaves.
+
 Referências: [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security) e [imagens em buckets privados](https://supabase.com/docs/guides/storage/serving/downloads).

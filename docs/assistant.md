@@ -91,3 +91,7 @@ Os scripts aceitam somente localhost/127.0.0.1 e conferem o projeto Supabase ant
 O teste de conversas usa critérios explícitos sobre comportamento, fatos e tamanho das respostas; as respostas também foram lidas para identificar problemas que esses critérios não capturavam. Os checks não são uma medição geral da inteligência do modelo nem garantia para toda conversa futura.
 
 A validação visual desta atualização está pendente: o controle de navegador recusou o acesso à aba. Testes HTTP e de banco não substituem essa conferência.
+# Atualização de privacidade — 28/10/2026
+
+O catálogo e o funil agora exigem contexto autenticado e vínculo verificado no banco. Visitantes podem conversar sem receber imóveis privados ou ter contato encaminhado a um corretor global. Os scripts de integração descritos abaixo foram criados para o contrato público anterior; usar a validação atual de [isolamento de dados](seguranca-dados.md) para as APIs. Os resultados históricos não substituem essa conferência.
+

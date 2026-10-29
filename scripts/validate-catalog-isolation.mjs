@@ -11,8 +11,8 @@ if (origin !== 'https://correiai.vercel.app' || !process.argv.includes('--allow-
 const runId = `security-${Date.now()}`;
 const checks = []; const accounts = []; const properties = []; const leads = [];
 let uploadedFixture = null;
-async function publicStorageClient() {
-  const html = await (await fetch(origin)).text();
+async function publicStorageClient(cookie) {
+  const html = await (await fetch(origin+'/imoveis/novo',{headers:{Cookie:cookie}})).text();
   const sources = [...new Set([...html.matchAll(/src="([^\"]+\.js[^\"]*)"/g)].map(m=>m[1]))];
   for (const source of sources.filter(s=>s.startsWith('/_next/static/'))) {
     const code = await (await fetch(origin+source)).text();
@@ -72,7 +72,7 @@ try {
   assert.ok(upload.data.path.startsWith(a.id+'/'));
   check('imagem de A não pode ser assinada por B',(await call(`/api/imoveis/imagem?path=${encodeURIComponent(upload.data.path)}`,{cookie:b.cookie})).res.status,404);
   check('imagem exige sessão',(await call(`/api/imoveis/imagem?path=${encodeURIComponent(upload.data.path)}`)).res.status,401);
-  const storage = await publicStorageClient();
+  const storage = await publicStorageClient(a.cookie);
   for (const table of ['imoveis','perfis','leads','imobiliarias']) {
     const result = await storage.from(table).select('id').limit(1);
     check(`SDK público sem acesso a ${table}`,Boolean(result.error),true);

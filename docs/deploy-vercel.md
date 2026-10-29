@@ -4,6 +4,8 @@ Projeto Vercel: `gb1440s-projects/correiai`. Domínio: https://correiai.vercel.a
 
 O primeiro deploy usou main `8009b4c`. A atualização de isolamento de dados está documentada em [seguranca-dados.md](seguranca-dados.md). A regra de catálogo público do primeiro deploy foi substituída: nova conta começa vazia, com acesso apenas aos próprios imóveis ou aos da imobiliária verificada. A landing mostra exemplos ilustrativos.
 
+Atualização de segurança publicada em 28/10/2026: `dpl_39mQRwUmvcgDR9cRvq9mjN9FtPoo`, READY, origem de código `6968cb6`. Build remoto aprovado e 43 checks reais passaram no domínio público, incluindo upload e isolamento entre contas.
+
 ## Variáveis de Production
 
 - `NEXT_PUBLIC_SUPABASE_URL`: projeto `sadnfebpklwgxerzgfqc`.
