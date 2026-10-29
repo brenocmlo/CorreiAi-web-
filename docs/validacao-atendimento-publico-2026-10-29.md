@@ -6,9 +6,9 @@ Landing por imobiliária, catálogo disponível com preços e telefone comercial
 
 ## Evidências antes da publicação
 
-- 221 testes passaram, sem falhas ou testes ignorados. Runner isolado em `.git/validation/offline/run.mjs`: ambiente permitido explícito, configurações fictícias, rede bloqueada e banco/provedor/Storage em memória; nenhuma escrita real por essa suíte.
+- 223 testes passaram, sem falhas ou testes ignorados. Runner isolado em `.git/validation/offline/run.mjs`: ambiente permitido explícito, configurações fictícias, rede bloqueada e banco/provedor/Storage em memória; nenhuma escrita real por essa suíte.
 - Build Next.js 16.4.3 aprovado, incluindo TypeScript e as rotas públicas dinâmicas. Build local usa valores públicos fictícios apenas para validação do prerender; a Vercel utiliza suas variáveis próprias.
-- ESLint dos arquivos de produção alterados aprovado; `git diff --check` aprovado.
+- ESLint dos arquivos de produção alterados sem erros; aviso preexistente de uso de img na vitrine ilustrativa. `git diff --check` aprovado.
 - Chrome, componentes e handlers reais com dados fictícios: cadastro rápido identifica Ana, diálogo mantém a página, cards e preços em desktop e celular (390 × 844), telefone correto, orçamento sem resultados, SQL rejeitado, assunto aleatório redirecionado, detalhe público e ativação/desativação no painel da própria imobiliária.
 - O teste de navegador revelou que “meu limite é 100 mil” não substituía o orçamento. Corrigido com regressão incluindo “meu teto é de…” e “só posso investir…”. Também corrigida pergunta de preço de imóvel selecionado acima do teto: informa o valor e a diferença sem mudar o limite da busca.
 
@@ -22,7 +22,7 @@ Security Advisor atualizado: zero erros, zero avisos e três informações de RL
 
 ## Limites da validação
 
-Os cenários novos de conversa usam provedor simulado na suíte isolada e no navegador local. Não representam medição geral do Mistral NeMo nem garantia contra qualquer formulação de ataque. A proteção principal é o escopo e o conjunto de operações que o servidor permite; o modelo não recebe ferramenta SQL, credenciais ou dados de outros clientes. A qualidade do modelo real precisa ser acompanhada separadamente.
+Os cenários de busca usam provedor simulado na suíte isolada e no navegador local. Na versão candidata da Vercel, o Chrome também confirmou respostas do modelo real sobre financiamento e insegurança com parcelas, sem cadastro nem escrita de leads. A validação identificou e removeu a orientação antiga de login obrigatório na landing genérica; agora ela indica o link público da imobiliária. Esses exemplos não representam medição geral do Mistral NeMo nem garantia contra qualquer formulação de ataque. A proteção principal é o escopo e o conjunto de operações que o servidor permite; o modelo não recebe ferramenta SQL, credenciais ou dados de outros clientes. A qualidade do modelo real precisa de acompanhamento contínuo.
 
 ## Uso após publicação
 

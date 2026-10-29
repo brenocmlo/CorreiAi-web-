@@ -168,7 +168,7 @@ export function LandingMidShowcase() {
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-[var(--shop-text-dim)]">
             Exemplos ilustrativos de como seu catálogo aparece na vitrine. O catálogo de cada
-            imobiliária é privado — só entra na conversa com a IA depois do login. Arraste para o
+            imobiliária está no link de atendimento que ela compartilha com você. Arraste para o
             lado para ver todas as fichas.
           </p>
 

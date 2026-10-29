@@ -7,7 +7,7 @@ export function assistantRestriction(
   if (reason === 'company_required')
     return {
       message:
-        'Sua conta está sem vínculo com uma imobiliária. Solicite a liberação ao administrador da imobiliária para consultar seus imóveis e preços.',
+        'Sua conta está sem vínculo com uma imobiliária. Você pode consultar as ofertas pelo link público de atendimento dessa imobiliária. Para acesso ao catálogo interno, solicite a liberação ao administrador.',
       action: null,
     };
   if (reason === 'admin_only')
@@ -18,7 +18,7 @@ export function assistantRestriction(
     };
   return {
     message:
-      'Para ver imóveis e preços, entre com uma conta vinculada à imobiliária. Sem esse acesso, posso responder dúvidas gerais, mas não consultar o catálogo privado.',
-    action: { href: CHAT_LOGIN_URL, label: 'Entrar para ver imóveis' },
+      'Para ver imóveis e preços sem login, abra o link público de atendimento da imobiliária. Aqui posso responder dúvidas gerais. Se você já tem uma conta vinculada, também pode entrar para consultar seu catálogo privado.',
+    action: { href: CHAT_LOGIN_URL, label: 'Já tenho conta' },
   };
 }

@@ -58,7 +58,7 @@ function dialogueGuidance(text: string): string {
     );
   if (/financi|entrada|prestac|parcela|aprovacao/.test(last))
     guidance.push(
-      'Responda primeiro à dúvida de financiamento, de forma geral. Não invente taxas, percentuais mínimos ou parcelas. Condições e aprovação dependem da análise da instituição; não simule nem garanta valores.',
+      'Responda primeiro à dúvida de financiamento, de forma geral e em linguagem cotidiana: o banco financia parte da compra e a pessoa devolve esse valor em parcelas com juros. Explique renda, documentos e análise sem escrever como um contrato. Não invente taxas, percentuais mínimos ou parcelas. Condições e aprovação dependem da análise da instituição; não simule nem garanta valores.',
     );
   if (
     /ja (?:falei|disse|informei)|nao (?:entendeu|entenderam)|repetindo|irritad/.test(
@@ -131,10 +131,11 @@ export function conversationPrompt(
         ? null
         : property.descricao,
   }));
-  return `Você é o assistente imobiliário da CorreIA. Atenda em português brasileiro, com cordialidade e clareza.
+  return `Você é a assistente virtual imobiliária da CorreAI. Atenda em português brasileiro, com cordialidade e clareza.
 Seu trabalho: entender a busca, esclarecer dúvidas com dados reais, qualificar o cliente e preparar o atendimento do corretor.
 
 CONDUÇÃO
+- Escreva como uma conversa de atendimento: frases diretas, palavras comuns e tom acolhedor, sem exagerar na intimidade. Evite expressões burocráticas como "processo pelo qual", "propriedade em questão" ou "instituição supracitada". Não comece toda resposta com "Entendi" nem repita a apresentação.
 - Faça NO MÁXIMO UMA pergunta por resposta, somente se necessária ao próximo passo. Nunca junte vários campos numa pergunta. Use o histórico; não volte a perguntar algo já informado.
 - Responda à ÚLTIMA mensagem. Não copie a resposta anterior e não repita toda a busca em cada turno.
 - Priorize objetivo, tipo, orçamento e localização. Mostre opções assim que encontrar algo útil. Quartos, vagas, prazo e pagamento são refinamentos opcionais, não uma lista obrigatória de perguntas.
