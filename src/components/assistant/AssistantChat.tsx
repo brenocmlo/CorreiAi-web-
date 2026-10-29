@@ -9,6 +9,8 @@ import { requestJson } from '@/lib/client-request';
 import { assistantRestriction } from '@/lib/assistant-restriction';
 import { CHAT_SIGNUP_URL } from '@/lib/assistant-auth-flow';
 import { assistantApiUrl } from '@/lib/public-agency-path';
+import { DEMO_AGENCIES, demoAgencyMention, getDemoAgency } from '@/lib/assistant-demo';
+import { qualificationFrom } from '@/lib/assistant-qualification';
 import type {
   AssistantContext,
   AssistantProperty,
@@ -20,6 +22,7 @@ import type {
 
 type DisplayMessage = ConversationMessage & {
   properties?: AssistantProperty[];
+  continuarEm?: AssistantResponse['continuarEm'];
 };
 const greeting: DisplayMessage = {
   role: 'assistant',
@@ -34,12 +37,16 @@ export function AssistantChat({
   onClose,
   publicSlug,
   initialSelectedId,
+  demoSlug,
+  onDemoChange,
 }: {
   storageKey?: string;
   onClose?: () => void;
   embedded?: boolean;
   publicSlug?: string | null;
   initialSelectedId?: string;
+  demoSlug?: string | null;
+  onDemoChange?: (slug: string) => void;
 }) {
   const [messages, setMessages] = useState<DisplayMessage[]>([greeting]),
     [input, setInput] = useState('');
@@ -72,7 +79,7 @@ export function AssistantChat({
     const timer = setTimeout(() => controller.abort(), 10000);
     async function restore() {
       try {
-        const res = await fetch(assistantApiUrl(publicSlug), {
+        const res = await fetch(assistantApiUrl(publicSlug, demoSlug), {
           cache: 'no-store',
           signal: controller.signal,
         });
@@ -97,10 +104,7 @@ export function AssistantChat({
           );
         }
         if (data.contexto?.catalogState === 'restricted')
-          setSuggestions([
-            'Como funciona o financiamento?',
-            'Como escolher um imóvel?',
-          ]);
+          setSuggestions(['Quero comprar', 'Quero alugar', 'Quero anunciar']);
         const history = data.atendimento?.historico;
         if (Array.isArray(history) && history.length) {
           const restored: DisplayMessage[] = history.slice(-30);
@@ -132,8 +136,21 @@ export function AssistantChat({
                 typeof m.text === 'string' &&
                 m.text.length <= 2000,
             )
-          )
-            setMessages(cached.messages);
+          ) {
+            if (demoSlug) {
+              const catalog = getDemoAgency(demoSlug)?.imoveis ?? [];
+              const restored = cached.messages.map((message: ConversationMessage & { propertyIds?: unknown }) => {
+                const ids = Array.isArray(message.propertyIds) ? message.propertyIds.slice(0, 10) : [];
+                return { role: message.role, text: message.text, properties: catalog.filter(property => ids.includes(property.id)) };
+              });
+              setMessages(restored);
+              const q = qualificationFrom(restored);
+              q.nome = null; q.email = null; q.telefone = null;
+              setQualification(q); setCapture('demonstracao');
+              const activeIds = Array.isArray(cached.currentIds) ? cached.currentIds.slice(0, 10) : [];
+              setCurrentIds(catalog.filter(property => activeIds.includes(property.id)).map(property => property.id));
+            } else setMessages(cached.messages);
+          }
           else if (data.atendimento?.nome)
             setMessages([
               {
@@ -156,7 +173,7 @@ export function AssistantChat({
       controller.abort();
       request.current?.abort();
     };
-  }, [storageKey, publicSlug, initialSelectedId]);
+  }, [storageKey, publicSlug, initialSelectedId, demoSlug]);
   useEffect(() => {
     if (!initialized) return;
     try {
@@ -164,8 +181,9 @@ export function AssistantChat({
         storageKey,
         JSON.stringify({
           messages: messages
-            .map(({ role, text }) => ({ role, text }))
+            .map(({ role, text, properties }) => ({ role, text, ...(demoSlug ? { propertyIds: properties?.map(property => property.id) ?? [] } : {}) }))
             .slice(-30),
+          ...(demoSlug ? { currentIds } : {}),
         }),
       );
     } catch {
@@ -179,7 +197,7 @@ export function AssistantChat({
           ? 'instant'
           : 'smooth',
       });
-  }, [messages, initialized, loading, storageKey]);
+  }, [messages, initialized, loading, storageKey, demoSlug, currentIds]);
 
   async function submit(history: ConversationMessage[], propertyId?: string) {
     if (busy.current) return;
@@ -196,7 +214,7 @@ export function AssistantChat({
       controller.abort();
     }, 65000);
     try {
-      const response = await fetch(assistantApiUrl(publicSlug), {
+      const response = await fetch(assistantApiUrl(publicSlug, demoSlug), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -205,8 +223,16 @@ export function AssistantChat({
         }),
         signal: controller.signal,
       });
-      const data = (await response.json().catch(()=>({error:'Não consegui ler a resposta do atendimento. Sua mensagem foi mantida; tente novamente.'}))) as AssistantResponse;
-      if(response.status===409){setSelectedId(undefined);setCurrentIds([]);}
+      const data = (await response
+        .json()
+        .catch(() => ({
+          error:
+            'Não consegui ler a resposta do atendimento. Sua mensagem foi mantida; tente novamente.',
+        }))) as AssistantResponse;
+      if (response.status === 409) {
+        setSelectedId(undefined);
+        setCurrentIds([]);
+      }
       if (!response.ok || !data.reply)
         throw new Error(
           data.error || 'Não consegui responder agora. Tente novamente.',
@@ -228,6 +254,7 @@ export function AssistantChat({
             role: 'assistant',
             text: data.reply,
             properties: changed || showAgain ? data.imoveis : [],
+            continuarEm: data.continuarEm,
           },
         ].slice(-30) as DisplayMessage[];
       });
@@ -255,6 +282,12 @@ export function AssistantChat({
   }
   function send(text = input, propertyId = selectedId) {
     if (!text.trim() || busy.current || !initialized) return;
+    const changeDemo = demoSlug ? demoAgencyMention(text) : null;
+    if (changeDemo && changeDemo !== demoSlug && onDemoChange) {
+      setInput('');
+      onDemoChange(changeDemo);
+      return;
+    }
     const next = [
       ...messages.map(({ role, text }) => ({ role, text })),
       { role: 'user' as const, text: text.trim() },
@@ -273,7 +306,9 @@ export function AssistantChat({
     setLoading(true);
     setError('');
     try {
-      await requestJson(assistantApiUrl(publicSlug), { method: 'DELETE' });
+      await requestJson(assistantApiUrl(publicSlug, demoSlug), {
+        method: 'DELETE',
+      });
       sessionStorage.removeItem(storageKey);
       setMessages([greeting]);
       setQualification(null);
@@ -335,6 +370,33 @@ export function AssistantChat({
           </button>
         )}
       </header>
+      {demoSlug && (
+        <aside className="shrink-0 border-b border-indigo-400/15 bg-indigo-500/5 px-4 py-3">
+          <label
+            htmlFor="assistant-demo-company"
+            className="block text-[11px] font-medium text-indigo-200"
+          >
+            Demonstração do CorreAI · escolha uma imobiliária
+          </label>
+          <select
+            id="assistant-demo-company"
+            value={demoSlug}
+            onChange={(event) => onDemoChange?.(event.target.value)}
+            disabled={loading}
+            className="mt-2 min-h-10 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white"
+          >
+            {DEMO_AGENCIES.map((agency) => (
+              <option key={agency.slug} value={agency.slug}>
+                {agency.nome} · {agency.cidade}
+              </option>
+            ))}
+          </select>
+          <p className="mt-2 text-[10px] leading-relaxed text-slate-400">
+            Imobiliárias, imóveis e valores fictícios. Fotos ilustrativas. Sem
+            cadastro, contato ou visita real.
+          </p>
+        </aside>
+      )}
       {contactLink && context.company?.telefone && (
         <a
           href={contactLink}
@@ -403,11 +465,28 @@ export function AssistantChat({
                 </span>
                 {message.text}
               </p>
+              {message.role === 'assistant' &&
+                message.continuarEm &&
+                /^\/imobiliaria\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(
+                  message.continuarEm.href,
+                ) && (
+                  <Link
+                    href={message.continuarEm.href}
+                    onClick={onClose}
+                    className="inline-flex min-h-11 max-w-[92%] items-center rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-500"
+                  >
+                    {message.continuarEm.label}
+                  </Link>
+                )}
               {message.role === 'assistant' && !!message.properties?.length && (
                 <AssistantProperties
                   properties={message.properties}
                   activeIds={currentIds}
                   publicSlug={publicSlug}
+                  demo={!!demoSlug}
+                  onInspect={(property) =>
+                    send('Quais são os detalhes deste imóvel?', property.id)
+                  }
                   disabled={loading}
                   onDetails={onClose}
                   onSelect={(property) =>
@@ -433,12 +512,17 @@ export function AssistantChat({
         {qualification && (
           <AssistantSummary value={qualification} status={capture} />
         )}
-        {(capture === 'criado' || capture === 'atualizado' && qualification?.contatoSolicitado && qualification.permiteContato) && (
+        {(capture === 'criado' ||
+          (capture === 'atualizado' &&
+            qualification?.contatoSolicitado &&
+            qualification.permiteContato)) && (
           <p
             role="status"
             className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-xs leading-relaxed text-emerald-200"
           >
-            {qualification?.contatoSolicitado ? 'Pedido de contato registrado para a equipe da imobiliária.' : 'Seu atendimento foi registrado para a equipe da imobiliária.'}
+            {qualification?.contatoSolicitado
+              ? 'Pedido de contato registrado para a equipe da imobiliária.'
+              : 'Seu atendimento foi registrado para a equipe da imobiliária.'}
             {qualification?.visitaSolicitada
               ? ' A visita ainda aguarda confirmação.'
               : ''}
@@ -534,7 +618,7 @@ export function AssistantChat({
           </button>
         </form>
         <p className="mt-2 text-center text-[10px] leading-relaxed text-slate-500">
-          Assistente virtual · Visitas dependem da confirmação do corretor.
+          {demoSlug ? 'Demonstração do sistema · Nenhum contato ou visita real.' : 'Assistente virtual · Visitas dependem da confirmação do corretor.'}
         </p>
       </div>
     </section>

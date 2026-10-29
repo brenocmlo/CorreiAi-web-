@@ -13,10 +13,11 @@ export function homeForRole(role: AppRole): string {
 }
 
 export function isPrivatePage(pathname: string): boolean {
-  return ['/dashboard', '/imoveis', '/leads', '/funil', '/admin'].some(path => pathname === path || pathname.startsWith(`${path}/`));
+  return ['/dashboard', '/imoveis', '/leads', '/funil', '/admin', '/cliente'].some(path => pathname === path || pathname.startsWith(`${path}/`));
 }
 
 export function canAccessPage(role: AppRole, pathname: string): boolean {
+  if (pathname === '/cliente' || pathname.startsWith('/cliente/')) return role === 'lead';
   if (pathname === '/admin/imobiliarias' || pathname.startsWith('/admin/imobiliarias/')) return role === 'super_admin';
   if (role === 'super_admin') return pathname === '/admin';
   if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) return true;

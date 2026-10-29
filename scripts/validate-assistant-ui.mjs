@@ -20,6 +20,26 @@ const { setServerSupabaseClientOverride } = await import(
   '../src/lib/supabase.ts'
 );
 const db = assistantFixture();
+// Private portal fixtures: never uses Supabase or real files/accounts.
+const portalLeadId='99999999-9999-4999-8999-999999999999';
+db.state.leads.push({id:portalLeadId,nome:'Ana · cliente de teste',email:'ana@example.invalid',etapa:'em_atendimento',corretor_id:BROKER_A,cliente_perfil_id:CLIENT_A,portal_liberado:true});
+db.state.cliente_documentos=[];db.state.cliente_mensagens=[];
+const fixtureFiles=new Map();
+db.storage={from(){return {async upload(key,data){fixtureFiles.set(key,new Blob([data]));return {error:null}},async remove(keys){keys.forEach(key=>fixtureFiles.delete(key));return{error:null}},async download(key){return{data:fixtureFiles.get(key)??null,error:null}}}}};
+const baseFixtureRpc=db.rpc;
+db.rpc=async(name,args)=>{
+ if(name==='consume_public_attendance')return baseFixtureRpc(name,args);
+ const lead=db.state.leads.find(l=>l.id===args.p_lead);
+ if(name==='configurar_cliente_portal'){lead.portal_liberado=args.p_liberado;return{error:null};}
+ if(name==='registrar_cliente_portal'){
+  if(!lead?.portal_liberado)return{error:{code:'42501'}};
+  if(args.p_acao==='documento')db.state.cliente_documentos.push({...args.p_dados,lead_id:lead.id,status:'recebido',observacao:'',criado_em:new Date().toISOString()});
+  if(args.p_acao==='mensagem')db.state.cliente_mensagens.push({id:crypto.randomUUID(),lead_id:lead.id,autor_id:args.p_usuario,...args.p_dados,criado_em:new Date().toISOString()});
+  if(args.p_acao==='revisao')Object.assign(db.state.cliente_documentos.find(d=>d.id===args.p_dados.id),args.p_dados);
+  return{error:null};
+ }
+ return{data:portalLeadId,error:null};
+};
 Object.assign(db.state.imobiliarias[0], {
   public_slug: 'horizonte',
   atendimento_publico: true,
@@ -44,6 +64,7 @@ globalThis.fetch = async (url) => {
   });
 };
 const handlers = {
+  '/api/cliente': await import('../src/app/api/cliente/route.ts'),
   '/api/auth/me': await import('../src/app/api/auth/me/route.ts'),
   '/api/assistente': await import('../src/app/api/assistente/route.ts'),
   '/api/imoveis': await import('../src/app/api/imoveis/route.ts'),
@@ -60,12 +81,13 @@ const publicHandlers = {
     '../src/app/api/publico/imobiliarias/[slug]/imoveis/[id]/imagem/route.ts'
   ),
 };
+const portalHandlers={thread:await import('../src/app/api/cliente/atendimento/[id]/route.ts'),document:await import('../src/app/api/cliente/documentos/[id]/route.ts'),config:await import('../src/app/api/leads/[id]/portal/route.ts')};
 const root = process.cwd(),
   port = Number(process.env.ASSISTANT_UI_PORT || 3218),
   origin = `http://127.0.0.1:${port}`;
 const output = await build({
   stdin: {
-    contents: `import React,{useEffect,useState} from 'react';import{createRoot}from'react-dom/client';import{AuthProvider}from'./src/contexts/AuthContext';import{AssistantProvider}from'./src/contexts/AssistantContext';import{OpenChatButton}from'./src/components/assistant/OpenChatButton';import Navbar from'./src/components/Navbar';import ImoveisPage from'./src/app/imoveis/page';import{CompanyContactSettings}from'./src/components/CompanyContactSettings';import{CompanyPublicPageSettings}from'./src/components/CompanyPublicPageSettings';import{PublicAgencyLanding}from'./src/components/public-agency/PublicAgencyLanding';import{PublicPropertyDetail}from'./src/components/public-agency/PublicPropertyDetail';import{publicAgencySlug}from'./src/lib/public-agency-path';function PublicFixture(){const[agency,setAgency]=useState(null),[property,setProperty]=useState(null),[error,setError]=useState('');const slug=publicAgencySlug(location.pathname),id=location.pathname.split('/imoveis/')[1];useEffect(()=>{fetch('/api/publico/imobiliarias/'+slug+(id?'/imoveis/'+id:'')).then(async r=>{if(!r.ok)throw new Error('Página não encontrada');return r.json()}).then(data=>{setAgency(data.imobiliaria);setProperty(data.imovel??null)}).catch(err=>setError(err.message))},[slug]);return agency?(property?<PublicPropertyDetail agency={agency} property={property}/>:<PublicAgencyLanding key={slug} agency={agency}/>):<p className="p-10">{error||'Carregando página...'}</p>};createRoot(document.getElementById('root')).render(<AuthProvider><AssistantProvider><Navbar/><div className="border-b border-amber-500/20 bg-amber-500/5 px-6 py-2 text-xs text-amber-200">TESTE LOCAL · Dados fictícios · Nenhum acesso ao banco real</div>{publicAgencySlug(location.pathname)?<PublicFixture/>:location.pathname==='/admin'?<main className="mx-auto max-w-4xl p-6"><CompanyContactSettings/><CompanyPublicPageSettings/></main>:<ImoveisPage/>}<div className="px-6 pb-12"><OpenChatButton className="rounded-xl bg-indigo-600 px-5 py-3 text-white">Abrir atendimento sem sair desta página</OpenChatButton></div></AssistantProvider></AuthProvider>);`,
+    contents: `import React,{useEffect,useState} from 'react';import{createRoot}from'react-dom/client';import{AuthProvider}from'./src/contexts/AuthContext';import{ClientPortal}from'./src/components/client/ClientPortal';import{AssistantProvider}from'./src/contexts/AssistantContext';import{OpenChatButton}from'./src/components/assistant/OpenChatButton';import Navbar from'./src/components/Navbar';import ImoveisPage from'./src/app/imoveis/page';import{CompanyContactSettings}from'./src/components/CompanyContactSettings';import{CompanyPublicPageSettings}from'./src/components/CompanyPublicPageSettings';import{PublicAgencyLanding}from'./src/components/public-agency/PublicAgencyLanding';import{PublicPropertyDetail}from'./src/components/public-agency/PublicPropertyDetail';import{LandingNavbar}from'./src/components/landing/LandingNavbar';import{HeroSection}from'./src/components/landing/HeroSection';import{LandingMidShowcase}from'./src/components/landing/LandingMidShowcase';import{CinematicFooter}from'./src/components/landing/CinematicFooter';function DemoLanding(){return <div className="landing-root"><LandingNavbar/><HeroSection/><LandingMidShowcase/><CinematicFooter/></div>};import{publicAgencySlug}from'./src/lib/public-agency-path';function PublicFixture(){const[agency,setAgency]=useState(null),[property,setProperty]=useState(null),[error,setError]=useState('');const slug=publicAgencySlug(location.pathname),id=location.pathname.split('/imoveis/')[1];useEffect(()=>{fetch('/api/publico/imobiliarias/'+slug+(id?'/imoveis/'+id:'')).then(async r=>{if(!r.ok)throw new Error('Página não encontrada');return r.json()}).then(data=>{setAgency(data.imobiliaria);setProperty(data.imovel??null)}).catch(err=>setError(err.message))},[slug]);return agency?(property?<PublicPropertyDetail agency={agency} property={property}/>:<PublicAgencyLanding key={slug} agency={agency}/>):<p className="p-10">{error||'Carregando página...'}</p>};createRoot(document.getElementById('root')).render(<AuthProvider><AssistantProvider><Navbar/><div className="border-b border-amber-500/20 bg-amber-500/5 px-6 py-2 text-xs text-amber-200">TESTE LOCAL · Dados fictícios · Nenhum acesso ao banco real</div>{publicAgencySlug(location.pathname)?<PublicFixture/>:location.pathname==='/admin'?<main className="mx-auto max-w-4xl p-6"><CompanyContactSettings/><CompanyPublicPageSettings/></main>:location.pathname==='/cliente'?<main className="mx-auto max-w-3xl p-4"><ClientPortal/></main>:location.pathname==='/portal-corretor'?<main className="mx-auto max-w-3xl p-4"><ClientPortal staffLeadId="99999999-9999-4999-8999-999999999999"/></main>:location.pathname==='/'?<DemoLanding/>:<ImoveisPage/>}<div className="px-6 pb-12"><OpenChatButton className="rounded-xl bg-indigo-600 px-5 py-3 text-white">Abrir atendimento sem sair desta página</OpenChatButton></div></AssistantProvider></AuthProvider>);`,
     resolveDir: root,
     loader: 'tsx',
   },
@@ -103,7 +125,7 @@ const output = await build({
 const css = (
   await postcss([tailwindcss()]).process(
     fs
-      .readFileSync('src/app/globals.css', 'utf8')
+      .readFileSync('src/app/globals.css', 'utf8').concat('\n',fs.readFileSync('src/app/landing.css','utf8'))
       .replace(/@import url\([^)]*\);/g, ''),
     { from: path.resolve('src/app/globals.css') },
   )
@@ -113,7 +135,7 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:",
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: https://images.unsplash.com",
   );
   if (url.pathname === '/__start') {
     if (url.searchParams.get('role') === 'guest') {
@@ -140,7 +162,7 @@ const server = http.createServer(async (req, res) => {
       nome_completo: profile.nome_completo,
     });
     res.writeHead(303, {
-      Location: profile.role === 'admin_corretora' ? '/admin' : '/imoveis',
+      Location: url.searchParams.get('portal')==='1'?(profile.role==='lead'?'/cliente':'/portal-corretor'):profile.role === 'admin_corretora' ? '/admin' : '/imoveis',
       'Set-Cookie': `auth_token=${token}; HttpOnly; SameSite=Strict; Path=/`,
     });
     res.end();
@@ -154,7 +176,9 @@ const server = http.createServer(async (req, res) => {
   const publicMatch = url.pathname.match(
     /^\/api\/publico\/imobiliarias\/([^/]+)(?:\/imoveis\/([^/]+)(\/imagem)?)?$/,
   );
-  const controller =
+  const portalMatch=url.pathname.match(/^\/api\/cliente\/(atendimento|documentos)\/([^/]+)$/);
+  const portalConfig=url.pathname.match(/^\/api\/leads\/([^/]+)\/portal$/);
+  const controller = (portalMatch?portalHandlers[portalMatch[1]==='atendimento'?'thread':'document']:portalConfig?portalHandlers.config:null) ??
     handlers[url.pathname] ??
     (publicMatch
       ? publicMatch[3]
@@ -165,13 +189,14 @@ const server = http.createServer(async (req, res) => {
       : null);
   if (controller) {
     try {
-      let body = '';
-      for await (const chunk of req) body += chunk;
+      const bodyChunks=[];
+      for await (const chunk of req) bodyChunks.push(Buffer.from(chunk));
+      const body=Buffer.concat(bodyChunks);
       const request = new NextRequest(url, {
         method: req.method,
         headers: req.headers,
         ...(!['GET', 'HEAD'].includes(req.method)
-          ? { body: body || undefined }
+          ? { body: body.length?body:undefined }
           : {}),
       });
       const handler = controller[req.method];
@@ -183,14 +208,14 @@ const server = http.createServer(async (req, res) => {
       const response = await handler(request, {
         params: Promise.resolve({
           slug: publicMatch?.[1],
-          id: publicMatch?.[2],
+          id: portalMatch?.[2]??portalConfig?.[1]??publicMatch?.[2],
         }),
       });
       const headers = Object.fromEntries(response.headers);
       if (response.headers.getSetCookie().length)
         headers['set-cookie'] = response.headers.getSetCookie();
       res.writeHead(response.status, headers);
-      res.end(await response.text());
+      res.end(Buffer.from(await response.arrayBuffer()));
     } catch (error) {
       console.error(error.message);
       res.writeHead(500);

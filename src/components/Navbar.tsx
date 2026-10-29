@@ -40,7 +40,7 @@ export default function Navbar() {
     ...(isAdmin ? [{ href: '/admin', label: 'Admin' }] : []),
   ];
 
-  const navLinksLead = [{ href: '/dashboard', label: 'Início' }];
+  const navLinksLead = [{ href: '/dashboard', label: 'Início' }, { href: '/cliente', label: 'Meu atendimento' }];
 
   const navLinks =
     profile?.role === 'super_admin'

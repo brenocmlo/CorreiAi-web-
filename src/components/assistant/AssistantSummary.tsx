@@ -30,7 +30,12 @@ export function AssistantSummary({
           Sua preferência de não receber contato foi respeitada.
         </p>
       )}
-      {value.visitaSolicitada && (
+      {status === 'demonstracao' && (
+        <p className="mt-3 text-indigo-200">
+          Simulação: nenhum cadastro, contato ou visita real.
+        </p>
+      )}
+      {value.visitaSolicitada && status !== 'demonstracao' && (
         <p className="mt-2 text-amber-200">
           Visita solicitada
           {value.visitaPreferencia ? `: ${value.visitaPreferencia}` : ''}. O

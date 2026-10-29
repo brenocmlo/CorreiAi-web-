@@ -11,6 +11,8 @@ export function AssistantProperties({
   onDetails,
   publicSlug,
   activeIds,
+  demo,
+  onInspect,
 }: {
   properties: AssistantProperty[];
   disabled: boolean;
@@ -18,6 +20,8 @@ export function AssistantProperties({
   onDetails?: () => void;
   publicSlug?: string | null;
   activeIds?: readonly string[];
+  demo?: boolean;
+  onInspect?: (property: AssistantProperty) => void;
 }) {
   if (!properties.length) return null;
   return (
@@ -88,17 +92,28 @@ export function AssistantProperties({
             {property.metragem != null && <span>{property.metragem} m²</span>}
           </div>
           <div className="grid grid-cols-2 border-t border-white/10 text-xs">
-            <Link
-              href={
-                publicSlug
-                  ? `${publicAgencyPath(publicSlug)}/imoveis/${property.id}`
-                  : `/imoveis/${property.id}`
-              }
-              onClick={onDetails}
-              className="flex min-h-11 items-center justify-center px-3 py-3 text-slate-200 hover:bg-white/5"
-            >
-              Ver detalhes
-            </Link>
+            {demo ? (
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onInspect?.(property)}
+                className="min-h-11 px-3 py-3 text-slate-200 hover:bg-white/5"
+              >
+                Ver detalhes
+              </button>
+            ) : (
+              <Link
+                href={
+                  publicSlug
+                    ? `${publicAgencyPath(publicSlug)}/imoveis/${property.id}`
+                    : `/imoveis/${property.id}`
+                }
+                onClick={onDetails}
+                className="flex min-h-11 items-center justify-center px-3 py-3 text-slate-200 hover:bg-white/5"
+              >
+                Ver detalhes
+              </Link>
+            )}
             <button
               type="button"
               disabled={
@@ -107,7 +122,7 @@ export function AssistantProperties({
               onClick={() => onSelect(property)}
               className="min-h-11 border-l border-white/10 px-3 py-3 font-medium text-indigo-200 hover:bg-indigo-500/10 disabled:opacity-40"
             >
-              Solicitar visita
+              {demo ? 'Simular visita' : 'Solicitar visita'}
             </button>
           </div>
         </article>

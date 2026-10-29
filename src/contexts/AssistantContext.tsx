@@ -15,11 +15,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { AssistantChat } from '@/components/assistant/AssistantChat';
 import { assistantStorageKey } from '@/lib/assistant-cache';
 import { publicAgencySlug } from '@/lib/public-agency-path';
+import { getDemoAgency } from '@/lib/assistant-demo';
 
 const ChatContext = createContext<{
   openChat: () => void;
   closeChat: () => void;
   refreshChat: () => void;
+  startDemo: (slug: string) => void;
 } | null>(null);
 export function useAssistant() {
   const value = useContext(ChatContext);
@@ -32,11 +34,13 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     [mounted, setMounted] = useState(false),
     [visited, setVisited] = useState(false);
   const [revision, setRevision] = useState(0);
+  const [selectedDemo, setSelectedDemo] = useState('horizonte');
   const dialog = useRef<HTMLDialogElement>(null),
     opener = useRef<HTMLElement | null>(null);
   const { profile, loading } = useAuth();
   const pathname = usePathname();
   const publicSlug = publicAgencySlug(pathname);
+  const demoSlug = pathname === '/' ? selectedDemo : null;
   const focusedPropertyId = publicSlug
     ? pathname.match(/\/imoveis\/([a-f0-9-]{36})$/)?.[1]
     : undefined;
@@ -53,12 +57,22 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     setRevision((value) => value + 1);
     openChat();
   }, [openChat]);
-  const key = publicSlug
-    ? `correia-assistente:publico:${publicSlug}`
-    : assistantStorageKey(
-        profile?.id ?? 'visitante',
-        profile?.imobiliaria_id ?? null,
-      );
+  const startDemo = useCallback(
+    (slug: string) => {
+      if (!getDemoAgency(slug)) return;
+      setSelectedDemo(slug);
+      openChat();
+    },
+    [openChat],
+  );
+  const key = demoSlug
+    ? `correia-assistente:demo:${demoSlug}`
+    : publicSlug
+      ? `correia-assistente:publico:${publicSlug}`
+      : assistantStorageKey(
+          profile?.id ?? 'visitante',
+          profile?.imobiliaria_id ?? null,
+        );
   useEffect(() => {
     queueMicrotask(() => setMounted(true));
   }, []);
@@ -80,9 +94,11 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   const hidden =
     pathname === '/login' ||
     pathname === '/cadastro' ||
-    (profile?.role === 'super_admin' && !publicSlug);
+    (profile?.role === 'super_admin' && !publicSlug && !demoSlug);
   return (
-    <ChatContext.Provider value={{ openChat, closeChat, refreshChat }}>
+    <ChatContext.Provider
+      value={{ openChat, closeChat, refreshChat, startDemo }}
+    >
       {children}
       {!hidden && !open && !loading && (
         <button
@@ -112,6 +128,8 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
                 key={`${key}:${revision}:${focusedPropertyId ?? ''}`}
                 storageKey={key}
                 publicSlug={publicSlug}
+                demoSlug={demoSlug}
+                onDemoChange={startDemo}
                 initialSelectedId={focusedPropertyId}
                 onClose={closeChat}
               />

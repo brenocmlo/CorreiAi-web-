@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { OpenChatButton } from '@/components/assistant/OpenChatButton';
 import { SunburstIcon } from './SunburstIcon';
 
 export function LandingNavbar() {
@@ -25,12 +26,11 @@ export function LandingNavbar() {
           >
             Entrar
           </Link>
-          <Link
-            href="/cadastro"
+          <OpenChatButton
             className="inline-flex min-h-10 items-center rounded-[4px] border border-[#D9BB4C]/70 bg-[#D9BB4C] px-3 py-2 text-sm font-semibold text-[#161107] transition-transform duration-100 hover:bg-[#e8cc6c] active:scale-[0.97] sm:px-5"
           >
-            Começar agora
-          </Link>
+            Testar a IA
+          </OpenChatButton>
         </div>
       </div>
     </nav>

@@ -115,6 +115,8 @@ export function qualificationFrom(
     tipoImovel: previous?.tipoImovel ?? null,
     bairro: previous?.bairro ?? null,
     orcamentoMax: previous?.orcamentoMax ?? null,
+    orcamentoNaoDefinido: previous?.orcamentoNaoDefinido ?? false,
+    semPreferenciaBairro: previous?.semPreferenciaBairro ?? false,
     quartosMin: previous?.quartosMin ?? null,
     vagasMin: previous?.vagasMin ?? null,
     prazo: previous?.prazo ?? null,
@@ -137,6 +139,15 @@ export function qualificationFrom(
       messages.slice(0, index).findLast((m) => m.role === 'assistant')?.text ??
       '';
     const previousQuestion = normalize(question);
+    if (
+      /ajustar.{0,15}busca|continuar.{0,15}busca|refazer.{0,15}busca/.test(
+        lower,
+      )
+    ) {
+      q.contatoSolicitado = false;
+      q.visitaSolicitada = false;
+      q.visitaPreferencia = null;
+    }
     const name = message
       .match(
         /\b(?:me chamo|meu nome [ée]|sou(?: o| a)?)\s+([\p{L}][\p{L} '-]{1,100})/iu,
@@ -202,14 +213,38 @@ export function qualificationFrom(
     )
       q.bairro = finalLocation;
     const spontaneousBudget =
-      /^\s*(?:r\$\s*)?\d{1,3}(?:\.\d{3})+(?:,\d{2})?\s*(?:reais)?[.!]?\s*$/.test(
+      /^\s*(?:r\$\s*)?(?:\d{1,3}(?:\.\d{3})+(?:,\d{2})?|\d{5,10}|\d+(?:[.,]\d+)?\s*(?:milhao|milhoes|mil|mi\b|k\b))\s*(?:reais)?[.!]?\s*$/.test(
         lower,
       ) &&
       !/telefone|celular|ddd|cpf|horario|dia e periodo/.test(previousQuestion)
         ? parseMoney(message)
         : null;
     const budget = budgetFrom(message, question) ?? spontaneousBudget;
-    if (budget !== null) q.orcamentoMax = budget;
+    if (budget !== null) {
+      q.orcamentoMax = budget;
+      q.orcamentoNaoDefinido = false;
+    } else if (
+      /nao (?:tenho|defini|sei).{0,25}(?:orcamento|valor|quanto)|(?:orcamento|valor).{0,20}(?:indefinido|nao definido)|prefiro nao (?:dizer|informar).{0,20}(?:valor|orcamento)/.test(
+        lower,
+      )
+    ) {
+      q.orcamentoMax = null;
+      q.orcamentoNaoDefinido = true;
+    }
+    if (neighborhood || shortNeighborhood || finalLocation)
+      q.semPreferenciaBairro = false;
+    if (
+      /nao tenho preferencia.{0,15}bairro|qualquer bairro|outros bairros|sem (?:preferencia|restricao).{0,15}bairro/.test(
+        lower,
+      ) ||
+      (/bairro|regiao/.test(previousQuestion) &&
+        /^(?:tanto faz|qualquer um|qualquer|sem preferencia)[.!\s]*$/.test(
+          lower,
+        ))
+    ) {
+      q.bairro = null;
+      q.semPreferenciaBairro = true;
+    }
     const comparing =
       /diferenca|compar|vantag|desvantag|qual.{0,30}melhor|nao sei|em duvida|indecis/.test(
         lower,
@@ -255,8 +290,16 @@ export function qualificationFrom(
     );
     if (rooms) q.quartosMin = counts[rooms[1]] ?? Number(rooms[1]);
     if (parking) q.vagasMin = counts[parking[1]] ?? Number(parking[1]);
+    const contactPrompt =
+      /preparar.{0,30}atendimento|contato.{0,25}equipe|falar.{0,20}corretor/.test(
+        previousQuestion,
+      );
     if (
-      /nao\s+(?:quero|autorizo|permito|desejo).{0,40}(?:cadastr|salv|compartilh|contat|corretor|(?:passar|informar|fornecer).{0,15}dados)|nao me (?:lig|contat)/.test(
+      (contactPrompt && /^nao\b/.test(lower)) ||
+      /prefiro nao (?:passar|informar|fornecer).{0,20}(?:dados|telefone|celular|e-?mail|nome)/.test(
+        lower,
+      ) ||
+      /nao\s+(?:quero|autorizo|permito|desejo).{0,40}(?:cadastr|salv|compartilh|contat|corretor|(?:passar|informar|fornecer).{0,15}(?:dados|telefone|celular|e-?mail|nome))|nao (?:passo|informo|forneco).{0,15}(?:telefone|celular|e-?mail|nome)|nao me (?:lig|contat)/.test(
         lower,
       )
     )
@@ -265,19 +308,20 @@ export function qualificationFrom(
       /(?:autorizo|pode).{0,30}(?:cadastr|salv|encaminh|contat)/.test(lower)
     )
       q.permiteContato = true;
-    if (
-      /(?:quero|preciso|gostaria).{0,25}(?:falar|conversar|contato).{0,25}corretor|(?:me chame|me ligue|quero retorno)/.test(
-        lower,
-      )
-    )
+    const contactRequest = lower.match(
+      /(?:quero|preciso|gostaria).{0,25}(?:falar|conversar|contato).{0,25}corretor|(?:me chame|me ligue|quero retorno)/,
+    );
+    if (contactRequest && !negated(lower, contactRequest.index!)) {
       q.contatoSolicitado = true;
+      q.permiteContato = true;
+    }
     if (
       /^(sim|pode ser|pode|claro|quero)[.!\s]*$/.test(lower) &&
-      /preparar.{0,30}atendimento|contato.{0,25}equipe|falar.{0,20}corretor/.test(
-        previousQuestion,
-      )
-    )
+      contactPrompt
+    ) {
       q.contatoSolicitado = true;
+      q.permiteContato = true;
+    }
     if (!q.permiteContato) q.contatoSolicitado = false;
     if (
       /nao\s+(?:quero|desejo|preciso).{0,20}(?:visit|agend)|cancel.{0,20}visit/.test(
@@ -374,7 +418,9 @@ export function qualificationFrom(
     q.objetivo,
     q.tipoImovel,
     q.bairro && `Bairro: ${q.bairro}`,
+    q.semPreferenciaBairro && 'Sem preferência de bairro',
     q.orcamentoMax && `Teto: R$ ${q.orcamentoMax.toLocaleString('pt-BR')}`,
+    q.orcamentoNaoDefinido && 'Orçamento a definir',
     q.quartosMin !== null && `${q.quartosMin} quartos`,
     q.vagasMin !== null && `${q.vagasMin} vagas`,
     q.prazo && `Prazo: ${q.prazo}`,
