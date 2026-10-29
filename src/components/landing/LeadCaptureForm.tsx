@@ -2,23 +2,17 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
-import {
-  ETAPAS_FUNIL,
-  FAIXAS_ORCAMENTO,
-  TIPOS_IMOVEL,
-  type EtapaFunil,
-} from '@/types/lead';
+import { FAIXAS_ORCAMENTO, TIPOS_IMOVEL } from '@/types/lead';
 
 const inputClass =
-  'h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-sm text-white placeholder:text-white/30 focus:border-[#3054ff]/50 focus:outline-none focus:ring-1 focus:ring-[#3054ff]/40';
+  'h-10 w-full rounded-[3px] border border-white/10 bg-[var(--shop-ink)] px-3 text-sm text-[var(--shop-ink-text)] placeholder:text-white/25 transition-colors duration-150 focus:border-[var(--shop-brass)]/70 focus:outline-none';
 
 const selectClass =
   `${inputClass} appearance-none bg-[length:14px] bg-[right_0.65rem_center] bg-no-repeat pr-9`;
 
 const chevron =
-  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='rgba(255,255,255,0.5)'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E\")";
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='rgba(243,239,230,0.45)'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E\")";
 
 export function LeadCaptureForm() {
   const [nome, setNome] = useState('');
@@ -26,7 +20,6 @@ export function LeadCaptureForm() {
   const [email, setEmail] = useState('');
   const [faixaOrcamento, setFaixaOrcamento] = useState('');
   const [tipoImovel, setTipoImovel] = useState('');
-  // const [etapa, setEtapa] = useState<EtapaFunil>('novo');
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -42,14 +35,7 @@ export function LeadCaptureForm() {
       const res = await fetch('/api/leads/public', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nome,
-          telefone,
-          email,
-          faixaOrcamento,
-          tipoImovel,
-          // etapa,
-        }),
+        body: JSON.stringify({ nome, telefone, email, faixaOrcamento, tipoImovel }),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -69,25 +55,20 @@ export function LeadCaptureForm() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 24 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: 0.35, duration: 0.5 }}
-      className="w-full rounded-2xl border border-white/10 bg-black/50 p-5 shadow-[0_24px_60px_rgba(0,0,0,0.5)] backdrop-blur-xl sm:p-6"
-    >
+    <div className="relative rounded-[3px] border border-[var(--shop-brass)]/25 bg-[var(--shop-panel)] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.5)] sm:p-6">
+      <div className="pin-tape absolute left-1/2 -translate-x-1/2" aria-hidden />
+
       <div className="mb-5 space-y-1">
-        <h2 className="font-[family-name:var(--font-instrument-sans)] text-lg font-semibold text-white">
+        <h2 className="font-display text-lg font-semibold text-[var(--shop-ink-text)]">
           Comece sua busca
         </h2>
-        <p className="text-sm text-white/50">
-          Preencha em menos de 1 minuto — sem criar senha.
+        <p className="text-sm text-[var(--shop-text-dim)]">
+          Deixe seu contato — menos de 1 minuto. A IA já cruza com o catálogo e fala com você em
+          seguida.
         </p>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-3 font-[family-name:var(--font-instrument-sans)]"
-      >
+      <form onSubmit={handleSubmit} noValidate className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Nome">
             <input
@@ -130,11 +111,11 @@ export function LeadCaptureForm() {
               style={{ backgroundImage: chevron }}
               required
             >
-              <option value="" className="bg-[#1a1a1a]">
+              <option value="" className="bg-[var(--shop-panel)]">
                 Selecione
               </option>
               {FAIXAS_ORCAMENTO.map((f) => (
-                <option key={f} value={f} className="bg-[#1a1a1a]">
+                <option key={f} value={f} className="bg-[var(--shop-panel)]">
                   {f}
                 </option>
               ))}
@@ -148,11 +129,11 @@ export function LeadCaptureForm() {
               style={{ backgroundImage: chevron }}
               required
             >
-              <option value="" className="bg-[#1a1a1a]">
+              <option value="" className="bg-[var(--shop-panel)]">
                 Selecione
               </option>
               {TIPOS_IMOVEL.map((t) => (
-                <option key={t} value={t} className="bg-[#1a1a1a]">
+                <option key={t} value={t} className="bg-[var(--shop-panel)]">
                   {t}
                 </option>
               ))}
@@ -160,62 +141,43 @@ export function LeadCaptureForm() {
           </Field>
         </div>
 
-        {/* <Field label="Etapa">
-          <select
-            value={etapa}
-            onChange={(e) => setEtapa(e.target.value as EtapaFunil)}
-            className={selectClass}
-            style={{ backgroundImage: chevron }}
-          >
-            {ETAPAS_FUNIL.map((item) => (
-              <option key={item.id} value={item.id} className="bg-[#1a1a1a]">
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </Field> */}
-
-        <div className="mt-9" />
-
         {error && (
-          <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+          <p role="alert" className="rounded-[3px] border border-red-500/25 bg-red-500/10 px-3 py-2 text-xs text-red-300">
             {error}
           </p>
         )}
         {success && (
-          <p className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-400">
-            Cadastro recebido! Em breve entraremos em contato.
+          <p role="status" className="rounded-[3px] border border-[var(--shop-brass)]/30 bg-[var(--shop-brass)]/10 px-3 py-2 text-xs text-[var(--shop-brass)]">
+            Cartão recebido! Levando você até a IA…
           </p>
         )}
 
         <button
           type="submit"
           disabled={loading || success}
-          className="group mt-1 flex w-full items-center justify-center gap-2 rounded-full bg-white py-3 text-sm font-semibold text-[#0a0400] transition hover:scale-[1.01] hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] disabled:cursor-not-allowed disabled:opacity-60"
+          className="group mt-1 flex w-full items-center justify-center gap-2 rounded-[3px] bg-[var(--shop-brass)] py-3 text-sm font-semibold text-[#171206] transition-transform duration-100 hover:bg-[#e8cc6c] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? (
             <>
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/20 border-t-[#3054ff]" />
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#171206]/25 border-t-[#171206]" />
               Enviando…
             </>
           ) : (
             <>
-              Encontrar meu imóvel
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#3054ff] text-white transition-colors group-hover:bg-[#2040e0]">
-                <ArrowRight className="h-4 w-4" strokeWidth={2} />
-              </span>
+              Entrar na vitrine
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
             </>
           )}
         </button>
       </form>
-    </motion.div>
+    </div>
   );
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block space-y-1.5">
-      <span className="text-xs font-medium text-white/70">{label}</span>
+      <span className="text-xs font-medium text-[var(--shop-text-dim)]">{label}</span>
       {children}
     </label>
   );

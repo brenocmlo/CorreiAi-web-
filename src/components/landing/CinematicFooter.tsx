@@ -1,10 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { ArrowUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 if (typeof window !== 'undefined') {
@@ -12,117 +13,15 @@ if (typeof window !== 'undefined') {
 }
 
 const STYLES = `
-.cinematic-footer-wrapper {
-  font-family: var(--font-instrument-sans), ui-sans-serif, system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-
-  --background: #000000;
-  --foreground: #ffffff;
-  --primary: #3054ff;
-  --secondary: #b4c0ff;
-  --destructive: #ef4444;
-  --muted-foreground: rgba(255, 255, 255, 0.55);
-  --border: rgba(255, 255, 255, 0.12);
-
-  --pill-bg-1: color-mix(in oklch, var(--foreground) 3%, transparent);
-  --pill-bg-2: color-mix(in oklch, var(--foreground) 1%, transparent);
-  --pill-shadow: color-mix(in oklch, var(--background) 50%, transparent);
-  --pill-highlight: color-mix(in oklch, var(--foreground) 10%, transparent);
-  --pill-inset-shadow: color-mix(in oklch, var(--background) 80%, transparent);
-  --pill-border: color-mix(in oklch, var(--foreground) 8%, transparent);
-
-  --pill-bg-1-hover: color-mix(in oklch, var(--foreground) 8%, transparent);
-  --pill-bg-2-hover: color-mix(in oklch, var(--foreground) 2%, transparent);
-  --pill-border-hover: color-mix(in oklch, var(--foreground) 20%, transparent);
-  --pill-shadow-hover: color-mix(in oklch, var(--background) 70%, transparent);
-  --pill-highlight-hover: color-mix(in oklch, var(--foreground) 20%, transparent);
-}
-
-@keyframes footer-breathe {
-  0% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
-  100% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
-}
-
-@keyframes footer-scroll-marquee {
+@keyframes footer-marquee {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
 }
-
-@keyframes footer-heartbeat {
-  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 5px color-mix(in oklch, var(--destructive) 50%, transparent)); }
-  15%, 45% { transform: scale(1.2); filter: drop-shadow(0 0 10px color-mix(in oklch, var(--destructive) 80%, transparent)); }
-  30% { transform: scale(1); }
+.footer-marquee {
+  animation: footer-marquee 42s linear infinite;
 }
-
-.animate-footer-breathe {
-  animation: footer-breathe 8s ease-in-out infinite alternate;
-}
-
-.animate-footer-scroll-marquee {
-  animation: footer-scroll-marquee 40s linear infinite;
-}
-
-.animate-footer-heartbeat {
-  animation: footer-heartbeat 2s cubic-bezier(0.25, 1, 0.5, 1) infinite;
-}
-
-.footer-bg-grid {
-  background-size: 60px 60px;
-  background-image:
-    linear-gradient(to right, color-mix(in oklch, var(--foreground) 3%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in oklch, var(--foreground) 3%, transparent) 1px, transparent 1px);
-  mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
-  -webkit-mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
-}
-
-.footer-aurora {
-  background: radial-gradient(
-    circle at 50% 50%,
-    color-mix(in oklch, var(--primary) 15%, transparent) 0%,
-    color-mix(in oklch, var(--secondary) 15%, transparent) 40%,
-    transparent 70%
-  );
-}
-
-.footer-glass-pill {
-  background: linear-gradient(145deg, var(--pill-bg-1) 0%, var(--pill-bg-2) 100%);
-  box-shadow:
-      0 10px 30px -10px var(--pill-shadow),
-      inset 0 1px 1px var(--pill-highlight),
-      inset 0 -1px 2px var(--pill-inset-shadow);
-  border: 1px solid var(--pill-border);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.footer-glass-pill:hover {
-  background: linear-gradient(145deg, var(--pill-bg-1-hover) 0%, var(--pill-bg-2-hover) 100%);
-  border-color: var(--pill-border-hover);
-  box-shadow:
-      0 20px 40px -10px var(--pill-shadow-hover),
-      inset 0 1px 1px var(--pill-highlight-hover);
-  color: var(--foreground);
-}
-
-.footer-giant-bg-text {
-  font-size: 26vw;
-  line-height: 0.75;
-  font-weight: 900;
-  letter-spacing: -0.05em;
-  color: transparent;
-  -webkit-text-stroke: 1px color-mix(in oklch, var(--foreground) 5%, transparent);
-  background: linear-gradient(180deg, color-mix(in oklch, var(--foreground) 10%, transparent) 0%, transparent 60%);
-  -webkit-background-clip: text;
-  background-clip: text;
-}
-
-.footer-text-glow {
-  background: linear-gradient(180deg, var(--foreground) 0%, color-mix(in oklch, var(--foreground) 40%, transparent) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  filter: drop-shadow(0px 0px 20px color-mix(in oklch, var(--foreground) 15%, transparent));
+@media (prefers-reduced-motion: reduce) {
+  .footer-marquee { animation: none; }
 }
 `;
 
@@ -137,6 +36,7 @@ const MagneticButton = React.forwardRef<HTMLElement, MagneticButtonProps>(
 
     useEffect(() => {
       if (typeof window === 'undefined') return;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       const element = localRef.current;
       if (!element) return;
 
@@ -149,26 +49,15 @@ const MagneticButton = React.forwardRef<HTMLElement, MagneticButtonProps>(
           const y = e.clientY - rect.top - w;
 
           gsap.to(element, {
-            x: x * 0.4,
-            y: y * 0.4,
-            rotationX: -y * 0.15,
-            rotationY: x * 0.15,
-            scale: 1.05,
+            x: x * 0.3,
+            y: y * 0.3,
             ease: 'power2.out',
             duration: 0.4,
           });
         };
 
         const handleMouseLeave = () => {
-          gsap.to(element, {
-            x: 0,
-            y: 0,
-            rotationX: 0,
-            rotationY: 0,
-            scale: 1,
-            ease: 'elastic.out(1, 0.3)',
-            duration: 1.2,
-          });
+          gsap.to(element, { x: 0, y: 0, ease: 'elastic.out(1, 0.4)', duration: 1 });
         };
 
         element.addEventListener('mousemove', handleMouseMove);
@@ -188,10 +77,9 @@ const MagneticButton = React.forwardRef<HTMLElement, MagneticButtonProps>(
         ref={(node: HTMLElement | null) => {
           (localRef as React.MutableRefObject<HTMLElement | null>).current = node;
           if (typeof forwardedRef === 'function') forwardedRef(node);
-          else if (forwardedRef)
-            (forwardedRef as React.MutableRefObject<HTMLElement | null>).current = node;
+          else if (forwardedRef) (forwardedRef as React.MutableRefObject<HTMLElement | null>).current = node;
         }}
-        className={cn('cursor-pointer', className)}
+        className={cn('cursor-pointer active:scale-[0.97] transition-transform duration-100', className)}
         {...props}
       >
         {children}
@@ -201,199 +89,147 @@ const MagneticButton = React.forwardRef<HTMLElement, MagneticButtonProps>(
 );
 MagneticButton.displayName = 'MagneticButton';
 
-const MarqueeItem = () => (
-  <div className="flex items-center space-x-12 px-6">
-    <span>CRM Imobiliário</span> <span className="text-[#3054ff]/60">✦</span>
-    <span>Funil de Vendas</span> <span className="text-[#b4c0ff]/60">✦</span>
-    <span>Chat com IA</span> <span className="text-[#3054ff]/60">✦</span>
-    <span>Gestão de Leads</span> <span className="text-[#b4c0ff]/60">✦</span>
-    <span>Feche Mais Negócios</span> <span className="text-[#3054ff]/60">✦</span>
+const MARQUEE_ITEMS = [
+  'CRM Imobiliário',
+  'Assistente com IA',
+  'Catálogo real',
+  'Funil de leads',
+  'Corretores em campo',
+];
+
+const MarqueeRow = () => (
+  <div className="flex items-center gap-10 px-5">
+    {MARQUEE_ITEMS.map((item) => (
+      <span key={item} className="flex items-center gap-10">
+        {item}
+        <span className="text-[var(--shop-brass)]/50">·</span>
+      </span>
+    ))}
   </div>
 );
 
 export function CinematicFooter() {
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const giantTextRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const linksRef = useRef<HTMLDivElement>(null);
+  const [reduceMotion, setReduceMotion] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!wrapperRef.current) return;
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const onChange = () => setReduceMotion(query.matches);
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
+  }, []);
+
+  useEffect(() => {
+    if (!wrapperRef.current || reduceMotion) return;
 
     const ctx = gsap.context(() => {
       gsap.fromTo(
-        giantTextRef.current,
-        { y: '10vh', scale: 0.8, opacity: 0 },
-        {
-          y: '0vh',
-          scale: 1,
-          opacity: 1,
-          ease: 'power1.out',
-          scrollTrigger: {
-            trigger: wrapperRef.current,
-            start: 'top 80%',
-            end: 'bottom bottom',
-            scrub: 1,
-          },
-        }
-      );
-
-      gsap.fromTo(
         [headingRef.current, linksRef.current],
-        { y: 50, opacity: 0 },
+        { y: 40, opacity: 0 },
         {
           y: 0,
           opacity: 1,
-          stagger: 0.15,
+          stagger: 0.12,
           ease: 'power3.out',
           scrollTrigger: {
             trigger: wrapperRef.current,
-            start: 'top 40%',
-            end: 'bottom bottom',
-            scrub: 1,
+            start: 'top 75%',
+            end: 'top 35%',
+            scrub: 0.6,
           },
         }
       );
     }, wrapperRef);
 
     return () => ctx.revert();
-  }, []);
+  }, [reduceMotion]);
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
   };
 
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: STYLES }} />
 
-      <div
+      <footer
         ref={wrapperRef}
-        className="relative h-screen w-full"
-        style={{ clipPath: 'polygon(0% 0, 100% 0%, 100% 100%, 0 100%)' }}
+        className="relative w-full overflow-hidden border-t border-[var(--shop-brass)]/15 bg-[var(--shop-ink)]"
       >
-        <footer className="cinematic-footer-wrapper fixed bottom-0 left-0 flex h-screen w-full flex-col justify-between overflow-hidden bg-black text-white">
-          <div
-            className="footer-aurora pointer-events-none absolute top-1/2 left-1/2 z-0 h-[60vh] w-[80vw] -translate-x-1/2 -translate-y-1/2 animate-footer-breathe rounded-[50%] blur-[80px]"
-            aria-hidden
-          />
-          <div className="footer-bg-grid pointer-events-none absolute inset-0 z-0" aria-hidden />
+        {/* The shop's hanging sign, lit from inside. */}
+        <div
+          className="pointer-events-none absolute left-1/2 top-0 h-[40vh] w-[70vw] -translate-x-1/2 rounded-[50%] opacity-50 blur-[100px]"
+          style={{ background: 'radial-gradient(ellipse at center, var(--shop-brass-glow), transparent 65%)' }}
+          aria-hidden
+        />
 
-          <div
-            ref={giantTextRef}
-            className="footer-giant-bg-text pointer-events-none absolute -bottom-[5vh] left-1/2 z-0 -translate-x-1/2 whitespace-nowrap select-none"
-            aria-hidden
+        <div className="overflow-hidden border-b border-white/10 bg-black/40 py-3.5">
+          <div className="footer-marquee flex w-max text-xs font-semibold uppercase tracking-[0.25em] text-[var(--shop-text-dim)]">
+            <MarqueeRow />
+            <MarqueeRow />
+          </div>
+        </div>
+
+        <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center px-6 py-24 text-center">
+          <h2
+            ref={headingRef}
+            className="font-display max-w-xl text-4xl font-semibold leading-[1.05] tracking-[-0.02em] text-[var(--shop-ink-text)] sm:text-6xl"
           >
-            CORREAI
-          </div>
+            A vitrine está aberta.
+          </h2>
 
-          <div className="absolute top-12 left-0 z-10 w-full -rotate-2 scale-110 overflow-hidden border-y border-white/10 bg-black/60 py-4 shadow-2xl backdrop-blur-md">
-            <div className="flex w-max animate-footer-scroll-marquee text-xs font-bold tracking-[0.3em] text-white/50 uppercase md:text-sm">
-              <MarqueeItem />
-              <MarqueeItem />
-            </div>
-          </div>
-
-          <div className="relative z-10 mx-auto mt-20 flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-6">
-            <h2
-              ref={headingRef}
-              className="footer-text-glow mb-12 text-center text-5xl font-black tracking-tighter md:text-8xl"
-            >
-              Pronto para começar?
-            </h2>
-
-            <div ref={linksRef} className="flex w-full flex-col items-center gap-6">
-              <div className="flex w-full flex-wrap justify-center gap-4">
-                <MagneticButton
-                  as={Link}
-                  href="/cadastro"
-                  className="footer-glass-pill group flex items-center gap-3 rounded-full px-10 py-5 text-sm font-bold text-white md:text-base"
-                >
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#3054ff] text-xs font-black">
-                    →
-                  </span>
-                  Começar Grátis
-                </MagneticButton>
-
-                <MagneticButton
-                  as={Link}
-                  href="/login"
-                  className="footer-glass-pill flex items-center gap-3 rounded-full px-10 py-5 text-sm font-bold text-white/80 md:text-base hover:text-white"
-                >
-                  Entrar na Plataforma
-                </MagneticButton>
-              </div>
-
-              <div className="mt-2 flex w-full flex-wrap justify-center gap-3 md:gap-6">
-                <MagneticButton
-                  as="a"
-                  href="#"
-                  className="footer-glass-pill rounded-full px-6 py-3 text-xs font-medium text-white/55 hover:text-white md:text-sm"
-                >
-                  Privacidade
-                </MagneticButton>
-                <MagneticButton
-                  as="a"
-                  href="#"
-                  className="footer-glass-pill rounded-full px-6 py-3 text-xs font-medium text-white/55 hover:text-white md:text-sm"
-                >
-                  Termos de Uso
-                </MagneticButton>
-                <MagneticButton
-                  as="a"
-                  href="mailto:suporte@correai.com"
-                  className="footer-glass-pill rounded-full px-6 py-3 text-xs font-medium text-white/55 hover:text-white md:text-sm"
-                >
-                  Suporte
-                </MagneticButton>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative z-20 flex w-full flex-col items-center justify-between gap-6 px-6 pb-8 md:flex-row md:px-12">
-            <div className="order-2 text-[10px] font-semibold tracking-widest text-white/50 uppercase md:order-1 md:text-xs">
-              © {new Date().getFullYear()} CorreAi. Todos os direitos reservados.
-            </div>
-
-            <div className="footer-glass-pill order-1 flex cursor-default items-center gap-2 rounded-full border-white/10 px-6 py-3 md:order-2">
-              <span className="text-[10px] font-bold tracking-widest text-white/50 uppercase md:text-xs">
-                Feito com
-              </span>
-              <span className="animate-footer-heartbeat text-sm text-red-500 md:text-base">❤</span>
-              <span className="text-[10px] font-bold tracking-widest text-white/50 uppercase md:text-xs">
-                pela
-              </span>
-              <span className="ml-1 text-xs font-black tracking-normal text-white md:text-sm">
-                CorreAi
-              </span>
-            </div>
-
-            <MagneticButton
-              as="button"
-              type="button"
-              onClick={scrollToTop}
-              className="footer-glass-pill group order-3 flex h-12 w-12 items-center justify-center rounded-full text-white/55 hover:text-white"
-              aria-label="Voltar ao topo"
-            >
-              <svg
-                className="h-5 w-5 transition-transform duration-300 group-hover:-translate-y-1.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden
+          <div ref={linksRef} className="mt-10 flex w-full flex-col items-center gap-5">
+            <div className="flex w-full flex-wrap justify-center gap-3">
+              <MagneticButton
+                as={Link}
+                href="/cadastro"
+                className="flex items-center gap-2.5 rounded-[4px] bg-[var(--shop-brass)] px-8 py-4 text-sm font-semibold text-[#171206] hover:bg-[#e8cc6c]"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 10l7-7m0 0l7 7m-7-7v18"
-                />
-              </svg>
-            </MagneticButton>
+                Começar grátis
+              </MagneticButton>
+              <MagneticButton
+                as={Link}
+                href="/login"
+                className="flex items-center gap-2.5 rounded-[4px] border border-white/15 px-8 py-4 text-sm font-semibold text-[var(--shop-ink-text)]/85 hover:border-white/30 hover:text-[var(--shop-ink-text)]"
+              >
+                Entrar na plataforma
+              </MagneticButton>
+            </div>
+
+            <div className="mt-1 flex flex-wrap justify-center gap-2 text-xs text-[var(--shop-text-dim)]">
+              <a href="#" className="rounded-[3px] px-3 py-2 hover:text-[var(--shop-ink-text)]">
+                Privacidade
+              </a>
+              <a href="#" className="rounded-[3px] px-3 py-2 hover:text-[var(--shop-ink-text)]">
+                Termos de uso
+              </a>
+              <a href="mailto:suporte@correai.com" className="rounded-[3px] px-3 py-2 hover:text-[var(--shop-ink-text)]">
+                Suporte
+              </a>
+            </div>
           </div>
-        </footer>
-      </div>
+        </div>
+
+        <div className="relative z-10 flex w-full flex-col items-center justify-between gap-4 border-t border-white/10 px-6 py-6 text-[11px] text-[var(--shop-text-dim)] md:flex-row md:px-12">
+          <span className="tabular-nums tracking-wide">
+            <span style={{ fontFamily: 'system-ui, sans-serif' }}>©</span> {new Date().getFullYear()} CorreAI. Todos os direitos reservados.
+          </span>
+
+          <MagneticButton
+            as="button"
+            type="button"
+            onClick={scrollToTop}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-[var(--shop-text-dim)] hover:border-[var(--shop-brass)]/40 hover:text-[var(--shop-ink-text)]"
+            aria-label="Voltar ao topo"
+          >
+            <ArrowUp className="h-4 w-4" strokeWidth={2} />
+          </MagneticButton>
+        </div>
+      </footer>
     </>
   );
 }

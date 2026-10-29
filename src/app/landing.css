@@ -1,0 +1,62 @@
+/* Scoped to the public landing page only — the storefront-at-night world.
+   Does not touch the app-wide design system used by the logged-in product. */
+
+.landing-root {
+  --shop-ink: #07090d;
+  --shop-panel: #0c0f16;
+  --shop-glass-line: rgba(255, 255, 255, 0.08);
+  --shop-brass: #d9bb4c;
+  --shop-brass-dim: #8a7232;
+  --shop-brass-glow: rgba(217, 187, 76, 0.35);
+  --shop-signal: #4c73f2;
+  --shop-signal-soft: #a9bbf8;
+  --shop-paper: #ece6d8;
+  --shop-paper-dim: #cfc7b2;
+  --shop-ink-text: #f3efe6;
+  --shop-text-dim: rgba(243, 239, 230, 0.62);
+
+  background: var(--shop-ink);
+  color: var(--shop-ink-text);
+  font-family: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.landing-root .font-display {
+  font-family: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+}
+
+.landing-root ::selection {
+  background: var(--shop-brass);
+  color: #171206;
+}
+
+.landing-root :focus-visible {
+  outline: 2px solid var(--shop-signal);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Thin vertical seams across a surface, reading as window panes. */
+.landing-root .glass-seams {
+  background-image: repeating-linear-gradient(
+    to right,
+    transparent 0,
+    transparent calc(25% - 1px),
+    var(--shop-glass-line) calc(25%),
+    transparent calc(25% + 1px)
+  );
+}
+
+/* A pushpin / tape corner for cards pinned behind glass. */
+.landing-root .pin-tape::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  width: 46px;
+  height: 18px;
+  background: rgba(236, 230, 216, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  transform: translateX(-50%) rotate(-2deg);
+  pointer-events: none;
+}

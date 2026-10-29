@@ -1,0 +1,25 @@
+{
+  "scope": "src/app/page.tsx and src/components/landing/*",
+  "world": "Vitrine de imobiliária à noite",
+  "seed": "seed:a101482db9f3e73a",
+  "colors": {
+    "shop-ink": "#07090d",
+    "shop-panel": "#0c0f16",
+    "shop-glass-line": "rgba(255,255,255,0.08)",
+    "shop-brass": "#d9bb4c",
+    "shop-brass-dim": "#8a7232",
+    "shop-brass-glow": "rgba(217,187,76,0.35)",
+    "shop-signal": "#4c73f2",
+    "shop-signal-soft": "#a9bbf8",
+    "shop-paper": "#ece6d8",
+    "shop-paper-dim": "#cfc7b2",
+    "shop-ink-text": "#f3efe6",
+    "shop-text-dim": "rgba(243,239,230,0.62)"
+  },
+  "fonts": {
+    "display": "Space Grotesk",
+    "body": "DM Sans"
+  },
+  "radius": "2-4px",
+  "colorStrategy": "committed (brass carries 30-60% of surface weight; signal-blue reserved for AI actions only)"
+}

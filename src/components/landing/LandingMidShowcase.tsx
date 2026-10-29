@@ -1,9 +1,9 @@
 'use client';
 
-import type { CSSProperties } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { ArrowUpRight } from 'lucide-react';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger);
@@ -17,8 +17,6 @@ type Card = {
   preco: string;
   area: string;
   tag: string;
-  gradientFrom: string;
-  gradientTo: string;
   imagem: string;
 };
 
@@ -31,8 +29,6 @@ const MOCK_CARDS: Card[] = [
     preco: 'R$ 980.000',
     area: '84 m²',
     tag: 'Ideal para viver bem',
-    gradientFrom: 'rgba(48,84,255,0.6)',
-    gradientTo: 'rgba(180,192,255,0.7)',
     imagem: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=600&q=80',
   },
   {
@@ -43,8 +39,6 @@ const MOCK_CARDS: Card[] = [
     preco: 'R$ 1.250.000',
     area: '145 m²',
     tag: 'Famílias em expansão',
-    gradientFrom: 'rgba(48,84,255,0.35)',
-    gradientTo: 'rgba(52,211,153,0.35)',
     imagem: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=600&q=80',
   },
   {
@@ -55,8 +49,6 @@ const MOCK_CARDS: Card[] = [
     preco: 'R$ 690.000',
     area: '62 m²',
     tag: 'Primeiro imóvel',
-    gradientFrom: 'rgba(48,84,255,0.45)',
-    gradientTo: 'rgba(180,192,255,0.55)',
     imagem: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=600&q=80',
   },
   {
@@ -67,8 +59,6 @@ const MOCK_CARDS: Card[] = [
     preco: 'R$ 1.480.000',
     area: '170 m²',
     tag: 'Tranquilidade garantida',
-    gradientFrom: 'rgba(48,84,255,0.28)',
-    gradientTo: 'rgba(99,102,241,0.42)',
     imagem: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=600&q=80',
   },
   {
@@ -79,20 +69,16 @@ const MOCK_CARDS: Card[] = [
     preco: 'R$ 1.120.000',
     area: '93 m²',
     tag: 'Casais e lifestyle',
-    gradientFrom: 'rgba(180,192,255,0.55)',
-    gradientTo: 'rgba(48,84,255,0.4)',
     imagem: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'house-3',
     tipo: 'Casa',
-    titulo: 'Casa térrea com integration total',
+    titulo: 'Casa térrea com integração total',
     descricao: 'Conforto térmico, circulação fluida e cozinha integrada.',
     preco: 'R$ 1.620.000',
     area: '200 m²',
     tag: 'Começo de vida novo',
-    gradientFrom: 'rgba(48,84,255,0.25)',
-    gradientTo: 'rgba(52,211,153,0.28)',
     imagem: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=600&q=80',
   },
   {
@@ -103,8 +89,6 @@ const MOCK_CARDS: Card[] = [
     preco: 'R$ 740.000',
     area: '70 m²',
     tag: 'Praticidade',
-    gradientFrom: 'rgba(48,84,255,0.4)',
-    gradientTo: 'rgba(180,192,255,0.55)',
     imagem: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=600&q=80',
   },
   {
@@ -115,8 +99,6 @@ const MOCK_CARDS: Card[] = [
     preco: 'R$ 1.900.000',
     area: '230 m²',
     tag: 'Receber com estilo',
-    gradientFrom: 'rgba(48,84,255,0.28)',
-    gradientTo: 'rgba(59,130,246,0.45)',
     imagem: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=600&q=80',
   },
 ];
@@ -141,8 +123,13 @@ const ROTULOS_TIPO: Record<string, string> = {
   comercial: 'Comercial',
 };
 
+// Ângulos e quedas fixos (não aleatórios) para a fileira não parecer uma
+// grade impressa — cada ficha pende como se alguém tivesse colado à mão.
+const ROTATIONS = [-2.5, 1.5, -1, 2, -1.5, 1, -2, 1.5];
+const DROPS = [0, 10, -4, 14, 2, -8, 8, 0];
+
 function imovelParaCard(imovel: ImovelPublico, idx: number): Card {
-  const gradiente = MOCK_CARDS[idx % MOCK_CARDS.length];
+  const fallbackImagem = MOCK_CARDS[idx % MOCK_CARDS.length].imagem;
   const rotuloTipo = ROTULOS_TIPO[imovel.tipo] ?? imovel.tipo;
   return {
     id: imovel.id,
@@ -152,14 +139,13 @@ function imovelParaCard(imovel: ImovelPublico, idx: number): Card {
     preco: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(imovel.valor),
     area: imovel.metragem ? `${imovel.metragem} m²` : '—',
     tag: imovel.quartos ? `${imovel.quartos} quartos` : 'Em destaque',
-    gradientFrom: gradiente.gradientFrom,
-    gradientTo: gradiente.gradientTo,
-    imagem: imovel.imagem_url || gradiente.imagem,
+    imagem: imovel.imagem_url || fallbackImagem,
   };
 }
 
 export function LandingMidShowcase() {
   const [cards, setCards] = useState<Card[]>(MOCK_CARDS);
+  const [isolatedId, setIsolatedId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelado = false;
@@ -181,158 +167,124 @@ export function LandingMidShowcase() {
 
   const sectionRef = useRef<HTMLElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
-  const rowRef = useRef<HTMLDivElement | null>(null);
 
-  const cardsForRender = useMemo(() => {
-    // Duplica para dar sensação de “carrossel” no scroll.
-    return cards.length > 1 ? [...cards, ...cards] : cards;
-  }, [cards]);
-
+  // A vitrine nunca trava o scroll da página: a fileira de fichas é uma
+  // faixa com scroll/arrasto horizontal próprio (mouse, trackpad ou dedo),
+  // e o visitante sempre circula livremente pelo resto da página por cima
+  // dela. Só o painel ganha uma entrada suave ao chegar na viewport.
   useEffect(() => {
     const section = sectionRef.current;
     const panel = panelRef.current;
-    const row = rowRef.current;
+    if (!section || !panel) return;
 
-    if (!section || !panel || !row) return;
-
-    const parent = row.parentElement;
-    const getMaxShift = () => {
-      const wrapperWidth = parent?.clientWidth ?? 0;
-      const rowWidth = row.scrollWidth;
-      return Math.max(0, rowWidth - wrapperWidth);
-    };
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      gsap.set(panel, { y: 0, opacity: 1 });
+      return;
+    }
 
     const ctx = gsap.context(() => {
-      // “Dropdown”/reveal do painel conforme o usuário chega na seção.
       gsap.fromTo(
         panel,
-        { y: 60, opacity: 0 },
+        { y: 40, opacity: 0 },
         {
           y: 0,
           opacity: 1,
           ease: 'power3.out',
+          duration: 0.7,
           scrollTrigger: {
             trigger: section,
             start: 'top 85%',
-            end: 'top 55%',
-            scrub: true,
+            toggleActions: 'play none none none',
           },
         }
       );
-
-      // Movimento horizontal dos cards no scroll (mesmo conceito do footer).
-      const maxShift = getMaxShift();
-      gsap.to(row, {
-        x: -maxShift,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: section,
-          start: 'top 70%',
-          end: 'bottom 20%',
-          scrub: true,
-        },
-      });
     }, section);
 
-    // Recalcula ao redimensionar.
-    const onResize = () => {
-      ScrollTrigger.refresh();
-    };
-    window.addEventListener('resize', onResize);
-
-    return () => {
-      window.removeEventListener('resize', onResize);
-      ctx.revert();
-    };
-  }, [cardsForRender]);
+    return () => ctx.revert();
+  }, []);
 
   return (
     <section
       ref={sectionRef}
-      className="relative z-10 mx-auto w-full bg-black"
-      aria-label="Opções de casas e apartamentos"
+      className="relative z-10 mx-auto w-full bg-[var(--shop-ink)]"
+      aria-label="Vitrine de imóveis"
     >
-      <div className="mx-auto max-w-6xl px-6 py-20">
+      <div className="mx-auto max-w-6xl px-6 py-24">
         <div
           ref={panelRef}
-          className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.6)] backdrop-blur-xl sm:p-8"
+          className="rounded-[3px] border border-[var(--shop-brass)]/20 bg-[var(--shop-panel)] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.6)] sm:p-8"
         >
-          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div className="space-y-1">
-              <p className="text-xs font-semibold tracking-[0.25em] text-white/60 uppercase">
-                Meio termo
-              </p>
-              <h2 className="font-[family-name:var(--font-instrument-serif)] text-2xl leading-tight sm:text-3xl">
-                Sugestões de imóveis para alinhar seu match
-              </h2>
-              <p className="max-w-2xl text-sm text-white/60">
-                Casas e apartamentos que se conectam com o que a CorreAi entrega ao lead e ao corretor.
-                Role para ver as opções mudando.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2 text-xs text-white/55">
-              <span>Lead</span>
-              <span className="h-px w-10 bg-white/20" />
-              <span>Corretor</span>
-            </div>
-          </div>
+          <h2 className="font-display max-w-xl text-2xl font-semibold leading-tight text-[var(--shop-ink-text)] sm:text-3xl">
+            Fichas reais, coladas no vidro.
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm text-[var(--shop-text-dim)]">
+            O catálogo da imobiliária, como ele está agora. Arraste para o lado para ver todas as
+            fichas.
+          </p>
 
           <div className="mt-8">
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.03] to-white/[0.01]">
-              <div className="pointer-events-none absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-black to-transparent" />
-              <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-black to-transparent" />
+            <div className="relative overflow-x-auto rounded-[3px] border border-white/10 bg-[linear-gradient(180deg,rgba(0,0,0,0.3),rgba(0,0,0,0.1))]">
+              <div className="pointer-events-none absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-[var(--shop-panel)] to-transparent" />
+              <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-[var(--shop-panel)] to-transparent" />
 
-              <div className="px-5 py-8">
-                <div ref={rowRef} className="flex w-max gap-5">
-                  {cardsForRender.map((c, idx) => (
-                    <article
-                      key={`${c.id}-${idx}`}
-                      className="group relative w-[260px] shrink-0 rounded-3xl border border-white/10 bg-white/[0.03] p-4 shadow-[0_18px_45px_rgba(0,0,0,0.6)] backdrop-blur-lg"
-                    >
-                      <div
-                        className="relative mb-4 h-32 w-full overflow-hidden rounded-2xl"
-                        aria-hidden
+              <div className="snap-x snap-mandatory px-6 py-12">
+                <div className="flex w-max items-start gap-0">
+                  {cards.map((c, idx) => {
+                    const isolated = isolatedId === c.id;
+                    const dimmed = isolatedId !== null && !isolated;
+                    // Fichas coladas à mão, não impressas numa grade: cada
+                    // uma pende num ângulo levemente diferente e invade a
+                    // margem da vizinha.
+                    const rotation = ROTATIONS[idx % ROTATIONS.length];
+                    const drop = DROPS[idx % DROPS.length];
+                    return (
+                      <article
+                        key={c.id}
+                        onClick={() => setIsolatedId((prev) => (prev === c.id ? null : c.id))}
+                        style={{
+                          transform: isolated
+                            ? 'rotate(0deg) translateY(-10px)'
+                            : `rotate(${rotation}deg) translateY(${drop}px)`,
+                          marginLeft: idx === 0 ? 0 : -22,
+                          zIndex: isolated ? 30 : idx,
+                        }}
+                        className={`pin-tape group relative w-[250px] shrink-0 cursor-pointer snap-start rounded-[2px] bg-[var(--shop-paper)] p-3.5 text-[#1b1710] shadow-[0_14px_32px_rgba(0,0,0,0.5)] transition-[opacity,transform] duration-300 ease-out hover:z-20 ${
+                          dimmed ? 'opacity-35' : 'opacity-100'
+                        }`}
                       >
-                        <img
-                          src={c.imagem}
-                          alt={c.titulo}
-                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        />
-                        <div
-                          className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,var(--g1),transparent_58%),radial-gradient(circle_at_100%_100%,var(--g2),transparent_58%)] mix-blend-overlay opacity-80 transition-opacity duration-700 group-hover:opacity-60"
-                          style={
-                            {
-                              '--g1': c.gradientFrom,
-                              '--g2': c.gradientTo,
-                            } as CSSProperties
-                          }
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="rounded-full border border-white/15 px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-white/75">
-                          {c.tipo}
-                        </span>
-                        <span className="text-[11px] text-white/50">{c.area}</span>
-                      </div>
-
-                      <h3 className="mt-2 text-sm font-semibold leading-snug">{c.titulo}</h3>
-                      <p className="mt-1 text-[11px] leading-relaxed text-white/60">
-                        {c.descricao}
-                      </p>
-
-                      <div className="mt-4 flex items-end justify-between">
-                        <div>
-                          <p className="text-[11px] text-white/55">{c.tag}</p>
-                          <p className="text-sm font-semibold text-white">{c.preco}</p>
+                        <div className="relative mb-3 h-28 w-full overflow-hidden rounded-[1px]" aria-hidden>
+                          <img
+                            src={c.imagem}
+                            alt={c.titulo}
+                            className="h-full w-full object-cover grayscale-[15%] transition-transform duration-700 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent" />
                         </div>
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-[12px] text-white/70">
-                          ↻
+
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6b5f3f]">
+                            {c.tipo}
+                          </span>
+                          <span className="tabular-nums text-[10px] text-[#6b5f3f]">{c.area}</span>
                         </div>
-                      </div>
-                    </article>
-                  ))}
+
+                        <h3 className="mt-1.5 text-[13px] font-semibold leading-snug text-[#1b1710]">
+                          {c.titulo}
+                        </h3>
+                        <p className="mt-1 text-[11px] leading-relaxed text-[#3c3627]">{c.descricao}</p>
+
+                        <div className="mt-3 flex items-end justify-between border-t border-[#1b1710]/10 pt-2.5">
+                          <div>
+                            <p className="text-[10px] text-[#6b5f3f]">{c.tag}</p>
+                            <p className="font-display tabular-nums text-sm font-semibold text-[#1b1710]">
+                              {c.preco}
+                            </p>
+                          </div>
+                          <ArrowUpRight className="h-4 w-4 text-[#6b5f3f] transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" strokeWidth={2} />
+                        </div>
+                      </article>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -342,4 +294,3 @@ export function LandingMidShowcase() {
     </section>
   );
 }
-
