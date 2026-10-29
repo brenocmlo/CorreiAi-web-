@@ -12,6 +12,9 @@ async function apiRequest<T>(url: string, options: RequestInit = {}): Promise<T>
     headers: { 'Content-Type': 'application/json', ...options.headers },
   });
   const body = await response.json().catch(() => ({}));
+  if (response.status === 401 && typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('correia:session-expired'));
+  }
   if (!response.ok) throw new Error(body.error ?? 'Erro ao consultar imóveis.');
   return body as T;
 }

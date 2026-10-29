@@ -8,6 +8,10 @@ export function isAdminRole(role: AppRole | null | undefined): boolean {
   return role === 'admin_corretora' || role === 'super_admin';
 }
 
+export function isPrivatePage(pathname: string): boolean {
+  return ['/dashboard', '/imoveis', '/leads', '/funil', '/admin'].some(path => pathname === path || pathname.startsWith(`${path}/`));
+}
+
 export function canAccessPage(role: AppRole, pathname: string): boolean {
   if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) return true;
   if (pathname === '/admin' || pathname.startsWith('/admin/')) {

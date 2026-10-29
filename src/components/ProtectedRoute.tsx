@@ -3,8 +3,8 @@
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 
-// A proteção real é feita pelo middleware server-side (src/middleware.ts).
-// Este componente apenas renderiza um loading enquanto o AuthContext hidrata.
+// AuthProvider oculta e redireciona a área privada sem sessão; proxy e APIs
+// fazem a validação no servidor. Aqui mantemos o loading da tela.
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { loading } = useAuth();
 
