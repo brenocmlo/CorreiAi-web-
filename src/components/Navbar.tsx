@@ -3,10 +3,11 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { homeForRole } from '@/lib/auth-policy';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function Navbar() {
-  const { user, profile, logout, isLead, isAdmin } = useAuth();
+  const { user, profile, isLead, isAdmin } = useAuth();
   const pathname = usePathname();
   const [menuAberto, setMenuAberto] = useState(false);
 
@@ -39,7 +40,11 @@ export default function Navbar() {
 
   const navLinksLead = [{ href: '/dashboard', label: 'Início' }];
 
-  const navLinks = isLead ? navLinksLead : navLinksCorretor;
+  const navLinks = profile?.role === 'super_admin' ? [{ href: '/admin/imobiliarias', label: 'Imobiliárias' }] : isLead ? navLinksLead : navLinksCorretor;
+  const prepareLogout = () => {
+    setMenuAberto(false);
+    try { sessionStorage.removeItem('correia-assistente'); } catch { /* Armazenamento opcional. */ }
+  };
 
   return (
     <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
@@ -47,7 +52,7 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo e Links Principais */}
           <div className="flex items-center gap-8">
-            <Link href="/dashboard" className="flex items-center gap-2">
+            <Link href={profile ? homeForRole(profile.role) : "/login"} className="flex items-center gap-2">
               <span className="text-xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                 CorreIA
               </span>
@@ -83,12 +88,13 @@ export default function Navbar() {
               <p className="text-sm font-semibold text-slate-200">{nomeExibicao}</p>
             </div>
             <div className="h-8 w-px bg-slate-700"></div>
-            <button
-              onClick={() => logout()}
+            <form action="/api/auth/logout" method="post" onSubmit={prepareLogout}>
+            <button type="submit"
               className="text-sm font-medium text-slate-400 hover:text-red-400 transition-colors"
             >
               Sair
             </button>
+            </form>
           </div>
 
           {/* Botão Menu Mobile */}
@@ -130,15 +136,13 @@ export default function Navbar() {
                 </Link>
               );
             })}
-            <button
-              onClick={() => {
-                setMenuAberto(false);
-                logout();
-              }}
+            <form action="/api/auth/logout" method="post" onSubmit={prepareLogout}>
+            <button type="submit"
               className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-slate-800 hover:text-red-300 mt-4"
             >
               Sair da Conta
             </button>
+            </form>
           </div>
         </div>
       )}

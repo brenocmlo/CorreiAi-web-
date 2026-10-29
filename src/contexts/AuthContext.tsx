@@ -1,7 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { AppRole, isAdminRole } from '@/lib/auth-policy';
+import React, { createContext, useContext, useCallback, useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { AppRole, canAccessPage, homeForRole, isAdminRole, isPrivatePage } from '@/lib/auth-policy';
 
 interface Profile {
   id: string;
@@ -21,7 +22,6 @@ interface AuthContextType {
   isCorretor: boolean;
   isAdmin: boolean;
   loading: boolean;
-  logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -31,46 +31,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchMe = async () => {
+  const pathname = usePathname();
+  const requestVersion = useRef(0);
+
+  const fetchMe = useCallback(async () => {
+    const version = ++requestVersion.current;
     try {
-      const res = await fetch('/api/auth/me');
-      if (res.ok) {
-        const { perfil } = await res.json();
-        setProfile(perfil as Profile);
-      } else {
-        setProfile(null);
-      }
+      const res = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
+      const body = res.ok ? await res.json() : null;
+      if (version === requestVersion.current) setProfile(body?.perfil ?? null);
     } catch {
-      setProfile(null);
+      if (version === requestVersion.current) setProfile(null);
+    } finally {
+      if (version === requestVersion.current) setLoading(false);
     }
-  };
-
-  const refreshProfile = async () => {
-    await fetchMe();
-  };
-
-  useEffect(() => {
-    async function loadSession() {
-      await fetchMe();
-      setLoading(false);
-    }
-    void loadSession();
   }, []);
 
-  const logout = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/auth/logout', { method: 'POST' });
-      if (!response.ok) throw new Error('Não foi possível encerrar a sessão.');
-      try { sessionStorage.removeItem('correia-assistente'); } catch { /* Armazenamento local pode estar indisponível. */ }
+  const refreshProfile = fetchMe;
+
+  useEffect(() => {
+    // Validar novamente ao navegar também cobre conteúdo pré-carregado antes do logout.
+    async function loadSession() { await fetchMe(); }
+    void loadSession();
+  }, [fetchMe, pathname]);
+
+  useEffect(() => {
+    const expire = () => {
+      requestVersion.current++;
       setProfile(null);
-      window.location.href = '/';
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error);
-    } finally {
       setLoading(false);
+    };
+    const checkOnFocus = () => { void fetchMe(); };
+    const checkOnRestore = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        setLoading(true);
+        void fetchMe();
+      }
+    };
+    window.addEventListener('correia:session-expired', expire);
+    window.addEventListener('focus', checkOnFocus);
+    window.addEventListener('pageshow', checkOnRestore);
+    return () => {
+      window.removeEventListener('correia:session-expired', expire);
+      window.removeEventListener('focus', checkOnFocus);
+      window.removeEventListener('pageshow', checkOnRestore);
+    };
+  }, [fetchMe]);
+
+  const privatePage = isPrivatePage(pathname);
+  const allowed = profile && canAccessPage(profile.role, pathname);
+  useEffect(() => {
+    if (privatePage && !loading) {
+      if (!profile) window.location.replace('/login');
+      else if (!canAccessPage(profile.role, pathname)) window.location.replace(homeForRole(profile.role));
     }
-  };
+  }, [privatePage, loading, profile, pathname]);
+
+  // Não deixar conteúdo de uma sessão antiga visível enquanto redireciona.
+  if (privatePage && (loading || !profile || !allowed)) {
+    return <div role="status" className="min-h-screen flex items-center justify-center bg-slate-950">Verificando sessão...</div>;
+  }
 
   const role = profile?.role ?? null;
 
@@ -84,7 +104,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isCorretor: role !== null && role !== 'lead',
         isAdmin: isAdminRole(role),
         loading,
-        logout,
         refreshProfile,
       }}
     >

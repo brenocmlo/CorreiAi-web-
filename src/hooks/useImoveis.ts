@@ -12,6 +12,9 @@ async function apiRequest<T>(url: string, options: RequestInit = {}): Promise<T>
     headers: { 'Content-Type': 'application/json', ...options.headers },
   });
   const body = await response.json().catch(() => ({}));
+  if (response.status === 401 && typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('correia:session-expired'));
+  }
   if (!response.ok) throw new Error(body.error ?? 'Erro ao consultar imóveis.');
   return body as T;
 }
@@ -130,11 +133,7 @@ export function useImoveis() {
 
       if (uploadError) throw uploadError;
 
-      const { data } = supabase.storage
-        .from(IMOVEIS_STORAGE_BUCKET)
-        .getPublicUrl(path);
-
-      return data.publicUrl;
+      return `/api/imoveis/imagem?path=${encodeURIComponent(path)}`;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao enviar imagem.');
       return null;

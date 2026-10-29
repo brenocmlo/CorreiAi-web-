@@ -6,11 +6,11 @@ import { createServerSupabaseClient } from '../../../lib/supabase.ts';
 import type { LeadInput } from '../../../types/lead.ts';
 
 export async function GET(request: NextRequest) {
-  const auth = getAuthFromRequest(request);
+  const auth = await getAuthFromRequest(request);
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
-  if (auth.role === 'lead') {
+  if (auth.role === 'lead' || auth.role === 'super_admin') {
     return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
   }
 
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     .from('leads')
     .select('*')
     .order('criado_em', { ascending: false });
-  if (auth.role === 'corretor') query = query.eq('corretor_id', auth.uid);
+  query = query.eq('corretor_id', auth.uid);
   const { data, error } = await query;
 
   if (error) {
@@ -30,11 +30,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = getAuthFromRequest(request);
+  const auth = await getAuthFromRequest(request);
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
-  if (auth.role === 'lead') {
+  if (auth.role === 'lead' || auth.role === 'super_admin') {
     return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
   }
 

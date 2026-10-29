@@ -20,7 +20,10 @@ type Card = {
   imagem: string;
 };
 
-const MOCK_CARDS: Card[] = [
+// Cada imobiliária tem catálogo próprio e privado (isolamento multi-tenant).
+// A landing pública nunca teve, e não deve ter, acesso a inventário real de
+// nenhum tenant específico — estas fichas são sempre ilustrativas.
+const ILLUSTRATIVE_CARDS: Card[] = [
   {
     id: 'apt-1',
     tipo: 'Apartamento',
@@ -103,67 +106,13 @@ const MOCK_CARDS: Card[] = [
   },
 ];
 
-interface ImovelPublico {
-  id: string;
-  tipo: string;
-  endereco: string;
-  bairro: string;
-  valor: number;
-  metragem?: number | null;
-  quartos?: number | null;
-  status: string;
-  imagem_url?: string | null;
-  descricao?: string | null;
-}
-
-const ROTULOS_TIPO: Record<string, string> = {
-  casa: 'Casa',
-  apartamento: 'Apartamento',
-  terreno: 'Terreno',
-  comercial: 'Comercial',
-};
-
 // Ângulos e quedas fixos (não aleatórios) para a fileira não parecer uma
 // grade impressa — cada ficha pende como se alguém tivesse colado à mão.
 const ROTATIONS = [-2.5, 1.5, -1, 2, -1.5, 1, -2, 1.5];
 const DROPS = [0, 10, -4, 14, 2, -8, 8, 0];
 
-function imovelParaCard(imovel: ImovelPublico, idx: number): Card {
-  const fallbackImagem = MOCK_CARDS[idx % MOCK_CARDS.length].imagem;
-  const rotuloTipo = ROTULOS_TIPO[imovel.tipo] ?? imovel.tipo;
-  return {
-    id: imovel.id,
-    tipo: rotuloTipo,
-    titulo: `${rotuloTipo} em ${imovel.bairro}`,
-    descricao: imovel.descricao?.trim() || `${imovel.endereco}, ${imovel.bairro}`,
-    preco: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(imovel.valor),
-    area: imovel.metragem ? `${imovel.metragem} m²` : '—',
-    tag: imovel.quartos ? `${imovel.quartos} quartos` : 'Em destaque',
-    imagem: imovel.imagem_url || fallbackImagem,
-  };
-}
-
 export function LandingMidShowcase() {
-  const [cards, setCards] = useState<Card[]>(MOCK_CARDS);
   const [isolatedId, setIsolatedId] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelado = false;
-    fetch('/api/imoveis')
-      .then((res) => (res.ok ? res.json() : Promise.reject(res)))
-      .then((data: { imoveis: ImovelPublico[] }) => {
-        if (cancelado) return;
-        const disponiveis = (data.imoveis ?? []).filter((i) => i.status === 'disponivel');
-        if (disponiveis.length === 0) return;
-        setCards(disponiveis.slice(0, 8).map(imovelParaCard));
-      })
-      .catch(() => {
-        // Mantém a vitrine com os exemplos padrão se a API falhar.
-      });
-    return () => {
-      cancelado = true;
-    };
-  }, []);
 
   const sectionRef = useRef<HTMLElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -207,7 +156,7 @@ export function LandingMidShowcase() {
     <section
       ref={sectionRef}
       className="relative z-10 mx-auto w-full bg-[var(--shop-ink)]"
-      aria-label="Vitrine de imóveis"
+      aria-label="Exemplos ilustrativos de casas e apartamentos"
     >
       <div className="mx-auto max-w-6xl px-6 py-24">
         <div
@@ -215,11 +164,12 @@ export function LandingMidShowcase() {
           className="rounded-[3px] border border-[var(--shop-brass)]/20 bg-[var(--shop-panel)] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.6)] sm:p-8"
         >
           <h2 className="font-display max-w-xl text-2xl font-semibold leading-tight text-[var(--shop-ink-text)] sm:text-3xl">
-            Fichas reais, coladas no vidro.
+            Fichas coladas no vidro.
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-[var(--shop-text-dim)]">
-            O catálogo da imobiliária, como ele está agora. Arraste para o lado para ver todas as
-            fichas.
+            Exemplos ilustrativos de como seu catálogo aparece na vitrine. O catálogo de cada
+            imobiliária é privado — só entra na conversa com a IA depois do login. Arraste para o
+            lado para ver todas as fichas.
           </p>
 
           <div className="mt-8">
@@ -229,7 +179,7 @@ export function LandingMidShowcase() {
 
               <div className="snap-x snap-mandatory px-6 py-12">
                 <div className="flex w-max items-start gap-0">
-                  {cards.map((c, idx) => {
+                  {ILLUSTRATIVE_CARDS.map((c, idx) => {
                     const isolated = isolatedId === c.id;
                     const dimmed = isolatedId !== null && !isolated;
                     // Fichas coladas à mão, não impressas numa grade: cada

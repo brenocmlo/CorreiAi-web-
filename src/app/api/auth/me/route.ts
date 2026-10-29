@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/jwt';
 import { createServerSupabaseClient } from '@/lib/supabase';
 import { publicProfile } from '@/lib/auth-session';
+import { resolveProfileAccess } from '@/lib/profile-access';
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,18 +18,18 @@ export async function GET(request: NextRequest) {
     const supabaseServer = createServerSupabaseClient();
     const { data: perfil, error } = await supabaseServer
       .from('perfis')
-      .select('id, nome_completo, email, cpf, creci, role, criado_em')
+      .select('id, nome_completo, email, cpf, creci, role, criado_em, ativo, imobiliaria_id')
       .eq('id', payload.uid)
       .maybeSingle();
 
     if (error) {
       return NextResponse.json({ error: 'Erro ao consultar sessão.' }, { status: 500 });
     }
-    if (!perfil) {
-      return NextResponse.json({ error: 'Perfil não encontrado.' }, { status: 404 });
+    if (!perfil || !await resolveProfileAccess(perfil)) {
+      return NextResponse.json({ error: 'Sessão indisponível.' }, { status: 401 });
     }
 
-    return NextResponse.json({ perfil: publicProfile(perfil) });
+    return NextResponse.json({ perfil: publicProfile(perfil) }, { headers: { 'Cache-Control': 'private, no-store' } });
   } catch {
     return NextResponse.json({ error: 'Token inválido ou expirado.' }, { status: 401 });
   }

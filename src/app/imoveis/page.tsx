@@ -9,7 +9,7 @@ import ConfirmModal from '@/components/ConfirmModal';
 
 export default function ImoveisPage() {
   const { isCorretor } = useAuth();
-  const { imoveis, loading, fetchImoveis, deleteImovel } = useImoveis();
+  const { imoveis, loading, error, fetchImoveis, deleteImovel } = useImoveis();
   
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [imovelToDelete, setImovelToDelete] = useState<string | null>(null);
@@ -50,7 +50,12 @@ export default function ImoveisPage() {
         )}
       </div>
 
-      {loading && imoveis.length === 0 ? (
+      {error ? (
+        <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-6 text-red-200">
+          {error}
+          <button onClick={() => fetchImoveis()} className="ml-4 underline">Tentar novamente</button>
+        </div>
+      ) : loading && imoveis.length === 0 ? (
         <div className="flex justify-center py-20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>

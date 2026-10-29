@@ -10,9 +10,9 @@ type RouteContext = { params: Promise<{ id: string }> };
 const VALID_STAGES = ETAPAS_FUNIL.map((stage) => stage.id);
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const auth = getAuthFromRequest(request);
+  const auth = await getAuthFromRequest(request);
   if (!auth) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
-  if (auth.role === 'lead') return NextResponse.json({ error: 'Sem permissão.' }, { status: 403 });
+  if (auth.role === 'lead' || auth.role === 'super_admin') return NextResponse.json({ error: 'Sem permissão.' }, { status: 403 });
 
   const { id } = await context.params;
   if (!isUuid(id)) return NextResponse.json({ error: 'ID inválido.' }, { status: 400 });

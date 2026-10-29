@@ -28,8 +28,8 @@ export default function NovoCorretorPage() {
       return;
     }
 
-    if (senha.length < 6) {
-      setErro('A senha deve ter no mínimo 6 caracteres.');
+    if (senha.length < 8) {
+      setErro('A senha deve ter no mínimo 8 caracteres.');
       return;
     }
 
@@ -44,7 +44,7 @@ export default function NovoCorretorPage() {
           email: email.trim(),
           cpf: cpf.trim(),
           creci: creci.trim(),
-          senha: senha.trim(),
+          senha,
         }),
       });
 
@@ -170,7 +170,7 @@ export default function NovoCorretorPage() {
                     {mostrarSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                <p className="mt-1.5 text-xs text-slate-500">O corretor poderá alterar esta senha depois.</p>
+                <p className="mt-1.5 text-xs text-slate-500">Pelo menos 8 caracteres. Compartilhe o acesso diretamente com o corretor.</p>
               </div>
 
               <button

@@ -1,9 +1,11 @@
 # CorreIA — CRM Imobiliário Inteligente
+
+A publicação atual está em [correiai.vercel.app](https://correiai.vercel.app), pela `main`. Antes de preparar outro banco, leia [isolamento de dados](docs/seguranca-dados.md) e aplique todas as migrations; o SQL inicial abaixo não substitui as proteções posteriores.
 ## 🏛️ Documentação de Arquitetura e Engenharia de Software
 
 Este documento apresenta a arquitetura de sistemas, as decisões de design e a aplicação prática de padrões e princípios de engenharia de software no **CorreIA**, um CRM Imobiliário Inteligente desenvolvido com foco em performance, segurança e usabilidade premium.
 
-Este repositório está configurado para a branch de homologação/preview (`preview`) e reflete o estado consolidado da aplicação.
+As alterações de segurança do catálogo estão na `main`; contas novas começam vazias e os dados são isolados por proprietário/imobiliária.
 
 ---
 

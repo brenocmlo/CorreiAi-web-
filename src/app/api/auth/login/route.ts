@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { createServerSupabaseClient } from '../../../../lib/supabase.ts';
 import { signToken } from '../../../../lib/jwt.ts';
 import { normalizeEmail } from '../../../../lib/auth-input.ts';
+import { resolveProfileAccess } from '../../../../lib/profile-access';
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
       .eq('email', email)
       .maybeSingle();
 
-    if (error || !perfil) {
+    if (error || !perfil || perfil.ativo !== true) {
       return NextResponse.json(
         { error: 'E-mail ou senha incorretos.' },
         { status: 401 }
@@ -40,6 +41,10 @@ export async function POST(request: NextRequest) {
         { error: 'E-mail ou senha incorretos.' },
         { status: 401 }
       );
+    }
+
+    if (!await resolveProfileAccess(perfil)) {
+      return NextResponse.json({ error: 'Seu acesso profissional depende de uma imobiliária ativa. Procure o administrador responsável.' }, { status: 403 });
     }
 
     // Gerar token JWT

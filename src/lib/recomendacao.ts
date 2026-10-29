@@ -1,4 +1,6 @@
 import { createServerSupabaseClient } from './supabase.ts';
+import { scopeCatalog, type CatalogAccess } from './catalog-access';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 const FAIXAS_VALORES: Record<string, { min: number; max: number }> = {
   'Até R$ 300 mil': { min: 0, max: 300000 },
@@ -37,29 +39,18 @@ function normalize(text: string): string {
 
 export async function recomendarImoveis(
   prefs: PreferenciasLead,
-  client?: { from: (table: string) => unknown }
+  client?: { from: (table: string) => unknown },
+  access?: CatalogAccess
 ): Promise<ImovelRecomendado[]> {
+  if (!access) return [];
   if (!prefs.tipoImovel?.trim() && !prefs.faixaOrcamento?.trim() && !prefs.bairro?.trim()) {
     return [];
   }
 
-  const supabase = (client ?? createServerSupabaseClient()) as {
-    from: (table: string) => {
-      select: (fields: string) => {
-        eq: (col: string, val: string) => {
-          order: (col: string, opt: { ascending: boolean }) => {
-            then: (resolve: (res: { data: unknown; error: unknown }) => void) => void;
-          };
-        };
-      };
-    };
-  };
-
-  const query = supabase
-    .from('imoveis')
-    .select('id, tipo, endereco, bairro, valor, metragem, quartos, vagas, imagem_url, status')
-    .eq('status', 'disponivel')
-    .order('valor', { ascending: true });
+  const supabase = (client ?? createServerSupabaseClient()) as SupabaseClient;
+  const query = scopeCatalog(supabase.from('imoveis')
+    .select('id, tipo, endereco, bairro, valor, metragem, quartos, vagas, imagem_url, status'), access)
+    .eq('status', 'disponivel').order('valor', { ascending: true });
 
   const { data, error } = await query;
 
