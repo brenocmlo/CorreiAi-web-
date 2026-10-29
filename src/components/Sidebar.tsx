@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { homeForRole } from '@/lib/auth-policy';
 import { useAuth } from '@/hooks/useAuth';
+import { clearAssistantCache } from '@/lib/assistant-cache';
 
 interface NavItem {
   href: string;
@@ -62,11 +63,7 @@ export default function Sidebar() {
   const navLinks = isSuperAdmin ? navLinksSuperAdmin : isLead ? navLinksLead : navLinksCorretor;
 
   const prepareLogout = () => {
-    try {
-      sessionStorage.removeItem('correia-assistente');
-    } catch {
-      /* Armazenamento opcional. */
-    }
+    clearAssistantCache();
   };
 
   const papel = isSuperAdmin

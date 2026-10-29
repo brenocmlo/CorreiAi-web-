@@ -11,9 +11,10 @@ export async function GET(request: NextRequest) {
   if (!path) return NextResponse.json({ error: 'Imagem inválida.' }, { status: 400 });
   const db = createServerSupabaseClient();
 
-  if (!auth) {
-    // Sem sessão: só libera se essa imagem pertence a um imóvel que o
-    // corretor marcou explicitamente para a vitrine pública da landing.
+  const ownPrivateImage = auth && auth.role !== 'super_admin' && path.startsWith(`${auth.uid}/`);
+  if (!ownPrivateImage) {
+    // Um destaque público também pode ser visto por quem já está logado
+    // em outra empresa. A exceção não autoriza nenhuma imagem privada.
     const destaque = await db
       .from('imoveis')
       .select('id')
@@ -22,11 +23,8 @@ export async function GET(request: NextRequest) {
       .eq('status', 'disponivel')
       .limit(1);
     if (destaque.error || !destaque.data?.length) {
-      return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
-    }
-  } else {
-    if (auth.role === 'super_admin') return NextResponse.json({ error: 'Acesse a administração das imobiliárias.' }, { status: 403 });
-    if (!path.startsWith(`${auth.uid}/`)) {
+      if (!auth) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
+      if (auth.role === 'super_admin') return NextResponse.json({ error: 'Acesse a administração das imobiliárias.' }, { status: 403 });
       const result = await scopeCatalog(db.from('imoveis').select('id').eq('imagem_url', storedImageUrl(path)), auth).limit(1);
       if (result.error || !result.data?.length) return NextResponse.json({ error: 'Imagem não encontrada.' }, { status: 404 });
     }

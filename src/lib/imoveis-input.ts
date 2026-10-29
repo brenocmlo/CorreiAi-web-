@@ -20,7 +20,7 @@ const STATUS = new Set<ImovelPayload['status']>(['disponivel', 'vendido', 'aluga
 const CAMPOS = ['tipo', 'endereco', 'bairro', 'valor', 'metragem', 'quartos', 'vagas', 'status', 'imagem_url', 'descricao', 'destaque_landing'] as const;
 
 export const COLUNAS_PUBLICAS_IMOVEL =
-  'id,tipo,endereco,bairro,valor,metragem,quartos,vagas,status,criado_em,imagem_url,descricao';
+  'id,tipo,endereco,bairro,valor,metragem,quartos,vagas,status,criado_em,imagem_url,descricao,destaque_landing';
 
 export function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
