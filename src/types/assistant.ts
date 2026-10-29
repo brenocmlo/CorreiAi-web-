@@ -1,5 +1,10 @@
 export type ConversationMessage = { role: 'user' | 'assistant'; text: string };
 
+export interface AssistantContext {
+  catalogState: 'available' | 'restricted' | 'unavailable';
+  company: { nome: string; telefone: string | null } | null;
+}
+
 export interface Qualification {
   origem: 'assistente';
   nome: string | null;
@@ -15,6 +20,7 @@ export interface Qualification {
   formaPagamento: string | null;
   preferencias: string[];
   permiteContato: boolean;
+  contatoSolicitado?: boolean;
   visitaSolicitada: boolean;
   visitaPreferencia: string | null;
   imovelInteresseId: string | null;
@@ -45,6 +51,8 @@ export interface AssistantResponse {
   captura: CaptureStatus;
   qualificacao: Qualification;
   imoveis: AssistantProperty[];
+  contexto?: AssistantContext;
+  sugestoes?: string[];
   aviso?: string;
   error?: string;
 }

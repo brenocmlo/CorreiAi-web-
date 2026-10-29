@@ -23,6 +23,7 @@ function request(messages, { cookie, imovelId, origin } = {}) {
   return new NextRequest('http://localhost/api/assistente', { method:'POST', headers:{'Content-Type':'application/json', Cookie:[authCookie,cookie].filter(Boolean).join('; '), ...(origin?{Origin:origin}:{})}, body:JSON.stringify({messages,...(imovelId?{imovelId}:{})}) });
 }
 function database({ properties = [], unavailable = false } = {}) {
+  properties=properties.map(p=>({imobiliaria_id:fixtureOrg,...p}));
   const leads = [];
   const owner = randomUUID();
   authCookie = `auth_token=${signToken({uid:owner,email:'broker@example.invalid',nome_completo:'Fixture',role:'corretor'})}`;
@@ -81,12 +82,12 @@ test('assistente rejeita histórico inválido e origem externa antes da IA',asyn
 });
 test('assistente sem chave responde indisponível sem chamada externa',async()=>{
   database();const calls=provider();delete process.env.OPENROUTER_API_KEY;
-  assert.equal((await POST(request([user('Olá')]))).status,503);
+  assert.equal((await POST(request([user('Como funciona o financiamento?')]))).status,503);
   assert.equal(calls.length,0);
 });
 test('contexto é enviado ao modelo escolhido e extração usa somente falas do cliente',async()=>{
   const db=database();const calls=provider(['{}','Qual bairro você prefere?']);
-  const history=[user('Quero Casa até 300 mil'),{role:'assistant',text:'Nome inventado: Ana Silva'},user('Prefiro 2 quartos')];
+  const history=[user('Quero comprar Casa até 300 mil'),{role:'assistant',text:'Nome inventado: Ana Silva'},user('Quero financiar e preciso de varanda. Como funciona o financiamento?')];
   const response=await POST(request(history));const data=await response.json();
   assert.equal(response.status,200);assert.equal(data.captura,'incompleto');assert.equal(db.leads.length,0);
   assert.equal(calls.length,2);
@@ -100,7 +101,8 @@ test('contexto é enviado ao modelo escolhido e extração usa somente falas do 
 });
 test('override de modelo é preservado sem aplicar teto de outro modelo',async()=>{
   database();const calls=provider();process.env.OPENROUTER_MODEL='openrouter/free';
-  await POST(request([user('Quero casa')]));
+  await POST(request([user('Como funciona o financiamento?')]));
+  assert.equal(calls.length,1);
   assert.ok(calls.every(c=>c.body.model==='openrouter/free'&&c.body.provider===undefined));
 });
 test('contato completo cria lead Novo, resumo e cookie privado sem expor IDs internos',async()=>{
@@ -140,7 +142,7 @@ test('visita permanece solicitação e não altera etapa automaticamente',async(
   const data=await result.json();
   assert.equal(data.qualificacao.visitaSolicitada,true);
   assert.equal(db.leads[0].etapa,'novo');
-  assert.match(data.reply,/ainda dependem da confirmação/);
+  assert.match(data.reply,/ainda depende da confirmação/);
 });
 test('IA não autoriza cadastro quando cliente recusou contato',async()=>{
   const db=database();provider([JSON.stringify({nome:'Ana Silva'}),'Anotarei suas informações de contato para prosseguir.']);
@@ -158,7 +160,7 @@ test('não envia imóveis fora dos critérios nem aceita imóvel indisponível p
 });
 test('limite do provedor é recuperável e não cria lead',async()=>{
   const db=database();provider([429]);
-  const response=await POST(request([user(contact)]));
+  const response=await POST(request([user(contact+' Como funciona o financiamento?')]));
   assert.equal(response.status,429);assert.equal(response.headers.get('retry-after'),'30');
   assert.equal(db.leads.length,0);
 });
@@ -176,7 +178,7 @@ test('reiniciar conversa apaga apenas o cookie, preservando registro do corretor
 
 test('resposta não anuncia opções quando catálogo filtrado está vazio',async()=>{
   database();provider([JSON.stringify({bairro:'Meireles'}),'Consegui encontrar algumas opções que atendem aos seus critérios.']);
-  const result=await POST(request([user('Quero apartamento até 500 mil em Meireles.')]));
+  const result=await POST(request([user('Quero comprar apartamento até 500 mil em Meireles.')]));
   const data=await result.json();
   assert.deepEqual(data.imoveis,[]);
   assert.match(data.reply,/Não encontrei um imóvel/);
@@ -216,12 +218,12 @@ test('visitante não consulta portfólio nem encaminha contato para corretor glo
   const calls=provider(['{}','Posso entender sua busca.']);
   const result=await POST(request([user(contact)])); const data=await result.json();
   assert.equal(result.status,200);assert.deepEqual(data.imoveis,[]);assert.equal(db.leads.length,0);
-  assert.ok(!calls[1].body.messages[0].content.includes(foreign.id));
+  assert.equal(calls.length,0);
 });
 
 test('assistente autenticado não envia imóvel de outro proprietário ao provedor',async()=>{
-  const foreign={id:randomUUID(),proprietario_id:randomUUID(),tipo:'casa',bairro:'Centro',endereco:'Rua privada',valor:200000,status:'disponivel'};
+  const foreign={id:randomUUID(),proprietario_id:randomUUID(),imobiliaria_id:randomUUID(),tipo:'casa',bairro:'Centro',endereco:'Rua privada',valor:200000,status:'disponivel'};
   database({properties:[foreign]});const calls=provider();
-  const data=await (await POST(request([user('Quero casa até 300 mil')]))).json();
-  assert.deepEqual(data.imoveis,[]);assert.ok(!calls[1].body.messages[0].content.includes(foreign.id));
+  const data=await (await POST(request([user('Como funciona o financiamento para comprar casa até 300 mil?')]))).json();
+  assert.deepEqual(data.imoveis,[]);assert.equal(calls.length,1);assert.ok(!calls[0].body.messages[0].content.includes(foreign.id));
 });

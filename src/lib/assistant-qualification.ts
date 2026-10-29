@@ -1,5 +1,6 @@
 import { TIPOS_IMOVEL } from '../types/lead';
 import type { AssistantProperty, ConversationMessage, Qualification } from '../types/assistant';
+import { phoneDigits } from './phone';
 
 export const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
@@ -49,6 +50,7 @@ export function qualificationFrom(messages: ConversationMessage[], extracted?: u
     orcamentoMax: previous?.orcamentoMax ?? null, quartosMin: previous?.quartosMin ?? null, vagasMin: previous?.vagasMin ?? null,
     prazo: previous?.prazo ?? null, formaPagamento: previous?.formaPagamento ?? null, preferencias: previous?.preferencias ?? [],
     permiteContato: previous?.permiteContato ?? true, visitaSolicitada: previous?.visitaSolicitada ?? false,
+    contatoSolicitado: previous?.contatoSolicitado ?? false,
     visitaPreferencia: previous?.visitaPreferencia ?? null, imovelInteresseId: previous?.imovelInteresseId ?? null,
     resumo: '', proximoPasso: '', atualizadoEm: new Date().toISOString(),
   };
@@ -57,6 +59,18 @@ export function qualificationFrom(messages: ConversationMessage[], extracted?: u
     const message = messages[index].text;
     const lower = normalize(message);
     const question = messages.slice(0, index).findLast((m) => m.role === 'assistant')?.text ?? '';
+    const previousQuestion = normalize(question);
+    const name = message.match(/\b(?:me chamo|meu nome [ée]|sou(?: o| a)?)\s+([\p{L}][\p{L} '-]{1,100})/iu)?.[1]?.split(/\s+(?:e (?:quero|procuro|meu|gostaria)|quero|procuro)\b/i)[0].trim();
+    if (name && !/^(?:um |uma |corretor|cliente|proprietari|interessad)/.test(normalize(name))) q.nome = name;
+    else if (/como.{0,20}(?:chamad|chama)|qual.{0,15}(?:seu )?nome/.test(previousQuestion) && /^[\p{L}][\p{L} '-]{1,100}[.!]?$/u.test(message.trim())) q.nome = message.trim().replace(/[.!]$/, '');
+    const neighborhood = message.match(/\b(?:no bairro|na regi[ãa]o|bairro(?: [ée])?)\s+([\p{L}][\p{L} '-]{1,99})/iu)?.[1]
+      ?.split(/\s+(?:at[ée]|com|por|para|e preciso|e quero|de at[ée])(?=\s|$)/i)[0].trim();
+    if (neighborhood) q.bairro = neighborhood;
+    else if (/qual bairro|em que bairro|em qual bairro|bairro.{0,20}prefere/.test(previousQuestion) && /^[\p{L}][\p{L} '-]{1,99}[.!]?$/u.test(message.trim()) && !/^(qualquer|nao|não|tanto faz)/i.test(message.trim())) q.bairro = message.trim().replace(/[.!]$/, '');
+    const shortNeighborhood = message.match(/\b(?:casa|apartamento|apto|terreno|studio)\s+(?:no|na|em)\s+([\p{L}][\p{L} '-]{1,99})/iu)?.[1]?.split(/\s+(?:at[ée]|com|por|para|e preciso|e quero)(?=\s|$)/i)[0].trim();
+    if (!neighborhood && shortNeighborhood && !/^(bairro|regiao|região)\b/i.test(shortNeighborhood)) q.bairro = shortNeighborhood;
+    const finalLocation=message.match(/\b(?:em|no|na)\s+([\p{Lu}][\p{L} '-]{1,99})/u)?.[1]?.split(/\s+(?:at[ée]|com|por|para)(?=\s|$)/i)[0].trim();
+    if(!neighborhood&&!shortNeighborhood&&finalLocation&&typesInSearch(lower))q.bairro=finalLocation;
     const budget = budgetFrom(message, question);
     if (budget !== null) q.orcamentoMax = budget;
     const comparing = /diferenca|compar|vantag|desvantag|qual.{0,30}melhor|nao sei|em duvida|indecis/.test(lower);
@@ -77,18 +91,23 @@ export function qualificationFrom(messages: ConversationMessage[], extracted?: u
     if (parking) q.vagasMin = counts[parking[1]] ?? Number(parking[1]);
     if (/nao\s+(?:quero|autorizo|permito|desejo).{0,40}(?:cadastr|salv|compartilh|contat|corretor|(?:passar|informar|fornecer).{0,15}dados)|nao me (?:lig|contat)/.test(lower)) q.permiteContato = false;
     else if (/(?:autorizo|pode).{0,30}(?:cadastr|salv|encaminh|contat)/.test(lower)) q.permiteContato = true;
+    if (/(?:quero|preciso|gostaria).{0,25}(?:falar|conversar|contato).{0,25}corretor|(?:me chame|me ligue|quero retorno)/.test(lower)) q.contatoSolicitado = true;
+    if (!q.permiteContato) q.contatoSolicitado = false;
     if (/nao\s+(?:quero|desejo|preciso).{0,20}(?:visit|agend)|cancel.{0,20}visit/.test(lower)) q.visitaSolicitada = false;
     else if (/(?:quero|gostaria|podemos|pode|preciso|vamos).{0,35}(?:visit|agend)|\bvisitar\b/.test(lower)) q.visitaSolicitada = true;
+    if (q.visitaSolicitada && /(?:qual dia|dia e periodo|horario|quando).{0,50}visita|(?:visita|visitar).{0,50}(?:qual dia|dia e periodo|horario|quando)/.test(previousQuestion) && /amanha|hoje|sabado|domingo|segunda|terca|quarta|quinta|sexta|\d+h|\d+:\d+/.test(lower) && message.length <= 160) q.visitaPreferencia = message.trim();
     const email = message.match(/[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>.]+/g)?.at(-1);
     if (email && email.length <= 254) q.email = email.toLowerCase();
     const phones = message.match(/\+?\d[\d\s().-]{8,}\d/g) ?? [];
-    const phone = phones.filter((p) => p.replace(/\D/g, '').length >= 10 && p.replace(/\D/g, '').length <= 15).at(-1);
-    if (phone) q.telefone = phone.replace(/\D/g, '');
+    const phoneContext = /(?:meu |me chama|me liga|telefone|whatsapp|celular|contato)/.test(lower) || /(?:qual|informe|passe|numero).{0,30}(?:telefone|whatsapp|celular|retorno)/.test(previousQuestion);
+    const phone = phones.filter(p => phoneDigits(p) && (phoneContext || /^\s*\+?\d{0,3}\s*\(\d{2}\)/.test(p)) && !/^\d{4}-\d{2}-\d{2}/.test(p)).at(-1);
+    if (phone && !/(?:telefone|whatsapp).{0,15}(?:da imobiliaria|do corretor|dele|dela)/.test(lower)) q.telefone = phoneDigits(phone);
   }
-  q.nome = grounded('nome', 120) ?? q.nome;
-  q.bairro = grounded('bairro', 100) ?? q.bairro;
   const latest = normalize(source.at(-1) ?? '');
-  if (/nao tenho preferencia.{0,15}bairro|qualquer bairro|sem (?:preferencia|restricao).{0,15}bairro/.test(latest)) q.bairro = null;
+  const extractedName = grounded('nome',120), extractedNeighborhood = grounded('bairro',100);
+  if (extractedName && (!q.nome || latest.includes(normalize(extractedName)))) q.nome = extractedName;
+  if (extractedNeighborhood && (!q.bairro || latest.includes(normalize(extractedNeighborhood)))) q.bairro = extractedNeighborhood;
+  if (/nao tenho preferencia.{0,15}bairro|qualquer bairro|outros bairros|sem (?:preferencia|restricao).{0,15}bairro/.test(latest)) q.bairro = null;
   const deadline = grounded('prazo');
   // Literalidade não basta: modelos pequenos às vezes classificam "até 300 mil" como prazo.
   if (deadline && /\b(dias?|semanas?|mes|meses|anos?|hoje|amanha|janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|semestre|trimestre|urgente|imediat[oa]|pressa)\b|quanto antes|assim que/.test(normalize(deadline))) q.prazo = deadline;
@@ -103,6 +122,8 @@ export function qualificationFrom(messages: ConversationMessage[], extracted?: u
   q.proximoPasso = !q.permiteContato ? 'Não contatar: cliente recusou o cadastro/contato.' : q.visitaSolicitada ? 'Corretor deve verificar disponibilidade e confirmar a visita solicitada.' : 'Corretor deve revisar a busca e entrar em contato com o cliente.';
   return q;
 }
+
+function typesInSearch(text:string){return /\b(?:casa|apartamento|apto|terreno|studio)\b/.test(text)&&!/diferenca|comparacao/.test(text);}
 
 export function completeContact(q: Qualification) {
   if (!q.permiteContato || !q.nome || q.nome.trim().length < 3 || !q.email || !q.telefone) return null;
