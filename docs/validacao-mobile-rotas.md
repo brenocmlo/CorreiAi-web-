@@ -31,4 +31,6 @@ O build revelou 11 alertas de dependências, incluindo um crítico no Next.js 16
 
 Referências primárias para os alertas do Next.js: [otimização de imagens](https://github.com/advisories/GHSA-2464-fhr4-w9xw), [bypass do proxy](https://github.com/advisories/GHSA-6gpp-xcg3-4w24). A presença de um pacote afetado não comprova exploração; as correções foram aplicadas preventivamente.
 
-A versão com dependências corrigidas será republicada após os checks finais. As variáveis de produção existentes serão preservadas; não há migration nesta entrega.
+A versão com dependências corrigidas foi publicada pela CLI a partir de **`3fcd096`**, no deploy **`dpl_6Hud4EWXDpaDA2vrfnQx8YagCP5N`**, com estado **READY** e alias **[correiai.vercel.app](https://correiai.vercel.app)**. O build remoto confirmou Next.js 16.4.3, zero vulnerabilidades conhecidas no `npm ci`, TypeScript aprovado e 30 páginas geradas. As 28 verificações HTTP passaram novamente após a troca do alias.
+
+As variáveis de produção existentes foram preservadas. Não houve migration, criação de contas/imóveis ou alteração de dados do Supabase nesta integração/publicação. A limitação do teste de câmera/galeria e Storage real descrita acima permanece; não confundir as verificações HTTP anônimas com um novo teste autenticado completo de produção.
