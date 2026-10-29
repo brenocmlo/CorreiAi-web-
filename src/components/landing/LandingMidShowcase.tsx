@@ -1,7 +1,7 @@
 'use client';
 
 import type { CSSProperties } from 'react';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -11,7 +11,7 @@ if (typeof window !== 'undefined') {
 
 type Card = {
   id: string;
-  tipo: 'Casa' | 'Apartamento';
+  tipo: string;
   titulo: string;
   descricao: string;
   preco: string;
@@ -121,15 +121,72 @@ const MOCK_CARDS: Card[] = [
   },
 ];
 
+interface ImovelPublico {
+  id: string;
+  tipo: string;
+  endereco: string;
+  bairro: string;
+  valor: number;
+  metragem?: number | null;
+  quartos?: number | null;
+  status: string;
+  imagem_url?: string | null;
+  descricao?: string | null;
+}
+
+const ROTULOS_TIPO: Record<string, string> = {
+  casa: 'Casa',
+  apartamento: 'Apartamento',
+  terreno: 'Terreno',
+  comercial: 'Comercial',
+};
+
+function imovelParaCard(imovel: ImovelPublico, idx: number): Card {
+  const gradiente = MOCK_CARDS[idx % MOCK_CARDS.length];
+  const rotuloTipo = ROTULOS_TIPO[imovel.tipo] ?? imovel.tipo;
+  return {
+    id: imovel.id,
+    tipo: rotuloTipo,
+    titulo: `${rotuloTipo} em ${imovel.bairro}`,
+    descricao: imovel.descricao?.trim() || `${imovel.endereco}, ${imovel.bairro}`,
+    preco: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(imovel.valor),
+    area: imovel.metragem ? `${imovel.metragem} m²` : '—',
+    tag: imovel.quartos ? `${imovel.quartos} quartos` : 'Em destaque',
+    gradientFrom: gradiente.gradientFrom,
+    gradientTo: gradiente.gradientTo,
+    imagem: imovel.imagem_url || gradiente.imagem,
+  };
+}
+
 export function LandingMidShowcase() {
+  const [cards, setCards] = useState<Card[]>(MOCK_CARDS);
+
+  useEffect(() => {
+    let cancelado = false;
+    fetch('/api/imoveis')
+      .then((res) => (res.ok ? res.json() : Promise.reject(res)))
+      .then((data: { imoveis: ImovelPublico[] }) => {
+        if (cancelado) return;
+        const disponiveis = (data.imoveis ?? []).filter((i) => i.status === 'disponivel');
+        if (disponiveis.length === 0) return;
+        setCards(disponiveis.slice(0, 8).map(imovelParaCard));
+      })
+      .catch(() => {
+        // Mantém a vitrine com os exemplos padrão se a API falhar.
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
   const sectionRef = useRef<HTMLElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const rowRef = useRef<HTMLDivElement | null>(null);
 
   const cardsForRender = useMemo(() => {
     // Duplica para dar sensação de “carrossel” no scroll.
-    return [...MOCK_CARDS, ...MOCK_CARDS];
-  }, []);
+    return cards.length > 1 ? [...cards, ...cards] : cards;
+  }, [cards]);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -187,7 +244,7 @@ export function LandingMidShowcase() {
       window.removeEventListener('resize', onResize);
       ctx.revert();
     };
-  }, []);
+  }, [cardsForRender]);
 
   return (
     <section
