@@ -1,6 +1,6 @@
 # Logout mobile, imóveis e segurança de rotas
 
-Preparado em 29/10/2026 na branch `fix/mobile-logout-imoveis`, a partir da main `359fddc` (atualização por fast-forward, sem conflitos). A publicação aguarda o novo merge do colega, conforme solicitado por Gabriel.
+Preparado em 29/10/2026 na branch `fix/mobile-logout-imoveis`, a partir da main `359fddc`. Após o aviso de Gabriel, a correção foi reaplicada sobre a main `1d0f8eb` por rebase, preservando a máscara de telefone do colega, sem conflitos. Integração na main por fast-forward e push normal no commit `7717f32`.
 
 ## Correções
 
@@ -23,6 +23,12 @@ Preparado em 29/10/2026 na branch `fix/mobile-logout-imoveis`, a partir da main 
 
 Esta foi uma revisão focada em sessão, rotas, permissões e imóveis; não substitui uma auditoria completa de segurança.
 
-## Próxima publicação
+## Dependências e publicação
 
-Após confirmação do merge do colega: buscar a main atualizada, conciliar esta branch preservando as duas alterações, repetir testes/build, integrar e só então publicar na Vercel. Não houve push, merge desta correção na main ou deploy durante esta preparação.
+O primeiro deploy CLI de `7717f32`, `dpl_7P7t8nb5qHSnU9CG4atX7W4Cw3uZ`, ficou READY em `https://correiai.vercel.app`. As 28 verificações HTTP anônimas passaram: páginas públicas, redirecionamento das privadas, 401 nas APIs privadas, rejeição de origem externa, payloads inválidos e expiração dos cookies. Nenhum cadastro ou gravação no banco foi executado nessa verificação.
+
+O build revelou 11 alertas de dependências, incluindo um crítico no Next.js 16.2.6. Atualizados Next.js e eslint-config-next para **16.4.3**, com correções transitivas compatíveis via `npm audit fix`, sem `--force`. `package-lock.json` e `pnpm-lock.yaml` sincronizados. A auditoria npm após a correção retornou **zero vulnerabilidades conhecidas**. Os 149 testes isolados passaram novamente nessa versão.
+
+Referências primárias para os alertas do Next.js: [otimização de imagens](https://github.com/advisories/GHSA-2464-fhr4-w9xw), [bypass do proxy](https://github.com/advisories/GHSA-6gpp-xcg3-4w24). A presença de um pacote afetado não comprova exploração; as correções foram aplicadas preventivamente.
+
+A versão com dependências corrigidas será republicada após os checks finais. As variáveis de produção existentes serão preservadas; não há migration nesta entrega.
