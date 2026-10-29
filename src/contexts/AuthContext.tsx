@@ -4,6 +4,7 @@ import React, { createContext, useContext, useCallback, useEffect, useRef, useSt
 import { usePathname } from 'next/navigation';
 import { AppRole, canAccessPage, homeForRole, isAdminRole, isPrivatePage } from '@/lib/auth-policy';
 import { withRequestTimeout } from '@/lib/client-request';
+import { clearAssistantCache } from '@/lib/assistant-cache';
 
 interface Profile {
   id: string;
@@ -13,6 +14,7 @@ interface Profile {
   creci?: string;
   role: AppRole;
   criado_em: string;
+  imobiliaria_id?: string | null;
 }
 
 interface AuthContextType {
@@ -63,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       requestVersion.current++;
       setProfile(null);
       setLoading(false);
-      try { sessionStorage.removeItem('correia-assistente'); } catch { /* Armazenamento opcional. */ }
+      clearAssistantCache();
     };
     const checkOnFocus = () => { void fetchMe(); };
     const checkOnRestore = (event: PageTransitionEvent) => {

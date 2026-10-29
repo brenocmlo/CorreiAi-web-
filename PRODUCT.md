@@ -22,8 +22,10 @@ The differentiator confirmed by the user: **the AI does the pre-sales work, not 
 ## Operating Context
 
 - The public landing page (`/`) is the top-of-funnel surface: anonymous, no login, must load fast and build trust quickly.
-- From the landing, a visitor either submits the quick capture form (`POST /api/leads/public`) or goes to `/assistente`, a full chat interface with the AI, which can also be reached directly.
-- The property showcase on the landing reads real, available inventory from `GET /api/imoveis` (now public) and falls back to illustrative example cards only when the catalog is empty or unreachable.
+- The assistant opens in a chat dialog over the current page, with a full-height layout on mobile. The legacy `/assistente` URL opens this dialog and returns to the appropriate home page. Client accounts land on `/dashboard`.
+- The catalog remains private: `/api/imoveis` requires an authenticated, authorized account. The assistant uses only the verified account's active agency and never accepts an agency ID from the browser. Visitors and clients without an agency can ask general questions but cannot see agency inventory or contact information. No public agency links were added.
+- The agency administrator configures the official business phone in `/admin`. The assistant shows this number only to linked users; a missing phone is reported as missing. A phone number alone does not establish that WhatsApp is available.
+- The landing's anonymous property showcase uses clearly illustrative example cards when the private catalog cannot be consulted.
 - Once a lead is captured, it lands in the agent's Kanban funnel (`/funil`) and lead list (`/leads`), where the agent moves it through stages and works it to close.
 - Agents separately manage the property catalog (`/imoveis`) — create, edit, mark status (disponível/vendido/alugado), delete with confirmation.
 

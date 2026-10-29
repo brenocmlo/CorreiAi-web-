@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { homeForRole } from '@/lib/auth-policy';
 import { useAuth } from '@/hooks/useAuth';
+import { clearAssistantCache } from '@/lib/assistant-cache';
+import { OpenChatButton } from '@/components/assistant/OpenChatButton';
 
 export default function Navbar() {
   const { user, profile, isLead, isAdmin } = useAuth();
@@ -37,12 +39,12 @@ export default function Navbar() {
     ...(isAdmin ? [{ href: '/admin', label: 'Admin' }] : []),
   ];
 
-  const navLinksLead = [{ href: '/assistente', label: 'Assistente' }, { href: '/dashboard', label: 'Início' }];
+  const navLinksLead = [{ href: '/dashboard', label: 'Início' }];
 
   const navLinks = profile?.role === 'super_admin' ? [{ href: '/admin/imobiliarias', label: 'Imobiliárias' }] : isLead ? navLinksLead : navLinksCorretor;
   const prepareLogout = () => {
     // O formulário mobile precisa continuar conectado ao DOM até o envio nativo.
-    try { sessionStorage.removeItem('correia-assistente'); } catch { /* Armazenamento opcional. */ }
+    clearAssistantCache();
   };
 
   return (
@@ -62,6 +64,7 @@ export default function Navbar() {
 
             {/* Links de navegação (Desktop) */}
             <nav className="hidden md:flex items-center gap-1">
+              {profile?.role!=='super_admin'&&<OpenChatButton className="rounded-lg px-3 py-2 text-sm text-slate-400 hover:bg-slate-800 hover:text-white">Assistente</OpenChatButton>}
               {navLinks.map((link) => {
                 const isAtivo = pathname === link.href;
                 return (
@@ -122,6 +125,7 @@ export default function Navbar() {
       {menuAberto && (
         <div id="menu-mobile" className="md:hidden border-t border-slate-800 bg-slate-900">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            {profile?.role!=='super_admin'&&<OpenChatButton className="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-slate-800">Assistente</OpenChatButton>}
             {navLinks.map((link) => {
               const isAtivo = pathname === link.href;
               return (

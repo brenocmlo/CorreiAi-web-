@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAssistant } from '@/contexts/AssistantContext';
 import { motion } from 'motion/react';
 import { ArrowRight, Circle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -48,6 +49,7 @@ export default function CadastroForm() {
   const [carregando, setCarregando] = useState(false);
   const { user, loading, refreshProfile } = useAuth();
   const router = useRouter();
+  const {openChat}=useAssistant();
 
   useEffect(() => {
     if (!loading && user) {
@@ -101,7 +103,8 @@ export default function CadastroForm() {
 
       setSucesso(true);
       await refreshProfile();
-      router.replace('/assistente');
+      router.replace(homeForRole('lead'));
+      openChat();
     } catch {
       setErro('Ocorreu um erro ao criar a conta. Tente novamente.');
     } finally {

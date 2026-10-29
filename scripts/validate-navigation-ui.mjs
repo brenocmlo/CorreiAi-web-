@@ -18,6 +18,8 @@ const bundle = await build({
   bundle: true, write: false, platform: 'browser', jsx: 'automatic',
   define: { 'process.env.NODE_ENV': '"development"' },
   plugins: [{ name: 'fixture-context', setup(builder) {
+    // O chat real é validado separadamente em validate-assistant-ui.mjs.
+    builder.onLoad({ filter: /[\\/]OpenChatButton\.tsx$/ }, () => ({ loader: 'jsx', contents: `import React from 'react';export function OpenChatButton({children,...props}){return <button type="button" {...props}>{children}</button>}` }));
     // Test image is generated in memory; this does not access local files or bypass the browser chooser.
     builder.onLoad({ filter: /[\\/]ImovelForm\.tsx$/ }, args => {
       const source = fs.readFileSync(args.path, 'utf8').replace(/<input\s+type="file"([\s\S]*?)\/>/, '<FixtureImagePicker$1/>');

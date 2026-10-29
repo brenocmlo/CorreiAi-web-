@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
+import { OpenChatButton } from '@/components/assistant/OpenChatButton';
 import Hls from 'hls.js';
 import { motion } from 'motion/react';
 import { ArrowRight, MessageCircle } from 'lucide-react';
@@ -133,14 +133,13 @@ export function HeroSection() {
             </motion.p>
 
             <motion.div {...reveal(0.28)} className="mt-9">
-              <Link
-                href="/assistente"
+              <OpenChatButton
                 className="group inline-flex items-center gap-2.5 rounded-[4px] bg-[var(--shop-signal)] px-6 py-3.5 text-sm font-semibold text-white transition-transform duration-100 hover:bg-[#5c80f4] active:scale-[0.97]"
               >
                 <MessageCircle className="h-4 w-4" strokeWidth={2} />
                 Falar com a IA
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </Link>
+              </OpenChatButton>
             </motion.div>
 
             <motion.div {...reveal(0.38)} className="mt-12 flex items-center gap-4">

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useAssistant } from '@/contexts/AssistantContext';
 import { ArrowRight } from 'lucide-react';
 import { FAIXAS_ORCAMENTO, TIPOS_IMOVEL } from '@/types/lead';
 
@@ -29,7 +29,7 @@ export function LeadCaptureForm() {
   const [email, setEmail] = useState('');
   const [faixaOrcamento, setFaixaOrcamento] = useState('');
   const [tipoImovel, setTipoImovel] = useState('');
-  const router = useRouter();
+  const {openChat}=useAssistant();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -55,7 +55,7 @@ export function LeadCaptureForm() {
       }
 
       setSuccess(true);
-      setTimeout(() => router.push('/assistente'), 1800);
+      setTimeout(openChat, 1000);
     } catch {
       setError('Não foi possível enviar. Tente novamente.');
     } finally {

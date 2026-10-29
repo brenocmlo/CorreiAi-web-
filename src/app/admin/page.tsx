@@ -7,6 +7,7 @@ import { homeForRole } from '@/lib/auth-policy';
 import { useAuth } from '@/hooks/useAuth';
 import { Shield, UserCheck, Plus } from 'lucide-react';
 import Link from 'next/link';
+import { CompanyContactSettings } from '@/components/CompanyContactSettings';
 
 interface Usuario {
   id: string;
@@ -89,6 +90,7 @@ export default function AdminPage() {
     <ProtectedRoute>
       <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black text-slate-100">
         <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <CompanyContactSettings />
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div className="flex items-center gap-3">
               <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400">

@@ -1,19 +1,98 @@
 import Link from 'next/link';
+import Image from 'next/image';
+import { BedDouble, CarFront, Home, MapPin } from 'lucide-react';
 import type { AssistantProperty } from '@/types/assistant';
 
-export function AssistantProperties({ properties, disabled, onSelect }: { properties: AssistantProperty[]; disabled: boolean; onSelect: (property: AssistantProperty) => void }) {
+export function AssistantProperties({
+  properties,
+  disabled,
+  onSelect,
+  onDetails,
+}: {
+  properties: AssistantProperty[];
+  disabled: boolean;
+  onSelect: (property: AssistantProperty) => void;
+  onDetails?: () => void;
+}) {
   if (!properties.length) return null;
   return (
-    <section aria-label="Imóveis compatíveis com sua busca" className="grid gap-3 sm:grid-cols-2">
+    <section
+      aria-label="Imóveis compatíveis com sua busca"
+      className="grid w-full min-w-0 gap-3"
+    >
       {properties.map((property) => (
-        <article key={property.id} className="min-w-0 rounded-xl border border-slate-700 bg-slate-900 p-4">
-          <p className="text-xs text-slate-400">{property.tipo} · {property.bairro}</p>
-          <h3 className="mt-1 break-words text-sm font-medium text-slate-100">{property.endereco}</h3>
-          <p className="mt-2 font-semibold text-white">{property.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-          <p className="mt-1 text-xs text-slate-400">{property.quartos != null ? `${property.quartos} quartos` : 'Quartos a confirmar'} · {property.vagas != null ? `${property.vagas} vagas` : 'Vagas a confirmar'}</p>
-          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-            <Link href={`/imoveis/${property.id}`} className="text-indigo-300 underline underline-offset-4">Ver imóvel</Link>
-            <button disabled={disabled} onClick={() => onSelect(property)} className="rounded-lg border border-slate-600 px-3 py-2 text-slate-200 hover:bg-slate-800 disabled:opacity-50">Solicitar visita</button>
+        <article
+          key={property.id}
+          className="min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-slate-900"
+        >
+          <div className="flex gap-3 p-3">
+            <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-800 text-slate-500">
+              {property.imagem_url ? (
+                <Image
+                  unoptimized
+                  src={property.imagem_url}
+                  width={96}
+                  height={96}
+                  alt={`${property.tipo} em ${property.bairro}`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <Home aria-hidden="true" className="h-6 w-6" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-medium capitalize text-indigo-200">
+                {property.tipo}
+              </p>
+              <h3 className="mt-1 text-base font-semibold tracking-tight text-white">
+                {property.valor.toLocaleString('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL',
+                })}
+              </h3>
+              <p className="mt-1 flex items-start gap-1 text-xs text-slate-400">
+                <MapPin
+                  aria-hidden="true"
+                  className="mt-0.5 h-3 w-3 shrink-0"
+                />
+                <span className="break-words">
+                  {property.bairro} · {property.endereco}
+                </span>
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-3 px-3 pb-3 text-[11px] text-slate-400">
+            {property.quartos != null && (
+              <span className="flex items-center gap-1">
+                <BedDouble aria-hidden="true" className="h-3 w-3" />
+                {property.quartos}{' '}
+                {property.quartos === 1 ? 'quarto' : 'quartos'}
+              </span>
+            )}
+            {property.vagas != null && (
+              <span className="flex items-center gap-1">
+                <CarFront aria-hidden="true" className="h-3 w-3" />
+                {property.vagas} {property.vagas === 1 ? 'vaga' : 'vagas'}
+              </span>
+            )}
+            {property.metragem != null && <span>{property.metragem} m²</span>}
+          </div>
+          <div className="grid grid-cols-2 border-t border-white/10 text-xs">
+            <Link
+              href={`/imoveis/${property.id}`}
+              onClick={onDetails}
+              className="flex min-h-11 items-center justify-center px-3 py-3 text-slate-200 hover:bg-white/5"
+            >
+              Ver detalhes
+            </Link>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => onSelect(property)}
+              className="min-h-11 border-l border-white/10 px-3 py-3 font-medium text-indigo-200 hover:bg-indigo-500/10 disabled:opacity-40"
+            >
+              Solicitar visita
+            </button>
           </div>
         </article>
       ))}
