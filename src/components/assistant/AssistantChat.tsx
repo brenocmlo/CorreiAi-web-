@@ -6,6 +6,9 @@ import { AssistantProperties } from './AssistantProperties';
 import { AssistantSummary } from './AssistantSummary';
 import { formatPhone, phoneLink } from '@/lib/phone';
 import { requestJson } from '@/lib/client-request';
+import { assistantRestriction } from '@/lib/assistant-restriction';
+import { CHAT_SIGNUP_URL } from '@/lib/assistant-auth-flow';
+import { assistantApiUrl } from '@/lib/public-agency-path';
 import type {
   AssistantContext,
   AssistantProperty,
@@ -29,10 +32,14 @@ const defaultContext: AssistantContext = {
 export function AssistantChat({
   storageKey = 'correia-assistente:visitante:sem-vinculo',
   onClose,
+  publicSlug,
+  initialSelectedId,
 }: {
   storageKey?: string;
   onClose?: () => void;
   embedded?: boolean;
+  publicSlug?: string | null;
+  initialSelectedId?: string;
 }) {
   const [messages, setMessages] = useState<DisplayMessage[]>([greeting]),
     [input, setInput] = useState('');
@@ -50,7 +57,10 @@ export function AssistantChat({
       'Quero alugar',
       'Quero anunciar',
     ]);
-  const [selectedId, setSelectedId] = useState<string>();
+  const [selectedId, setSelectedId] = useState<string | undefined>(
+    initialSelectedId,
+  );
+  const [currentIds, setCurrentIds] = useState<string[]>([]);
   const field = useRef<HTMLTextAreaElement>(null),
     scrollArea = useRef<HTMLDivElement>(null),
     busy = useRef(false),
@@ -62,7 +72,7 @@ export function AssistantChat({
     const timer = setTimeout(() => controller.abort(), 10000);
     async function restore() {
       try {
-        const res = await fetch('/api/assistente', {
+        const res = await fetch(assistantApiUrl(publicSlug), {
           cache: 'no-store',
           signal: controller.signal,
         });
@@ -70,6 +80,27 @@ export function AssistantChat({
         const data = await res.json();
         if (!active) return;
         setContext(data.contexto ?? defaultContext);
+        setCurrentIds(
+          (data.imoveis ?? []).map(
+            (property: AssistantProperty) => property.id,
+          ),
+        );
+        if (data.atendimento) {
+          setQualification(data.atendimento);
+          setCapture(
+            data.atendimento.permiteContato ? 'atualizado' : 'nao_autorizado',
+          );
+          setSelectedId(
+            initialSelectedId ??
+              data.atendimento.imovelInteresseId ??
+              undefined,
+          );
+        }
+        if (data.contexto?.catalogState === 'restricted')
+          setSuggestions([
+            'Como funciona o financiamento?',
+            'Como escolher um imóvel?',
+          ]);
         const history = data.atendimento?.historico;
         if (Array.isArray(history) && history.length) {
           const restored: DisplayMessage[] = history.slice(-30);
@@ -80,7 +111,11 @@ export function AssistantChat({
           setCapture(
             data.atendimento.permiteContato ? 'atualizado' : 'nao_autorizado',
           );
-          setSelectedId(data.atendimento.imovelInteresseId ?? undefined);
+          setSelectedId(
+            initialSelectedId ??
+              data.atendimento.imovelInteresseId ??
+              undefined,
+          );
           setSuggestions([]);
         } else {
           const cached = JSON.parse(
@@ -99,6 +134,13 @@ export function AssistantChat({
             )
           )
             setMessages(cached.messages);
+          else if (data.atendimento?.nome)
+            setMessages([
+              {
+                role: 'assistant',
+                text: `Olá, ${data.atendimento.nome.split(' ')[0]}! Já recebi seus dados para este atendimento. Você quer comprar, alugar ou anunciar um imóvel?`,
+              },
+            ]);
         }
       } catch {
         /* A recuperação não impede uma nova conversa. */
@@ -114,7 +156,7 @@ export function AssistantChat({
       controller.abort();
       request.current?.abort();
     };
-  }, [storageKey]);
+  }, [storageKey, publicSlug, initialSelectedId]);
   useEffect(() => {
     if (!initialized) return;
     try {
@@ -154,7 +196,7 @@ export function AssistantChat({
       controller.abort();
     }, 65000);
     try {
-      const response = await fetch('/api/assistente', {
+      const response = await fetch(assistantApiUrl(publicSlug), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -163,7 +205,8 @@ export function AssistantChat({
         }),
         signal: controller.signal,
       });
-      const data = (await response.json()) as AssistantResponse;
+      const data = (await response.json().catch(()=>({error:'Não consegui ler a resposta do atendimento. Sua mensagem foi mantida; tente novamente.'}))) as AssistantResponse;
+      if(response.status===409){setSelectedId(undefined);setCurrentIds([]);}
       if (!response.ok || !data.reply)
         throw new Error(
           data.error || 'Não consegui responder agora. Tente novamente.',
@@ -190,6 +233,8 @@ export function AssistantChat({
       });
       setQualification(data.qualificacao);
       setCapture(data.captura);
+      if (data.captura !== 'sem_alteracao')
+        setCurrentIds(data.imoveis.map((property) => property.id));
       setContext(data.contexto ?? defaultContext);
       setSuggestions(data.sugestoes ?? []);
       setSelectedId(data.qualificacao.imovelInteresseId ?? undefined);
@@ -228,15 +273,20 @@ export function AssistantChat({
     setLoading(true);
     setError('');
     try {
-      await requestJson('/api/assistente', { method: 'DELETE' });
+      await requestJson(assistantApiUrl(publicSlug), { method: 'DELETE' });
       sessionStorage.removeItem(storageKey);
       setMessages([greeting]);
       setQualification(null);
       setCapture('incompleto');
       setSelectedId(undefined);
+      setCurrentIds([]);
       setInput('');
       setWarning('');
-      setSuggestions(['Quero comprar', 'Quero alugar', 'Quero anunciar']);
+      setSuggestions(
+        context.catalogState === 'restricted'
+          ? ['Como funciona o financiamento?', 'Como escolher um imóvel?']
+          : ['Quero comprar', 'Quero alugar', 'Quero anunciar'],
+      );
     } catch {
       setError('Não consegui iniciar uma nova conversa. Tente novamente.');
     } finally {
@@ -247,6 +297,7 @@ export function AssistantChat({
   const contactLink = context.company?.telefone
     ? phoneLink(context.company.telefone)
     : null;
+  const restriction = assistantRestriction(context.restrictionReason);
   return (
     <section
       aria-label="Conversa com a assistente imobiliária"
@@ -298,23 +349,39 @@ export function AssistantChat({
           </span>
         </a>
       )}
+      {initialized && context.catalogState === 'restricted' && (
+        <aside
+          aria-label="Acesso ao catálogo"
+          className="shrink-0 border-b border-indigo-300/15 bg-indigo-500/5 px-4 py-3"
+        >
+          <p className="text-xs leading-relaxed text-slate-300">
+            {restriction.message}
+          </p>
+          {restriction.action && (
+            <Link
+              href={restriction.action.href}
+              onClick={onClose}
+              className="mt-2 inline-flex min-h-10 items-center rounded-lg border border-indigo-300/25 bg-indigo-500/15 px-3 text-xs font-semibold text-indigo-100 hover:bg-indigo-500/25"
+            >
+              {restriction.action.label}
+            </Link>
+          )}
+          {(!context.restrictionReason ||
+            context.restrictionReason === 'login_required') && (
+            <Link
+              href={CHAT_SIGNUP_URL}
+              onClick={onClose}
+              className="ml-2 mt-2 inline-flex min-h-10 items-center px-2 text-xs font-medium text-indigo-100 underline underline-offset-4"
+            >
+              Criar conta de cliente
+            </Link>
+          )}
+        </aside>
+      )}
       <div
         ref={scrollArea}
         className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 py-5 sm:px-5"
       >
-        {initialized && context.catalogState === 'restricted' && (
-          <p className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs leading-relaxed text-slate-400">
-            O catálogo é privado. Para ver imóveis, use uma conta vinculada à
-            imobiliária.{' '}
-            <Link
-              href="/login"
-              onClick={onClose}
-              className="text-indigo-200 underline underline-offset-2"
-            >
-              Entrar
-            </Link>
-          </p>
-        )}
         <div
           role="log"
           aria-label="Mensagens do atendimento"
@@ -339,6 +406,8 @@ export function AssistantChat({
               {message.role === 'assistant' && !!message.properties?.length && (
                 <AssistantProperties
                   properties={message.properties}
+                  activeIds={currentIds}
+                  publicSlug={publicSlug}
                   disabled={loading}
                   onDetails={onClose}
                   onSelect={(property) =>
@@ -364,12 +433,12 @@ export function AssistantChat({
         {qualification && (
           <AssistantSummary value={qualification} status={capture} />
         )}
-        {capture === 'criado' && (
+        {(capture === 'criado' || capture === 'atualizado' && qualification?.contatoSolicitado && qualification.permiteContato) && (
           <p
             role="status"
             className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-xs leading-relaxed text-emerald-200"
           >
-            Seu atendimento foi registrado no funil do corretor.
+            {qualification?.contatoSolicitado ? 'Pedido de contato registrado para a equipe da imobiliária.' : 'Seu atendimento foi registrado para a equipe da imobiliária.'}
             {qualification?.visitaSolicitada
               ? ' A visita ainda aguarda confirmação.'
               : ''}

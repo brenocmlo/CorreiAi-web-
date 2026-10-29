@@ -1,10 +1,12 @@
 # Assistente imobiliário e triagem
 
-# Atualização de privacidade — 28/10/2026
+# Atendimento por imobiliária — 29/10/2026
 
-O catálogo e o funil agora exigem contexto autenticado e vínculo verificado no banco. Visitantes podem conversar sem receber imóveis privados ou ter contato encaminhado a um corretor global. Os scripts de integração descritos abaixo foram criados para o contrato público anterior; usar a validação atual de [isolamento de dados](seguranca-dados.md) para as APIs. Os resultados históricos não substituem essa conferência.
+A imobiliária pode ativar uma landing própria em `/imobiliaria/{slug}`. Os visitantes desse link veem somente os imóveis disponíveis daquela empresa, preços e contato comercial, sem login de corretor. O formulário rápido, com autorização de contato, cria o lead para a equipe e identifica a pessoa no chat. Publicação começa desativada; o administrador configura e compartilha o link em `/admin`. Ver [operação e proteções](atendimento-publico-imobiliarias.md).
 
-O mesmo componente atende em `/assistente` e no dashboard do perfil lead. O assistente consulta somente o catálogo autorizado para a conta e o próprio atendimento. Visitantes podem conversar sem acesso ao portfólio privado. Não há integração com Gmail: o pedido foi esclarecido como acesso aos imóveis e às informações do sistema.
+O catálogo interno e o funil exigem contexto autenticado e vínculo verificado no banco. O atendimento público depende do link de uma empresa ativa que tenha autorizado a publicação; nunca encaminha contato para um corretor global. Os scripts de integração descritos abaixo incluem contratos históricos; usar também a validação atual de [isolamento de dados](seguranca-dados.md) e os cenários públicos desta entrega. Os resultados históricos não substituem essa conferência.
+
+O chat abre sobre a página atual, sem exigir uma nova tela. A rota antiga `/assistente` abre esse mesmo diálogo. Sem contexto de imobiliária publicada ou vínculo verificado, não há catálogo global. Não há integração com Gmail: o pedido foi esclarecido como acesso aos imóveis e às informações do sistema.
 
 ## Exemplo de atendimento
 
@@ -40,7 +42,7 @@ A comparação geral entre casa e apartamento usa uma resposta factual do servid
 | “Tem elevador, aceita pet e qual o condomínio?” | Esclarece todos os itens ausentes do cadastro do imóvel selecionado |
 | “Obrigado, vou pensar” | Respeita a pausa e deixa o canal aberto |
 
-Respostas longas são reduzidas a frases completas, preservando uma pergunta final curta quando houver, com no máximo 130 palavras e 1.800 caracteres. Isso evita que uma resposta do provider ultrapasse os 2.000 caracteres aceitos por mensagem na API e invalide o próximo turno. Valores recusados não ampliam o orçamento. Perguntas de comparação e indecisão não viram escolhas definitivas. A interpretação cobre padrões testados em português; linguagem ambígua pode exigir confirmação.
+Respostas longas são reduzidas a frases completas, preservando uma pergunta final curta quando houver, com no máximo 80 palavras e 1.800 caracteres. Isso evita que uma resposta do provider ultrapasse os 2.000 caracteres aceitos por mensagem na API e invalide o próximo turno. Valores recusados não ampliam o orçamento. Perguntas de comparação e indecisão não viram escolhas definitivas. A interpretação cobre padrões testados em português; linguagem ambígua pode exigir confirmação.
 
 ## Qualificação e imóveis
 
@@ -51,7 +53,7 @@ Respostas longas são reduzidas a frases completas, preservando uma pergunta fin
 
 Tipo, orçamento, quartos, vagas, contatos e recusa são interpretados no servidor. A extração de nome, bairro, prazo, pagamento e características pelo modelo só é aceita quando o valor consta literalmente nas falas do cliente; prazo também exige uma expressão temporal. A resposta recebe o estado atual da busca e somente os imóveis compatíveis.
 
-A consulta considera até 500 imóveis disponíveis, ordenados por valor, e retorna até cinco compatíveis. Orçamento, tipo, bairro, quartos e vagas são filtros obrigatórios quando informados. Características descritivas, como varanda, dependem do conteúdo do cadastro e da conferência do corretor. Ausência de imóvel compatível e falha de consulta são situações distintas.
+A consulta considera até 500 imóveis disponíveis, ordenados por valor, e retorna até três cartões compatíveis por resposta. Orçamento, tipo, bairro, quartos e vagas são filtros obrigatórios quando informados. Características descritivas, como varanda, dependem do conteúdo do cadastro e da conferência do corretor. Ausência de imóvel compatível e falha de consulta são situações distintas.
 
 O catálogo atual não separa venda de locação nem possui preço de aluguel. Por isso, pedidos de aluguel são qualificados e encaminhados ao corretor, sem apresentar preço de venda como aluguel. Também não existe agenda de disponibilidade: a assistente registra pedidos de visita, sem efetuar reservas ou confirmar horários.
 
@@ -94,4 +96,4 @@ Os scripts aceitam somente localhost/127.0.0.1 e conferem o projeto Supabase ant
 
 O teste de conversas usa critérios explícitos sobre comportamento, fatos e tamanho das respostas; as respostas também foram lidas para identificar problemas que esses critérios não capturavam. Os checks não são uma medição geral da inteligência do modelo nem garantia para toda conversa futura.
 
-A validação visual desta atualização está pendente: o controle de navegador recusou o acesso à aba. Testes HTTP e de banco não substituem essa conferência.
+A versão de atendimento público foi conferida no Chrome com dados fictícios, em desktop e viewport de celular. Os cenários, evidências e limites da validação estão no relatório desta entrega. Isso não substitui o acompanhamento das conversas com o modelo real.

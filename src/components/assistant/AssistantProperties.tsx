@@ -2,17 +2,22 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { BedDouble, CarFront, Home, MapPin } from 'lucide-react';
 import type { AssistantProperty } from '@/types/assistant';
+import { publicAgencyPath } from '@/lib/public-agency-path';
 
 export function AssistantProperties({
   properties,
   disabled,
   onSelect,
   onDetails,
+  publicSlug,
+  activeIds,
 }: {
   properties: AssistantProperty[];
   disabled: boolean;
   onSelect: (property: AssistantProperty) => void;
   onDetails?: () => void;
+  publicSlug?: string | null;
+  activeIds?: readonly string[];
 }) {
   if (!properties.length) return null;
   return (
@@ -25,6 +30,11 @@ export function AssistantProperties({
           key={property.id}
           className="min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-slate-900"
         >
+          {activeIds && !activeIds.includes(property.id) && (
+            <p className="border-b border-white/5 px-3 py-2 text-[10px] text-slate-500">
+              Resultado de uma busca anterior
+            </p>
+          )}
           <div className="flex gap-3 p-3">
             <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-800 text-slate-500">
               {property.imagem_url ? (
@@ -79,7 +89,11 @@ export function AssistantProperties({
           </div>
           <div className="grid grid-cols-2 border-t border-white/10 text-xs">
             <Link
-              href={`/imoveis/${property.id}`}
+              href={
+                publicSlug
+                  ? `${publicAgencyPath(publicSlug)}/imoveis/${property.id}`
+                  : `/imoveis/${property.id}`
+              }
               onClick={onDetails}
               className="flex min-h-11 items-center justify-center px-3 py-3 text-slate-200 hover:bg-white/5"
             >
@@ -87,7 +101,9 @@ export function AssistantProperties({
             </Link>
             <button
               type="button"
-              disabled={disabled}
+              disabled={
+                disabled || (!!activeIds && !activeIds.includes(property.id))
+              }
               onClick={() => onSelect(property)}
               className="min-h-11 border-l border-white/10 px-3 py-3 font-medium text-indigo-200 hover:bg-indigo-500/10 disabled:opacity-40"
             >

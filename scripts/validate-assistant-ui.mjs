@@ -14,11 +14,20 @@ import {
 } from '../tests/helpers/assistant-fixture.mjs';
 process.env.JWT_SECRET = 'ui-only-assistant-fixture-secret-123456';
 process.env.OPENROUTER_API_KEY = 'fixture-provider-only';
+process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://fixture.invalid';
 const { signToken } = await import('../src/lib/jwt.ts');
 const { setServerSupabaseClientOverride } = await import(
   '../src/lib/supabase.ts'
 );
 const db = assistantFixture();
+Object.assign(db.state.imobiliarias[0], {
+  public_slug: 'horizonte',
+  atendimento_publico: true,
+});
+Object.assign(db.state.imobiliarias[1], {
+  public_slug: 'outra-empresa',
+  atendimento_publico: true,
+});
 setServerSupabaseClientOverride(db);
 globalThis.fetch = async (url) => {
   if (!String(url).startsWith('https://openrouter.ai/'))
@@ -40,12 +49,23 @@ const handlers = {
   '/api/imoveis': await import('../src/app/api/imoveis/route.ts'),
   '/api/imobiliaria': await import('../src/app/api/imobiliaria/route.ts'),
   '/api/auth/logout': await import('../src/app/api/auth/logout/route.ts'),
+  '/api/leads/public': await import('../src/app/api/leads/public/route.ts'),
+};
+const publicHandlers = {
+  catalog: await import('../src/app/api/publico/imobiliarias/[slug]/route.ts'),
+  detail: await import(
+    '../src/app/api/publico/imobiliarias/[slug]/imoveis/[id]/route.ts'
+  ),
+  image: await import(
+    '../src/app/api/publico/imobiliarias/[slug]/imoveis/[id]/imagem/route.ts'
+  ),
 };
 const root = process.cwd(),
-  origin = 'http://127.0.0.1:3218';
+  port = Number(process.env.ASSISTANT_UI_PORT || 3218),
+  origin = `http://127.0.0.1:${port}`;
 const output = await build({
   stdin: {
-    contents: `import React from 'react';import{createRoot}from'react-dom/client';import{AuthProvider}from'./src/contexts/AuthContext';import{AssistantProvider}from'./src/contexts/AssistantContext';import{OpenChatButton}from'./src/components/assistant/OpenChatButton';import Navbar from'./src/components/Navbar';import ImoveisPage from'./src/app/imoveis/page';import{CompanyContactSettings}from'./src/components/CompanyContactSettings';createRoot(document.getElementById('root')).render(<AuthProvider><AssistantProvider><Navbar/><div className="border-b border-amber-500/20 bg-amber-500/5 px-6 py-2 text-xs text-amber-200">TESTE LOCAL · Dados fictícios · Nenhum acesso ao banco real</div>{location.pathname==='/admin'?<main className="mx-auto max-w-4xl p-6"><CompanyContactSettings/></main>:<ImoveisPage/>}<div className="px-6 pb-12"><OpenChatButton className="rounded-xl bg-indigo-600 px-5 py-3 text-white">Abrir atendimento sem sair desta página</OpenChatButton></div></AssistantProvider></AuthProvider>);`,
+    contents: `import React,{useEffect,useState} from 'react';import{createRoot}from'react-dom/client';import{AuthProvider}from'./src/contexts/AuthContext';import{AssistantProvider}from'./src/contexts/AssistantContext';import{OpenChatButton}from'./src/components/assistant/OpenChatButton';import Navbar from'./src/components/Navbar';import ImoveisPage from'./src/app/imoveis/page';import{CompanyContactSettings}from'./src/components/CompanyContactSettings';import{CompanyPublicPageSettings}from'./src/components/CompanyPublicPageSettings';import{PublicAgencyLanding}from'./src/components/public-agency/PublicAgencyLanding';import{PublicPropertyDetail}from'./src/components/public-agency/PublicPropertyDetail';import{publicAgencySlug}from'./src/lib/public-agency-path';function PublicFixture(){const[agency,setAgency]=useState(null),[property,setProperty]=useState(null),[error,setError]=useState('');const slug=publicAgencySlug(location.pathname),id=location.pathname.split('/imoveis/')[1];useEffect(()=>{fetch('/api/publico/imobiliarias/'+slug+(id?'/imoveis/'+id:'')).then(async r=>{if(!r.ok)throw new Error('Página não encontrada');return r.json()}).then(data=>{setAgency(data.imobiliaria);setProperty(data.imovel??null)}).catch(err=>setError(err.message))},[slug]);return agency?(property?<PublicPropertyDetail agency={agency} property={property}/>:<PublicAgencyLanding key={slug} agency={agency}/>):<p className="p-10">{error||'Carregando página...'}</p>};createRoot(document.getElementById('root')).render(<AuthProvider><AssistantProvider><Navbar/><div className="border-b border-amber-500/20 bg-amber-500/5 px-6 py-2 text-xs text-amber-200">TESTE LOCAL · Dados fictícios · Nenhum acesso ao banco real</div>{publicAgencySlug(location.pathname)?<PublicFixture/>:location.pathname==='/admin'?<main className="mx-auto max-w-4xl p-6"><CompanyContactSettings/><CompanyPublicPageSettings/></main>:<ImoveisPage/>}<div className="px-6 pb-12"><OpenChatButton className="rounded-xl bg-indigo-600 px-5 py-3 text-white">Abrir atendimento sem sair desta página</OpenChatButton></div></AssistantProvider></AuthProvider>);`,
     resolveDir: root,
     loader: 'tsx',
   },
@@ -96,13 +116,23 @@ const server = http.createServer(async (req, res) => {
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:",
   );
   if (url.pathname === '/__start') {
-    const id =
-      url.searchParams.get('role') === 'lead'
-        ? CLIENT_A
-        : url.searchParams.get('role') === 'admin'
-          ? ADMIN_A
-          : BROKER_A;
+    if (url.searchParams.get('role') === 'guest') {
+      res.writeHead(303, {
+        Location: '/',
+        'Set-Cookie':
+          'auth_token=; Max-Age=0; HttpOnly; SameSite=Strict; Path=/',
+      });
+      res.end();
+      return;
+    }
+    const id = ['lead', 'unlinked'].includes(url.searchParams.get('role'))
+      ? CLIENT_A
+      : url.searchParams.get('role') === 'admin'
+        ? ADMIN_A
+        : BROKER_A;
     const profile = db.state.perfis.find((p) => p.id === id);
+    if (url.searchParams.get('role') === 'unlinked')
+      profile.imobiliaria_id = null;
     const token = signToken({
       uid: id,
       role: profile.role,
@@ -121,7 +151,19 @@ const server = http.createServer(async (req, res) => {
     res.end(output.outputFiles[0].text);
     return;
   }
-  if (handlers[url.pathname]) {
+  const publicMatch = url.pathname.match(
+    /^\/api\/publico\/imobiliarias\/([^/]+)(?:\/imoveis\/([^/]+)(\/imagem)?)?$/,
+  );
+  const controller =
+    handlers[url.pathname] ??
+    (publicMatch
+      ? publicMatch[3]
+        ? publicHandlers.image
+        : publicMatch[2]
+          ? publicHandlers.detail
+          : publicHandlers.catalog
+      : null);
+  if (controller) {
     try {
       let body = '';
       for await (const chunk of req) body += chunk;
@@ -132,13 +174,18 @@ const server = http.createServer(async (req, res) => {
           ? { body: body || undefined }
           : {}),
       });
-      const handler = handlers[url.pathname][req.method];
+      const handler = controller[req.method];
       if (!handler) {
         res.writeHead(405);
         res.end();
         return;
       }
-      const response = await handler(request);
+      const response = await handler(request, {
+        params: Promise.resolve({
+          slug: publicMatch?.[1],
+          id: publicMatch?.[2],
+        }),
+      });
       const headers = Object.fromEntries(response.headers);
       if (response.headers.getSetCookie().length)
         headers['set-cookie'] = response.headers.getSetCookie();
@@ -156,6 +203,6 @@ const server = http.createServer(async (req, res) => {
     `<title>CorreAI · Atendimento · Teste isolado</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style><body><div id="root"></div><script src="/bundle.js"></script></body>`,
   );
 });
-server.listen(3218, '127.0.0.1', () =>
+server.listen(port, '127.0.0.1', () =>
   console.log(`UI isolada: ${origin}/__start · ?role=lead · ?role=admin`),
 );

@@ -14,10 +14,12 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { AssistantChat } from '@/components/assistant/AssistantChat';
 import { assistantStorageKey } from '@/lib/assistant-cache';
+import { publicAgencySlug } from '@/lib/public-agency-path';
 
 const ChatContext = createContext<{
   openChat: () => void;
   closeChat: () => void;
+  refreshChat: () => void;
 } | null>(null);
 export function useAssistant() {
   const value = useContext(ChatContext);
@@ -29,10 +31,15 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false),
     [mounted, setMounted] = useState(false),
     [visited, setVisited] = useState(false);
+  const [revision, setRevision] = useState(0);
   const dialog = useRef<HTMLDialogElement>(null),
     opener = useRef<HTMLElement | null>(null);
   const { profile, loading } = useAuth();
   const pathname = usePathname();
+  const publicSlug = publicAgencySlug(pathname);
+  const focusedPropertyId = publicSlug
+    ? pathname.match(/\/imoveis\/([a-f0-9-]{36})$/)?.[1]
+    : undefined;
   const openChat = useCallback(() => {
     opener.current =
       document.activeElement instanceof HTMLElement
@@ -42,10 +49,16 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     setOpen(true);
   }, []);
   const closeChat = useCallback(() => setOpen(false), []);
-  const key = assistantStorageKey(
-    profile?.id ?? 'visitante',
-    profile?.imobiliaria_id ?? null,
-  );
+  const refreshChat = useCallback(() => {
+    setRevision((value) => value + 1);
+    openChat();
+  }, [openChat]);
+  const key = publicSlug
+    ? `correia-assistente:publico:${publicSlug}`
+    : assistantStorageKey(
+        profile?.id ?? 'visitante',
+        profile?.imobiliaria_id ?? null,
+      );
   useEffect(() => {
     queueMicrotask(() => setMounted(true));
   }, []);
@@ -67,9 +80,9 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   const hidden =
     pathname === '/login' ||
     pathname === '/cadastro' ||
-    profile?.role === 'super_admin';
+    (profile?.role === 'super_admin' && !publicSlug);
   return (
-    <ChatContext.Provider value={{ openChat, closeChat }}>
+    <ChatContext.Provider value={{ openChat, closeChat, refreshChat }}>
       {children}
       {!hidden && !open && !loading && (
         <button
@@ -95,7 +108,13 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
             className="fixed inset-0 m-0 h-dvh max-h-dvh w-screen max-w-none overflow-hidden border-0 bg-transparent p-0 text-slate-100 backdrop:bg-slate-950/50 sm:inset-auto sm:bottom-5 sm:right-5 sm:h-[min(760px,calc(100dvh-40px))] sm:w-[450px] sm:rounded-3xl sm:border sm:border-slate-700/80 sm:shadow-2xl sm:shadow-black/60"
           >
             {visited && (
-              <AssistantChat key={key} storageKey={key} onClose={closeChat} />
+              <AssistantChat
+                key={`${key}:${revision}:${focusedPropertyId ?? ''}`}
+                storageKey={key}
+                publicSlug={publicSlug}
+                initialSelectedId={focusedPropertyId}
+                onClose={closeChat}
+              />
             )}
           </dialog>,
           document.body,

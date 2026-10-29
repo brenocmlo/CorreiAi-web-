@@ -61,8 +61,9 @@ export function CompanyContactSettings() {
         Contato de {nome}
       </h2>
       <p className="mt-2 text-sm text-slate-400">
-        A assistente informa este número aos usuários vinculados à sua
-        imobiliária. Use somente o contato comercial oficial.
+        A assistente usa este número nos atendimentos da sua imobiliária. Se
+        ativar a página pública, visitantes também poderão vê-lo. Use somente
+        o contato comercial oficial.
       </p>
       <form
         onSubmit={save}

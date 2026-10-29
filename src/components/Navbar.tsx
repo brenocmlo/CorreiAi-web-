@@ -18,7 +18,8 @@ export default function Navbar() {
     pathname === '/' ||
     pathname === '/login' ||
     pathname === '/cadastro' ||
-    pathname === '/cadastro/lead'
+    pathname === '/cadastro/lead' ||
+    pathname.startsWith('/imobiliaria/')
   ) {
     return null;
   }
@@ -41,7 +42,12 @@ export default function Navbar() {
 
   const navLinksLead = [{ href: '/dashboard', label: 'Início' }];
 
-  const navLinks = profile?.role === 'super_admin' ? [{ href: '/admin/imobiliarias', label: 'Imobiliárias' }] : isLead ? navLinksLead : navLinksCorretor;
+  const navLinks =
+    profile?.role === 'super_admin'
+      ? [{ href: '/admin/imobiliarias', label: 'Imobiliárias' }]
+      : isLead
+        ? navLinksLead
+        : navLinksCorretor;
   const prepareLogout = () => {
     // O formulário mobile precisa continuar conectado ao DOM até o envio nativo.
     clearAssistantCache();
@@ -53,7 +59,10 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo e Links Principais */}
           <div className="flex items-center gap-8">
-            <Link href={profile ? homeForRole(profile.role) : "/login"} className="flex items-center gap-2">
+            <Link
+              href={profile ? homeForRole(profile.role) : '/login'}
+              className="flex items-center gap-2"
+            >
               <span className="text-xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                 CorreIA
               </span>
@@ -64,7 +73,11 @@ export default function Navbar() {
 
             {/* Links de navegação (Desktop) */}
             <nav className="hidden md:flex items-center gap-1">
-              {profile?.role!=='super_admin'&&<OpenChatButton className="rounded-lg px-3 py-2 text-sm text-slate-400 hover:bg-slate-800 hover:text-white">Assistente</OpenChatButton>}
+              {profile?.role !== 'super_admin' && (
+                <OpenChatButton className="rounded-lg px-3 py-2 text-sm text-slate-400 hover:bg-slate-800 hover:text-white">
+                  Assistente
+                </OpenChatButton>
+              )}
               {navLinks.map((link) => {
                 const isAtivo = pathname === link.href;
                 return (
@@ -87,15 +100,22 @@ export default function Navbar() {
           {/* Perfil e Botão Sair (Desktop) */}
           <div className="hidden md:flex items-center gap-4">
             <div className="text-right">
-              <p className="text-sm font-semibold text-slate-200">{nomeExibicao}</p>
+              <p className="text-sm font-semibold text-slate-200">
+                {nomeExibicao}
+              </p>
             </div>
             <div className="h-8 w-px bg-slate-700"></div>
-            <form action="/api/auth/logout" method="post" onSubmit={prepareLogout}>
-            <button type="submit"
-              className="text-sm font-medium text-slate-400 hover:text-red-400 transition-colors"
+            <form
+              action="/api/auth/logout"
+              method="post"
+              onSubmit={prepareLogout}
             >
-              Sair
-            </button>
+              <button
+                type="submit"
+                className="text-sm font-medium text-slate-400 hover:text-red-400 transition-colors"
+              >
+                Sair
+              </button>
             </form>
           </div>
 
@@ -109,11 +129,26 @@ export default function Navbar() {
               onClick={() => setMenuAberto(!menuAberto)}
               className="text-slate-400 hover:text-white focus:outline-none p-2"
             >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
                 {menuAberto ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
                 )}
               </svg>
             </button>
@@ -123,9 +158,16 @@ export default function Navbar() {
 
       {/* Menu Mobile */}
       {menuAberto && (
-        <div id="menu-mobile" className="md:hidden border-t border-slate-800 bg-slate-900">
+        <div
+          id="menu-mobile"
+          className="md:hidden border-t border-slate-800 bg-slate-900"
+        >
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            {profile?.role!=='super_admin'&&<OpenChatButton className="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-slate-800">Assistente</OpenChatButton>}
+            {profile?.role !== 'super_admin' && (
+              <OpenChatButton className="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-slate-800">
+                Assistente
+              </OpenChatButton>
+            )}
             {navLinks.map((link) => {
               const isAtivo = pathname === link.href;
               return (
@@ -143,12 +185,17 @@ export default function Navbar() {
                 </Link>
               );
             })}
-            <form action="/api/auth/logout" method="post" onSubmit={prepareLogout}>
-            <button type="submit"
-              className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-slate-800 hover:text-red-300 mt-4"
+            <form
+              action="/api/auth/logout"
+              method="post"
+              onSubmit={prepareLogout}
             >
-              Sair da Conta
-            </button>
+              <button
+                type="submit"
+                className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-slate-800 hover:text-red-300 mt-4"
+              >
+                Sair da Conta
+              </button>
             </form>
           </div>
         </div>

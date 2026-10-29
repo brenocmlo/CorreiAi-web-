@@ -21,10 +21,11 @@ The differentiator confirmed by the user: **the AI does the pre-sales work, not 
 
 ## Operating Context
 
-- The public landing page (`/`) is the top-of-funnel surface: anonymous, no login, must load fast and build trust quickly.
+- The generic landing page (`/`) introduces CorreAI. Each agency can activate its own visitor landing page at `/imobiliaria/{slug}` from `/admin` and share that exact URL with clients.
 - The assistant opens in a chat dialog over the current page, with a full-height layout on mobile. The legacy `/assistente` URL opens this dialog and returns to the appropriate home page. Client accounts land on `/dashboard`.
-- The catalog remains private: `/api/imoveis` requires an authenticated, authorized account. The assistant uses only the verified account's active agency and never accepts an agency ID from the browser. Visitors and clients without an agency can ask general questions but cannot see agency inventory or contact information. No public agency links were added.
-- The agency administrator configures the official business phone in `/admin`. The assistant shows this number only to linked users; a missing phone is reported as missing. A phone number alone does not establish that WhatsApp is available.
+- `/api/imoveis` remains private. Public routes expose only available inventory and business contact of an active agency that explicitly enabled publication. A validated slug selects that agency; arbitrary company/owner IDs from request bodies never grant access. The generic landing and unlinked accounts have no global catalog.
+- The agency administrator configures the official business phone and public page in `/admin`. Published agency pages and their chat show the confirmed business number; a missing phone is reported as missing. A phone number alone does not establish that WhatsApp is available.
+- Visitors can browse and chat without a broker login. An optional quick name/email/phone form with contact authorization creates the lead in that agency's Kanban and supplies the chat with those details. This intake does not create a password, staff account or permission to use the internal CRM.
 - The landing's anonymous property showcase uses clearly illustrative example cards when the private catalog cannot be consulted.
 - Once a lead is captured, it lands in the agent's Kanban funnel (`/funil`) and lead list (`/leads`), where the agent moves it through stages and works it to close.
 - Agents separately manage the property catalog (`/imoveis`) — create, edit, mark status (disponível/vendido/alugado), delete with confirmation.
