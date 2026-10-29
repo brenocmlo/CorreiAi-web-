@@ -3,11 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAssistant } from '@/contexts/AssistantContext';
 import { motion } from 'motion/react';
 import { ArrowRight, Circle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { homeForRole } from '@/lib/auth-policy';
 import { BackToHomeButton } from '@/components/auth/BackToHomeButton';
+import { CHAT_LOGIN_URL, shouldResumeChat } from '@/lib/assistant-auth-flow';
 
 type CampoCadastro = 'nome' | 'sobrenome' | 'email' | 'cpf' | 'senha';
 type ErrosCampo = Partial<Record<CampoCadastro, string>>;
@@ -30,9 +32,11 @@ const fadeSlideUp = {
 
 const copy = {
   tituloHero: 'Encontre seu imóvel',
-  subtituloHero: 'Cadastre-se em poucos passos para conversar com a assistente.',
+  subtituloHero:
+    'Cadastre-se em poucos passos para conversar com a assistente.',
   tituloForm: 'Criar conta de cliente',
-  subtituloForm: 'Corretores e imobiliárias recebem acesso pelo administrador responsável.',
+  subtituloForm:
+    'Corretores e imobiliárias recebem acesso pelo administrador responsável.',
 };
 
 export default function CadastroForm() {
@@ -48,12 +52,14 @@ export default function CadastroForm() {
   const [carregando, setCarregando] = useState(false);
   const { user, loading, refreshProfile } = useAuth();
   const router = useRouter();
+  const { openChat } = useAssistant();
 
   useEffect(() => {
     if (!loading && user) {
+      if (shouldResumeChat(window.location.search, user.role)) openChat();
       router.replace(homeForRole(user.role));
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, openChat]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,9 +70,11 @@ export default function CadastroForm() {
     const novosErros: ErrosCampo = {};
     if (!primeiroNome.trim()) novosErros.nome = 'Informe seu nome.';
     if (!sobrenome.trim()) novosErros.sobrenome = 'Informe seu sobrenome.';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) novosErros.email = 'Informe um e-mail válido.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+      novosErros.email = 'Informe um e-mail válido.';
     if (!cpf.trim()) novosErros.cpf = 'Informe seu CPF.';
-    if (senha.length < 8) novosErros.senha = 'A senha deve ter no mínimo 8 caracteres.';
+    if (senha.length < 8)
+      novosErros.senha = 'A senha deve ter no mínimo 8 caracteres.';
     if (Object.keys(novosErros).length > 0) {
       setErrosCampo(novosErros);
       return;
@@ -93,7 +101,8 @@ export default function CadastroForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        const mensagem = data.error ?? 'Ocorreu um erro ao criar a conta. Tente novamente.';
+        const mensagem =
+          data.error ?? 'Ocorreu um erro ao criar a conta. Tente novamente.';
         if (res.status === 409) setErrosCampo({ email: mensagem });
         else setErro(mensagem);
         return;
@@ -101,7 +110,8 @@ export default function CadastroForm() {
 
       setSucesso(true);
       await refreshProfile();
-      router.replace('/assistente');
+      router.replace(homeForRole('lead'));
+      openChat();
     } catch {
       setErro('Ocorreu um erro ao criar a conta. Tente novamente.');
     } finally {
@@ -146,9 +156,14 @@ export default function CadastroForm() {
           initial="hidden"
           animate="visible"
         >
-          <motion.div variants={fadeSlideUp} className="flex items-center gap-2">
+          <motion.div
+            variants={fadeSlideUp}
+            className="flex items-center gap-2"
+          >
             <Circle className="h-6 w-6 fill-white text-white" />
-            <span className="text-xl font-semibold tracking-tight">CorreAI</span>
+            <span className="text-xl font-semibold tracking-tight">
+              CorreAI
+            </span>
           </motion.div>
 
           <motion.div variants={fadeSlideUp} className="space-y-3 text-center">
@@ -175,7 +190,9 @@ export default function CadastroForm() {
           transition={{ duration: 0.8, ease: 'easeOut' }}
         >
           <div className="space-y-2">
-            <h2 className="text-3xl font-medium tracking-tight">{copy.tituloForm}</h2>
+            <h2 className="text-3xl font-medium tracking-tight">
+              {copy.tituloForm}
+            </h2>
             <p className="text-white/40 text-sm">{copy.subtituloForm}</p>
           </div>
 
@@ -241,7 +258,12 @@ export default function CadastroForm() {
             />
 
             <div className="space-y-2">
-              <label htmlFor="cadastro-senha" className="block text-sm font-medium text-white">Senha</label>
+              <label
+                htmlFor="cadastro-senha"
+                className="block text-sm font-medium text-white"
+              >
+                Senha
+              </label>
               <div className="relative">
                 <input
                   id="cadastro-senha"
@@ -269,7 +291,9 @@ export default function CadastroForm() {
               {errosCampo.senha ? (
                 <p className="text-xs text-red-400">{errosCampo.senha}</p>
               ) : (
-                <p className="text-xs text-white/30">Requer no mínimo 8 caracteres.</p>
+                <p className="text-xs text-white/30">
+                  Requer no mínimo 8 caracteres.
+                </p>
               )}
             </div>
 
@@ -287,7 +311,10 @@ export default function CadastroForm() {
                 <>
                   <span>Criar conta</span>
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-primary transition-colors group-hover:bg-brand-primary-hover">
-                    <ArrowRight className="h-5 w-5 text-white" strokeWidth={2} />
+                    <ArrowRight
+                      className="h-5 w-5 text-white"
+                      strokeWidth={2}
+                    />
                   </span>
                 </>
               )}
@@ -297,7 +324,7 @@ export default function CadastroForm() {
           <p className="text-sm text-white/40 text-center">
             Já faz parte da equipe?{' '}
             <Link
-              href="/login"
+              href={CHAT_LOGIN_URL}
               className="font-medium text-brand-accent transition hover:text-white hover:underline"
             >
               Entrar

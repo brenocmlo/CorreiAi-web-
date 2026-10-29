@@ -9,7 +9,7 @@ export function isAdminRole(role: AppRole | null | undefined): boolean {
 }
 
 export function homeForRole(role: AppRole): string {
-  return role === 'super_admin' ? '/admin/imobiliarias' : role === 'admin_corretora' ? '/admin' : role === 'lead' ? '/assistente' : '/dashboard';
+  return role === 'super_admin' ? '/admin/imobiliarias' : role === 'admin_corretora' ? '/admin' : '/dashboard';
 }
 
 export function isPrivatePage(pathname: string): boolean {

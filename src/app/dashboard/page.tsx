@@ -7,7 +7,7 @@ import AppShell from '@/components/AppShell';
 import { useAuth } from '@/hooks/useAuth';
 import { useImoveis } from '@/hooks/useImoveis';
 import ImovelCard from '@/components/ImovelCard';
-import { AssistantChat } from '@/components/assistant/AssistantChat';
+import { OpenChatButton } from '@/components/assistant/OpenChatButton';
 import { Users, TrendingUp, DollarSign, Calendar, Home, Sparkles } from 'lucide-react';
 
 interface Metricas {
@@ -128,91 +128,45 @@ function DashboardCorretor() {
 
 function DashboardLead() {
   const { profile } = useAuth();
-  const nomeExibicao = profile?.nome_completo || 'Cliente';
-  const { imoveis, loading: loadingImoveis, fetchImoveis } = useImoveis();
-  const [activeTab, setActiveTab] = useState<'imoveis' | 'chat'>('imoveis');
-
+  const { imoveis, loading, error, fetchImoveis } = useImoveis();
   useEffect(() => { void fetchImoveis(); }, [fetchImoveis]);
-
-  const imoveisDisponiveis = imoveis.filter((i) => i.status === 'disponivel');
-
+  const available = imoveis.filter(imovel => imovel.status === 'disponivel');
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6">
-      {/* Header do Lead */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <main className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+      <header className="flex flex-wrap items-center justify-between gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-            Olá, {nomeExibicao}!
-          </h2>
-          <p className="text-sm text-slate-500 mt-1">
-            Seja bem-vindo ao CorreAI. Explore imóveis disponíveis ou converse com nosso assistente inteligente.
-          </p>
+          <p className="text-sm text-brand-primary">Sua busca, do seu jeito</p>
+          <h1 className="mt-2 text-2xl font-bold text-slate-900">Olá, {profile?.nome_completo || 'Cliente'}!</h1>
+          <p className="mt-2 max-w-lg text-sm leading-relaxed text-slate-500">Consulte os imóveis disponíveis para sua conta. A CorreAI ajuda a escolher e preparar seu atendimento com o corretor.</p>
         </div>
-        <div className="text-xs text-slate-500 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200 self-stretch sm:self-auto flex flex-col gap-1">
-          <div><span className="font-semibold text-slate-600">E-mail:</span> {profile?.email}</div>
-          {profile?.cpf && <div><span className="font-semibold text-slate-600">CPF:</span> {profile.cpf}</div>}
-        </div>
-      </div>
-
-      {/* Tabs Selector */}
-      <div className="flex border-b border-slate-200 gap-2">
-        <button
-          onClick={() => setActiveTab('imoveis')}
-          className={`flex items-center gap-2 px-5 py-3 border-b-2 font-medium text-sm transition-colors ${
-            activeTab === 'imoveis'
-              ? 'border-brand-primary text-brand-primary font-semibold'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <Home className="h-4 w-4" />
-          Imóveis Disponíveis
-        </button>
-        <button
-          onClick={() => setActiveTab('chat')}
-          className={`flex items-center gap-2 px-5 py-3 border-b-2 font-medium text-sm transition-colors ${
-            activeTab === 'chat'
-              ? 'border-brand-primary text-brand-primary font-semibold'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <Sparkles className="h-4 w-4" />
-          Chat com a IA
-        </button>
-      </div>
-
-      {/* Tab Contents */}
-      <div className="flex-1">
-        {activeTab === 'imoveis' ? (
-          <div>
-            <div className="mb-4">
-              <h3 className="text-lg font-bold text-slate-900">Catálogo de Imóveis</h3>
-              <p className="text-xs text-slate-500">Imóveis prontos para visitação e compra</p>
-            </div>
-
-            {loadingImoveis && imoveisDisponiveis.length === 0 ? (
-              <div className="flex justify-center py-20">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-primary"></div>
-              </div>
-            ) : imoveisDisponiveis.length === 0 ? (
-              <div className="bg-white border border-slate-200 rounded-xl p-12 text-center">
-                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400 text-xl">
-                  🏠
-                </div>
-                <h4 className="text-slate-900 font-medium mb-1">Nenhum imóvel disponível</h4>
-                <p className="text-xs text-slate-500">Não há imóveis disponíveis no catálogo no momento.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {imoveisDisponiveis.map((imovel) => (
-                  <ImovelCard key={imovel.id} imovel={imovel} />
-                ))}
-              </div>
-            )}
+        <OpenChatButton className="inline-flex items-center gap-2 rounded-xl bg-brand-primary px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-primary-hover">
+          <Sparkles aria-hidden="true" className="h-4 w-4" />
+          Conversar com a CorreAI
+        </OpenChatButton>
+      </header>
+      <section aria-label="Imóveis disponíveis">
+        <h2 className="mb-4 text-lg font-bold text-slate-900">Imóveis para você</h2>
+        {error ? (
+          <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+            {error}
+            <button type="button" onClick={() => void fetchImoveis()} className="ml-3 underline">Tentar novamente</button>
+          </div>
+        ) : loading ? (
+          <p role="status" className="py-10 text-slate-500">Consultando seu catálogo...</p>
+        ) : available.length ? (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {available.map((imovel) => (
+              <ImovelCard key={imovel.id} imovel={imovel} />
+            ))}
           </div>
         ) : (
-          <AssistantChat embedded />
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <Home aria-hidden="true" className="mx-auto mb-3 h-7 w-7 text-slate-400" />
+            <h3 className="font-medium text-slate-900">Seu catálogo está vazio</h3>
+            <p className="mt-2 text-sm text-slate-500">Os imóveis aparecem conforme o vínculo da sua conta com a imobiliária. A assistente continua disponível para tirar dúvidas.</p>
+          </div>
         )}
-      </div>
+      </section>
     </main>
   );
 }

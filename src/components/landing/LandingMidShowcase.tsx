@@ -221,8 +221,8 @@ export function LandingMidShowcase() {
             Fichas coladas no vidro.
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-[var(--shop-text-dim)]">
-            Imóveis que corretores escolheram destacar na vitrine. O resto do catálogo de cada
-            imobiliária é privado — só entra na conversa com a IA depois do login. Arraste para o
+            Imóveis que corretores escolheram destacar na vitrine. O catálogo completo de cada
+            imobiliária fica no link de atendimento que ela compartilha com você. Arraste para o
             lado para ver todas as fichas.
           </p>
 

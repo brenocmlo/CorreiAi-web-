@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, FormEvent } from 'react';
-import { ImovelInput } from '@/hooks/useImoveis';
+import React, { useRef, useState, FormEvent } from 'react';
+import type { ImovelInput } from '@/hooks/useImoveis';
+import { parseImageMetadata } from '@/lib/imoveis-upload';
 import { useRouter } from 'next/navigation';
 import { Field, Input, Select, Textarea } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -25,15 +26,21 @@ interface ImovelFormProps {
   onSubmit: (data: ImovelInput) => Promise<boolean>;
   onUploadImage?: (file: File) => Promise<string | null>;
   isLoading: boolean;
+  error?: string | null;
 }
 
-export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoading }: ImovelFormProps) {
+export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoading, error }: ImovelFormProps) {
   const router = useRouter();
-  
+
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [erros, setErros] = useState<ErrosImovel>({});
-  
+  const [submitError, setSubmitError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [imageUploaded, setImageUploaded] = useState(false);
+  const busy = useRef(false);
+
   const [formData, setFormData] = useState<ImovelInput>({
     tipo: initialData?.tipo || 'casa',
     endereco: initialData?.endereco || '',
@@ -61,28 +68,42 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (busy.current || isLoading || saved) return;
+    setSubmitError('');
 
     const errosValidacao = validarImovel(formData);
     setErros(errosValidacao);
-    if (Object.keys(errosValidacao).length > 0) return;
-
-    let finalUrl = formData.imagem_url;
-    
-    if (imageFile && onUploadImage) {
-      setUploading(true);
-      const url = await onUploadImage(imageFile);
-      setUploading(false);
-      if (url) {
-        finalUrl = url;
-      } else {
-        alert('Erro ao fazer upload da imagem. O imóvel não foi salvo; tente novamente.');
-        return;
-      }
+    if (Object.keys(errosValidacao).length > 0) {
+      setSubmitError('Revise os campos indicados antes de salvar.');
+      return;
     }
-
-    const success = await onSubmit({ ...formData, imagem_url: finalUrl });
-    if (success) {
-      router.push('/imoveis');
+    busy.current = true;
+    setSubmitting(true);
+    try {
+      let finalUrl = formData.imagem_url;
+      if (imageFile) {
+        const metadata = parseImageMetadata(imageFile);
+        if (!metadata.extension) throw new Error(metadata.error);
+        if (!onUploadImage) throw new Error('Não foi possível enviar a imagem. Tente novamente.');
+        setUploading(true);
+        const url = await onUploadImage(imageFile);
+        setUploading(false);
+        if (!url) throw new Error('Não foi possível enviar a imagem. O imóvel ainda não foi salvo. Verifique o arquivo e tente novamente.');
+        finalUrl = url;
+        setFormData(previous => ({ ...previous, imagem_url: url }));
+        setImageFile(null);
+        setImageUploaded(true);
+      }
+      const success = await onSubmit({ ...formData, imagem_url: finalUrl });
+      if (!success) throw new Error('Não foi possível confirmar o cadastro. Confira a mensagem e tente novamente.');
+      setSaved(true);
+      router.push(`/imoveis?resultado=${initialData ? 'atualizado' : 'cadastrado'}`);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Não foi possível concluir. Verifique sua conexão e tente novamente.');
+    } finally {
+      busy.current = false;
+      setUploading(false);
+      setSubmitting(false);
     }
   };
 
@@ -90,19 +111,23 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
     <form
       onSubmit={handleSubmit}
       noValidate
+      aria-busy={submitting || isLoading}
       className="space-y-6 bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm"
     >
       <div className="mb-6 border-b border-slate-200 pb-6">
-        <label className="block text-sm font-medium text-slate-700 mb-2">
+        <label htmlFor="imagem-imovel" className="block text-sm font-medium text-slate-700 mb-2">
           Foto Principal do Imóvel
         </label>
         <div className="flex items-center gap-4">
           <input
             type="file"
-            accept="image/*"
+            id="imagem-imovel"
+            accept="image/jpeg,image/png,image/webp"
+            disabled={submitting || saved}
             onChange={(e) => {
               if (e.target.files && e.target.files[0]) {
                 setImageFile(e.target.files[0]);
+                setImageUploaded(false);
               }
             }}
             className="block w-full text-sm text-slate-500
@@ -118,6 +143,8 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
             </div>
           )}
         </div>
+        <p className="mt-2 text-xs text-slate-500">JPEG, PNG ou WebP, até 5 MB.</p>
+        {imageFile && <p className="mt-2 break-all text-sm text-slate-600">Selecionada: {imageFile.name}</p>}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -241,12 +268,22 @@ export default function ImovelForm({ initialData, onSubmit, onUploadImage, isLoa
         </div>
       </div>
 
-      <div className="pt-6 border-t border-slate-200 flex justify-end gap-4">
-        <Button type="button" variant="secondary" onClick={() => router.back()}>
+      {(error || submitError) && (
+        <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {error || submitError}
+        </p>
+      )}
+      {(submitting || saved || imageUploaded) && (
+        <p role="status" className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-700">
+          {saved ? `Imóvel ${initialData ? 'atualizado' : 'cadastrado'} com sucesso! Abrindo a lista...` : uploading ? 'Enviando imagem. Aguarde...' : submitting ? `${imageUploaded ? 'Imagem enviada com sucesso. ' : ''}Salvando imóvel...` : 'Imagem enviada com sucesso.'}
+        </p>
+      )}
+      <div className="pt-6 border-t border-slate-200 flex flex-wrap justify-end gap-4">
+        <Button type="button" variant="secondary" disabled={submitting || saved} onClick={() => router.back()}>
           Cancelar
         </Button>
-        <Button type="submit" isLoading={isLoading || uploading} className="min-w-[140px]">
-          {uploading ? 'Enviando imagem...' : isLoading ? 'Salvando...' : 'Salvar Imóvel'}
+        <Button type="submit" disabled={saved} isLoading={isLoading || submitting} className="min-w-[140px]">
+          {saved ? 'Salvo!' : uploading ? 'Enviando imagem...' : submitting || isLoading ? 'Salvando...' : 'Salvar Imóvel'}
         </Button>
       </div>
     </form>

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Sidebar from "@/components/Sidebar";
+import { AssistantProvider } from "@/contexts/AssistantContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,8 +33,10 @@ export default function RootLayout({
     >
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-slate-950 text-slate-100">
         <AuthProvider>
-          <Sidebar />
-          {children}
+          <AssistantProvider>
+            <Sidebar />
+            {children}
+          </AssistantProvider>
         </AuthProvider>
       </body>
     </html>

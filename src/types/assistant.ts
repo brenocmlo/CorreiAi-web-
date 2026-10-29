@@ -1,5 +1,14 @@
 export type ConversationMessage = { role: 'user' | 'assistant'; text: string };
 
+export interface AssistantContext {
+  catalogState: 'available' | 'restricted' | 'unavailable';
+  company: { nome: string; telefone: string | null } | null;
+  restrictionReason?: 'login_required' | 'company_required' | 'admin_only';
+  publicSlug?: string;
+  catalogCount?: number;
+  catalogTypes?: string[];
+}
+
 export interface Qualification {
   origem: 'assistente';
   nome: string | null;
@@ -15,6 +24,7 @@ export interface Qualification {
   formaPagamento: string | null;
   preferencias: string[];
   permiteContato: boolean;
+  contatoSolicitado?: boolean;
   visitaSolicitada: boolean;
   visitaPreferencia: string | null;
   imovelInteresseId: string | null;
@@ -38,13 +48,21 @@ export interface AssistantProperty {
   status: string;
 }
 
-export type CaptureStatus = 'incompleto' | 'criado' | 'atualizado' | 'nao_autorizado' | 'indisponivel';
+export type CaptureStatus =
+  | 'incompleto'
+  | 'criado'
+  | 'atualizado'
+  | 'nao_autorizado'
+  | 'sem_alteracao'
+  | 'indisponivel';
 export interface AssistantResponse {
   reply: string;
   leadRegistrado: boolean;
   captura: CaptureStatus;
   qualificacao: Qualification;
   imoveis: AssistantProperty[];
+  contexto?: AssistantContext;
+  sugestoes?: string[];
   aviso?: string;
   error?: string;
 }

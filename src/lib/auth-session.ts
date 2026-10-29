@@ -9,6 +9,7 @@ export interface ProfileRow {
   role: AppRole;
   criado_em: string;
   senha_hash?: string;
+  imobiliaria_id?: string | null;
 }
 
 export function publicProfile(perfil: ProfileRow) {
@@ -20,5 +21,6 @@ export function publicProfile(perfil: ProfileRow) {
     creci: perfil.creci,
     role: perfil.role,
     criado_em: perfil.criado_em,
+    imobiliaria_id: perfil.imobiliaria_id ?? null,
   };
 }

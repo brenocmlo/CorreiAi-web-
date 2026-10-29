@@ -11,6 +11,9 @@ async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
   });
 
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('correia:session-expired'));
+  }
 
   if (!res.ok) {
     throw new Error((data as { error?: string }).error ?? 'Erro na requisição.');

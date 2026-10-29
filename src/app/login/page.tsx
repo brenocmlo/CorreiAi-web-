@@ -8,6 +8,8 @@ import { ArrowRight, Circle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { BackToHomeButton } from '@/components/auth/BackToHomeButton';
 import { homeForRole } from '@/lib/auth-policy';
+import { useAssistant } from '@/contexts/AssistantContext';
+import { CHAT_SIGNUP_URL, shouldResumeChat } from '@/lib/assistant-auth-flow';
 
 const VIDEO_SRC =
   'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260506_081238_406ed0e3-5d83-436e-a512-0bbff7ec5b95.mp4';
@@ -30,16 +32,21 @@ export default function Login() {
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [erro, setErro] = useState('');
-  const [errosCampo, setErrosCampo] = useState<{ email?: string; senha?: string }>({});
+  const [errosCampo, setErrosCampo] = useState<{
+    email?: string;
+    senha?: string;
+  }>({});
   const [carregando, setCarregando] = useState(false);
   const { user, loading, refreshProfile } = useAuth();
   const router = useRouter();
+  const { openChat } = useAssistant();
 
   useEffect(() => {
     if (!loading && user) {
+      if (shouldResumeChat(window.location.search, user.role)) openChat();
       router.replace(homeForRole(user.role));
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, openChat]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +64,9 @@ export default function Login() {
       const data = await res.json();
 
       if (!res.ok) {
-        const mensagem = data.error ?? 'Ocorreu um erro ao fazer login. Tente novamente mais tarde.';
+        const mensagem =
+          data.error ??
+          'Ocorreu um erro ao fazer login. Tente novamente mais tarde.';
         if (res.status === 401) setErrosCampo({ senha: mensagem });
         else if (res.status === 400) setErrosCampo({ email: mensagem });
         else setErro(mensagem);
@@ -111,9 +120,14 @@ export default function Login() {
           initial="hidden"
           animate="visible"
         >
-          <motion.div variants={fadeSlideUp} className="flex items-center gap-2">
+          <motion.div
+            variants={fadeSlideUp}
+            className="flex items-center gap-2"
+          >
             <Circle className="h-6 w-6 fill-white text-white" />
-            <span className="text-xl font-semibold tracking-tight">CorreAI</span>
+            <span className="text-xl font-semibold tracking-tight">
+              CorreAI
+            </span>
           </motion.div>
 
           <motion.div variants={fadeSlideUp} className="space-y-3 text-center">
@@ -141,9 +155,12 @@ export default function Login() {
           transition={{ duration: 0.8, ease: 'easeOut' }}
         >
           <div className="space-y-2">
-            <h2 className="text-3xl font-medium tracking-tight">Entrar na sua conta</h2>
+            <h2 className="text-3xl font-medium tracking-tight">
+              Entrar na sua conta
+            </h2>
             <p className="text-white/40 text-sm">
-              Clientes, corretores e administradores entram com seu e-mail e senha.
+              Clientes, corretores e administradores entram com seu e-mail e
+              senha.
             </p>
           </div>
 
@@ -176,8 +193,16 @@ export default function Login() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label htmlFor="login-senha" className="block text-sm font-medium text-white">Senha</label>
-                <a href="#" className="text-xs text-white/40 hover:text-white/70 transition">
+                <label
+                  htmlFor="login-senha"
+                  className="block text-sm font-medium text-white"
+                >
+                  Senha
+                </label>
+                <a
+                  href="#"
+                  className="text-xs text-white/40 hover:text-white/70 transition"
+                >
                   Esqueceu a senha?
                 </a>
               </div>
@@ -205,7 +230,9 @@ export default function Login() {
                   )}
                 </button>
               </div>
-              {errosCampo.senha && <p className="text-xs text-red-400">{errosCampo.senha}</p>}
+              {errosCampo.senha && (
+                <p className="text-xs text-red-400">{errosCampo.senha}</p>
+              )}
             </div>
 
             <button
@@ -222,7 +249,10 @@ export default function Login() {
                 <>
                   <span>Entrar</span>
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-primary transition-colors group-hover:bg-brand-primary-hover">
-                    <ArrowRight className="h-5 w-5 text-white" strokeWidth={2} />
+                    <ArrowRight
+                      className="h-5 w-5 text-white"
+                      strokeWidth={2}
+                    />
                   </span>
                 </>
               )}
@@ -232,7 +262,7 @@ export default function Login() {
           <p className="text-sm text-white/40 text-center">
             Não tem uma conta?{' '}
             <Link
-              href="/cadastro"
+              href={CHAT_SIGNUP_URL}
               className="font-medium text-brand-accent transition hover:text-white hover:underline"
             >
               Cadastre-se gratuitamente

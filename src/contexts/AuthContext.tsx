@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { AppRole, canAccessPage, homeForRole, isAdminRole, isPrivatePage } from '@/lib/auth-policy';
+import { withRequestTimeout } from '@/lib/client-request';
+import { clearAssistantCache } from '@/lib/assistant-cache';
 
 interface Profile {
   id: string;
@@ -12,6 +14,7 @@ interface Profile {
   creci?: string;
   role: AppRole;
   criado_em: string;
+  imobiliaria_id?: string | null;
 }
 
 interface AuthContextType {
@@ -37,8 +40,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchMe = useCallback(async () => {
     const version = ++requestVersion.current;
     try {
-      const res = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
-      const body = res.ok ? await res.json() : null;
+      const body = await withRequestTimeout(async signal => {
+        const response = await fetch('/api/auth/me', { signal, credentials: 'same-origin', cache: 'no-store' });
+        return response.ok ? await response.json() : null;
+      });
       if (version === requestVersion.current) setProfile(body?.perfil ?? null);
     } catch {
       if (version === requestVersion.current) setProfile(null);
@@ -60,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       requestVersion.current++;
       setProfile(null);
       setLoading(false);
+      clearAssistantCache();
     };
     const checkOnFocus = () => { void fetchMe(); };
     const checkOnRestore = (event: PageTransitionEvent) => {

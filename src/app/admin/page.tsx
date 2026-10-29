@@ -8,6 +8,8 @@ import { homeForRole } from '@/lib/auth-policy';
 import { useAuth } from '@/hooks/useAuth';
 import { Shield, UserCheck, Plus } from 'lucide-react';
 import Link from 'next/link';
+import { CompanyContactSettings } from '@/components/CompanyContactSettings';
+import { CompanyPublicPageSettings } from '@/components/CompanyPublicPageSettings';
 
 interface Usuario {
   id: string;
@@ -42,13 +44,14 @@ export default function AdminPage() {
     fetch('/api/admin')
       .then(async (r) => {
         const data = await r.json();
-        if (!r.ok) throw new Error(data.error ?? 'Não foi possível carregar a equipe.');
+        if (!r.ok)
+          throw new Error(data.error ?? 'Não foi possível carregar a equipe.');
         return data;
       })
       .then((data) => {
         if (Array.isArray(data)) setUsuarios(data);
       })
-      .catch(error => setErro(error.message))
+      .catch((error) => setErro(error.message))
       .finally(() => setLoading(false));
   }, [profile?.role]);
 
@@ -56,22 +59,25 @@ export default function AdminPage() {
     setUpdating(userId);
     setErro('');
     try {
-    const res = await fetch('/api/admin', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, ativo }),
-    });
+      const res = await fetch('/api/admin', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, ativo }),
+      });
 
-    if (res.ok) {
-      setUsuarios((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, ativo } : u))
-      );
-    } else {
-      const data = await res.json().catch(() => ({}));
-      setErro(data.error ?? 'Não foi possível alterar o acesso.');
+      if (res.ok) {
+        setUsuarios((prev) =>
+          prev.map((u) => (u.id === userId ? { ...u, ativo } : u)),
+        );
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setErro(data.error ?? 'Não foi possível alterar o acesso.');
+      }
+    } catch {
+      setErro('Não foi possível alterar o acesso. Tente novamente.');
+    } finally {
+      setUpdating(null);
     }
-    } catch { setErro('Não foi possível alterar o acesso. Tente novamente.'); }
-    finally { setUpdating(null); }
   }
 
   if (authLoading) {
@@ -90,6 +96,11 @@ export default function AdminPage() {
     <ProtectedRoute>
       <AppShell>
         <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="mb-8 space-y-6">
+            <CompanyContactSettings />
+            <CompanyPublicPageSettings />
+          </div>
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div className="flex items-center gap-3">
               <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
@@ -100,7 +111,7 @@ export default function AdminPage() {
                 <p className="text-sm text-slate-500">Cadastre corretores e controle o acesso da sua equipe</p>
               </div>
             </div>
-            
+
             <Link
               href="/admin/novo-corretor"
               className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-purple-700 shadow-sm"
@@ -160,12 +171,14 @@ export default function AdminPage() {
                       <td className="px-6 py-4">
                         <button
                           disabled={updating === u.id}
-                          onClick={() =>
-                            alterarAcesso(u.id, !u.ativo)
-                          }
+                          onClick={() => alterarAcesso(u.id, !u.ativo)}
                           className="text-xs px-3 py-1 rounded-lg border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                         >
-                          {updating === u.id ? 'Salvando...' : u.ativo ? 'Suspender acesso' : 'Reativar acesso'}
+                          {updating === u.id
+                            ? 'Salvando...'
+                            : u.ativo
+                              ? 'Suspender acesso'
+                              : 'Reativar acesso'}
                         </button>
                       </td>
                     </tr>

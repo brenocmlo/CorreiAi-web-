@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { DM_Sans, Space_Grotesk } from 'next/font/google';
 import { useAuth } from '@/hooks/useAuth';
+import { homeForRole } from '@/lib/auth-policy';
 import { LandingNavbar } from '@/components/landing/LandingNavbar';
 import { HeroSection } from '@/components/landing/HeroSection';
 import { LandingMidShowcase } from '@/components/landing/LandingMidShowcase';
@@ -19,7 +20,7 @@ export default function LandingPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace('/dashboard');
+      router.replace(homeForRole(user.role));
     }
   }, [user, loading, router]);
 

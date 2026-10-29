@@ -29,11 +29,11 @@ export function createServerSupabaseClient(): SupabaseClient {
 }
 
 // Client público — usado no browser (queries client-side)
-export function createBrowserSupabaseClient(): SupabaseClient {
+export function createBrowserSupabaseClient(fetcher?: typeof fetch): SupabaseClient {
   const config = getBrowserSupabaseConfig({
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   });
 
-  return createClient(config.url, config.key);
+  return createClient(config.url, config.key, fetcher ? { global: { fetch: fetcher } } : undefined);
 }

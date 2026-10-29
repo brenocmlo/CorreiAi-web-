@@ -11,7 +11,7 @@ import AppShell from '@/components/AppShell';
 export default function NovoImovelPage() {
   const { profile, loading: authLoading, isLead } = useAuth();
   const router = useRouter();
-  const { createImovel, uploadImagem, loading } = useImoveis();
+  const { createImovel, uploadImagem, loading, error } = useImoveis();
 
   useEffect(() => {
     if (!authLoading && profile && isLead) {
@@ -43,10 +43,11 @@ export default function NovoImovelPage() {
           <p className="text-slate-500">Preencha os dados abaixo para adicionar um novo imóvel ao catálogo.</p>
         </div>
 
-        <ImovelForm 
+        <ImovelForm
           onSubmit={createImovel}
           onUploadImage={uploadImagem}
-          isLoading={loading} 
+          isLoading={loading}
+          error={error}
         />
       </div>
     </AppShell>
