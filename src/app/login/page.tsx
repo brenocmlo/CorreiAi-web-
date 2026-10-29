@@ -7,6 +7,7 @@ import { motion } from 'motion/react';
 import { ArrowRight, Circle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { BackToHomeButton } from '@/components/auth/BackToHomeButton';
+import { homeForRole } from '@/lib/auth-policy';
 
 const VIDEO_SRC =
   'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260506_081238_406ed0e3-5d83-436e-a512-0bbff7ec5b95.mp4';
@@ -36,7 +37,7 @@ export default function Login() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace('/dashboard');
+      router.replace(homeForRole(user.role));
     }
   }, [user, loading, router]);
 
@@ -64,7 +65,7 @@ export default function Login() {
       }
 
       await refreshProfile();
-      router.replace('/dashboard');
+      // O efeito acima usa o perfil atual para abrir a área correta.
     } catch {
       setErro('Ocorreu um erro ao fazer login. Tente novamente mais tarde.');
     } finally {
@@ -142,7 +143,7 @@ export default function Login() {
           <div className="space-y-2">
             <h2 className="text-3xl font-medium tracking-tight">Entrar na sua conta</h2>
             <p className="text-white/40 text-sm">
-              Entre na sua conta para gerenciar seu CRM imobiliário.
+              Clientes, corretores e administradores entram com seu e-mail e senha.
             </p>
           </div>
 

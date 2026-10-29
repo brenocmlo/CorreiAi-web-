@@ -13,10 +13,12 @@ afterEach(() => setServerSupabaseClientOverride(null));
 function mockDatabase(rows) {
   return {
     from(table) {
-      if (table==='perfis') return {select(){return this},eq(){return this},maybeSingle(){return Promise.resolve({data:{id:'fixture-owner',role:'corretor',ativo:true,imobiliaria_id:null},error:null})}};
+      if(table==='imobiliarias')return {select(){return this},eq(){return this},maybeSingle(){return Promise.resolve({data:{ativo:true},error:null})}};
+      if (table==='perfis') return {select(){return this},eq(){return this},maybeSingle(){return Promise.resolve({data:{id:'fixture-owner',role:'corretor',ativo:true,imobiliaria_id:'33333333-3333-4333-8333-333333333333'},error:null})}};
       assert.equal(table, 'imoveis');
       const query = {
         select() { return this; },
+        or() { return this; },
         eq() { return this; },
         order() { return this; },
         then(resolve) { return Promise.resolve({ data: rows, error: null }).then(resolve); },

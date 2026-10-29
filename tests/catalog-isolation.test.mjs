@@ -17,7 +17,7 @@ const ORG = '33333333-3333-4333-8333-333333333333';
 const ID = '44444444-4444-4444-8444-444444444444';
 const OTHER = '55555555-5555-4555-8555-555555555555';
 
-function db({ org = null, active = true, role = 'corretor', rows = [] } = {}) {
+function db({ org = ORG, active = true, role = 'corretor', rows = [] } = {}) {
   return { from(table) {
     const filters = []; let alternatives; let inserted; let update; let deleted;
     const q = {
@@ -27,6 +27,7 @@ function db({ org = null, active = true, role = 'corretor', rows = [] } = {}) {
       insert(value) { inserted = value; return this; },
       update(value) { update = value; return this; }, delete() { deleted = true; return this; },
       result() {
+        if (table === 'imobiliarias') return {data:{id:ORG,ativo:true},error:null};
         if (table === 'perfis') return { data: {id:A, role, ativo:active, imobiliaria_id:org}, error:null };
         if (inserted) return {data:{id:ID,...inserted},error:null};
         const selected = rows.filter(r => filters.every(([k,v]) => r[k] === v) && (!alternatives || alternatives.some(([k,v]) => r[k] === v)));
@@ -51,7 +52,7 @@ test('catálogo anônimo não expõe imóveis', async () => {
   assert.equal((await list.GET(new NextRequest('http://localhost/api/imoveis'))).status,401);
 });
 test('conta nova sem imobiliária começa vazia, inclusive imóveis legados', async () => {
-  setServerSupabaseClientOverride(db({rows:[property,{...property,id:OTHER,proprietario_id:null}]}));
+  setServerSupabaseClientOverride(db({role:'lead',org:null,rows:[property,{...property,id:OTHER,proprietario_id:null}]}));
   assert.deepEqual((await (await list.GET(req())).json()).imoveis,[]);
 });
 test('lista somente próprios ou da imobiliária verificada no banco', async () => {
@@ -71,7 +72,7 @@ test('cadastro ignora proprietário e imobiliária enviados pelo cliente', async
   assert.equal(res.status,201);
   const { imovel } = await res.json();
   assert.equal(imovel.proprietario_id,A);
-  assert.equal(imovel.imobiliaria_id,null);
+  assert.equal(imovel.imobiliaria_id,ORG);
 });
 test('sessão desativada e role obsoleta no JWT não autorizam escrita', async () => {
   setServerSupabaseClientOverride(db({active:false}));

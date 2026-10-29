@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { AppRole, canAccessPage, isAdminRole, isPrivatePage } from '@/lib/auth-policy';
+import { AppRole, canAccessPage, homeForRole, isAdminRole, isPrivatePage } from '@/lib/auth-policy';
 
 interface Profile {
   id: string;
@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (privatePage && !loading) {
       if (!profile) window.location.replace('/login');
-      else if (!canAccessPage(profile.role, pathname)) window.location.replace('/dashboard');
+      else if (!canAccessPage(profile.role, pathname)) window.location.replace(homeForRole(profile.role));
     }
   }, [privatePage, loading, profile, pathname]);
 

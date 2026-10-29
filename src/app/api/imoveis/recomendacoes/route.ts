@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
   };
   const auth = await getAuthFromRequest(request);
   if (!auth) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
+  if (auth.role === 'super_admin') return NextResponse.json({ error: 'Acesse a administração das imobiliárias.' }, { status: 403 });
   const imoveis = await recomendarImoveis(prefs, undefined, auth);
   return NextResponse.json({ imoveis: imoveis.map(presentImovel) }, { headers: { 'Cache-Control': 'private, no-store' } });
 }

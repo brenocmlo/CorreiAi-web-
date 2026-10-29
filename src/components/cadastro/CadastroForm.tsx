@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
 import { ArrowRight, Circle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { homeForRole } from '@/lib/auth-policy';
 import { BackToHomeButton } from '@/components/auth/BackToHomeButton';
 
-type TipoPerfil = 'corretor' | 'lead';
-type CampoCadastro = 'nome' | 'sobrenome' | 'email' | 'cpf' | 'creci' | 'senha';
+type CampoCadastro = 'nome' | 'sobrenome' | 'email' | 'cpf' | 'senha';
 type ErrosCampo = Partial<Record<CampoCadastro, string>>;
 
 const VIDEO_SRC =
@@ -28,37 +28,19 @@ const fadeSlideUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
 
-const COPY: Record<
-  TipoPerfil,
-  { tituloHero: string; subtituloHero: string; tituloForm: string; subtituloForm: string }
-> = {
-  corretor: {
-    tituloHero: 'Junte-se à CorreAI',
-    subtituloHero: 'Siga estas 2 etapas rápidas para ativar seu espaço.',
-    tituloForm: 'Criar novo perfil',
-    subtituloForm: 'Informe seus dados básicos para começar a jornada.',
-  },
-  lead: {
-    tituloHero: 'Encontre seu imóvel',
-    subtituloHero: 'Cadastre-se em poucos passos e receba recomendações personalizadas.',
-    tituloForm: 'Criar sua conta',
-    subtituloForm: 'Informe seus dados para começar a buscar imóveis.',
-  },
+const copy = {
+  tituloHero: 'Encontre seu imóvel',
+  subtituloHero: 'Cadastre-se em poucos passos para conversar com a assistente.',
+  tituloForm: 'Criar conta de cliente',
+  subtituloForm: 'Corretores e imobiliárias recebem acesso pelo administrador responsável.',
 };
 
-interface CadastroFormProps {
-  tipoPerfil: TipoPerfil;
-}
-
-export default function CadastroForm({ tipoPerfil: tipoInicial }: CadastroFormProps) {
-  const [tipoPerfil, setTipoPerfil] = useState<TipoPerfil>(tipoInicial);
-  const copy = COPY[tipoPerfil];
+export default function CadastroForm() {
   const [errosCampo, setErrosCampo] = useState<ErrosCampo>({});
   const [primeiroNome, setPrimeiroNome] = useState('');
   const [sobrenome, setSobrenome] = useState('');
   const [email, setEmail] = useState('');
   const [cpf, setCpf] = useState('');
-  const [creci, setCreci] = useState('');
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [erro, setErro] = useState('');
@@ -69,7 +51,7 @@ export default function CadastroForm({ tipoPerfil: tipoInicial }: CadastroFormPr
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace('/dashboard');
+      router.replace(homeForRole(user.role));
     }
   }, [user, loading, router]);
 
@@ -84,7 +66,6 @@ export default function CadastroForm({ tipoPerfil: tipoInicial }: CadastroFormPr
     if (!sobrenome.trim()) novosErros.sobrenome = 'Informe seu sobrenome.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) novosErros.email = 'Informe um e-mail válido.';
     if (!cpf.trim()) novosErros.cpf = 'Informe seu CPF.';
-    if (tipoPerfil === 'corretor' && !creci.trim()) novosErros.creci = 'Informe seu CRECI.';
     if (senha.length < 8) novosErros.senha = 'A senha deve ter no mínimo 8 caracteres.';
     if (Object.keys(novosErros).length > 0) {
       setErrosCampo(novosErros);
@@ -103,9 +84,9 @@ export default function CadastroForm({ tipoPerfil: tipoInicial }: CadastroFormPr
           nome_completo: nomeCompleto,
           email,
           cpf,
-          creci: tipoPerfil === 'corretor' ? creci : null,
+          creci: null,
           senha,
-          role: tipoPerfil,
+          role: 'lead',
         }),
       });
 
@@ -120,11 +101,7 @@ export default function CadastroForm({ tipoPerfil: tipoInicial }: CadastroFormPr
 
       setSucesso(true);
       await refreshProfile();
-      if (tipoPerfil === 'lead') {
-        router.replace('/assistente');
-      } else {
-        router.replace('/dashboard');
-      }
+      router.replace('/assistente');
     } catch {
       setErro('Ocorreu um erro ao criar a conta. Tente novamente.');
     } finally {
@@ -202,32 +179,6 @@ export default function CadastroForm({ tipoPerfil: tipoInicial }: CadastroFormPr
             <p className="text-white/40 text-sm">{copy.subtituloForm}</p>
           </div>
 
-          <div role="radiogroup" aria-label="Tipo de perfil" className="grid grid-cols-2 gap-2 rounded-xl bg-brand-gray p-1">
-            {(
-              [
-                { valor: 'corretor', rotulo: 'Sou corretor' },
-                { valor: 'lead', rotulo: 'Sou cliente' },
-              ] as const
-            ).map((opcao) => (
-              <button
-                key={opcao.valor}
-                type="button"
-                role="radio"
-                aria-checked={tipoPerfil === opcao.valor}
-                onClick={() => {
-                  setTipoPerfil(opcao.valor);
-                  setErrosCampo({});
-                  setErro('');
-                }}
-                className={`h-10 rounded-lg text-sm font-medium transition ${
-                  tipoPerfil === opcao.valor ? 'bg-white text-black' : 'text-white/60 hover:text-white'
-                }`}
-              >
-                {opcao.rotulo}
-              </button>
-            ))}
-          </div>
-
           <SocialButton icon={<GoogleIcon />} label="Continuar com Google" />
 
           <div className="relative flex items-center">
@@ -288,17 +239,6 @@ export default function CadastroForm({ tipoPerfil: tipoInicial }: CadastroFormPr
               required
               error={errosCampo.cpf}
             />
-
-            {tipoPerfil === 'corretor' && (
-              <InputGroup
-                label="CRECI"
-                placeholder="Ex: 12345-F"
-                value={creci}
-                onChange={setCreci}
-                required
-                error={errosCampo.creci}
-              />
-            )}
 
             <div className="space-y-2">
               <label htmlFor="cadastro-senha" className="block text-sm font-medium text-white">Senha</label>

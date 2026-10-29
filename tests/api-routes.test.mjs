@@ -24,7 +24,7 @@ function createRequest(url, { method = 'GET', body = null, token = null } = {}) 
   }
   if (token) {
     const claims = verifyToken(token);
-    fixtureProfiles.set(claims.uid, {id:claims.uid,role:claims.role,ativo:true,imobiliaria_id:claims.role === 'lead' ? fixtureOrg : null});
+    fixtureProfiles.set(claims.uid, {id:claims.uid,role:claims.role,ativo:true,imobiliaria_id:fixtureOrg});
     headers.set('cookie', `auth_token=${token}`);
   }
   return new NextRequest(url, {
@@ -37,6 +37,7 @@ function createRequest(url, { method = 'GET', body = null, token = null } = {}) 
 function createMockSupabase(handlers = {}) {
   return {
     from(table) {
+      if (table === 'imobiliarias') return {select(){return this},eq(){return this},maybeSingle(){return Promise.resolve({data:{id:fixtureOrg,ativo:true},error:null})}};
       const handler = handlers[table] || {};
       const queryState = {
         table,
@@ -151,6 +152,7 @@ test('auth/login rejeita credenciais inválidas quando a senha está incorreta (
             email: 'corretor@teste.com',
             senha_hash: hashCorreto,
             ativo: true,
+            imobiliaria_id: fixtureOrg,
             role: 'corretor',
             nome_completo: 'Corretor Silva',
           },
@@ -181,6 +183,7 @@ test('auth/login autentica com sucesso e define o cookie auth_token (200)', asyn
             email: 'corretor@teste.com',
             senha_hash: hashCorreto,
             ativo: true,
+            imobiliaria_id: fixtureOrg,
             role: 'corretor',
             nome_completo: 'Corretor Silva',
           },
@@ -212,7 +215,7 @@ test('auth/login autentica com sucesso e define o cookie auth_token (200)', asyn
 test('auth/cadastro valida regras de registro e rejeita dados inválidos (400)', async () => {
   const cadastrosInvalidos = [
     // Corretor sem CRECI
-    { nome_completo: 'Ana', email: 'ana@teste.com', cpf: '12345678901', senha: '123456', role: 'corretor' },
+    { nome_completo: '', email: 'ana@teste.com', cpf: '12345678901', senha: '123456', role: 'lead' },
     // Senha muito curta
     { nome_completo: 'Ana', email: 'ana@teste.com', cpf: '12345678901', senha: '123', role: 'lead' },
     // Role administrativo proibido no cadastro público
@@ -224,9 +227,9 @@ test('auth/cadastro valida regras de registro e rejeita dados inválidos (400)',
   for (const body of cadastrosInvalidos) {
     const req = createRequest('http://localhost/api/auth/cadastro', { method: 'POST', body });
     const res = await cadastroHandler(req);
-    assert.equal(res.status, 400);
+    assert.equal(res.status, body.role && body.role !== 'lead' ? 403 : 400);
     const data = await res.json();
-    assert.match(data.error, /inválidos/i);
+    assert.match(data.error, body.role && body.role !== 'lead' ? /exclusivo para clientes/i : /inválidos/i);
   }
 });
 
@@ -246,7 +249,7 @@ test('auth/cadastro rejeita e-mail já cadastrado (409)', async () => {
       cpf: '12345678901',
       creci: '12345-F',
       senha: 'senha-segura',
-      role: 'corretor',
+      role: 'lead',
     },
   });
 
@@ -283,7 +286,7 @@ test('auth/cadastro cria perfil com sucesso e define o cookie auth_token (200)',
       cpf: '12345678901',
       creci: '54321-F',
       senha: 'minha-senha',
-      role: 'corretor',
+      role: 'lead',
     },
   });
 
@@ -293,7 +296,8 @@ test('auth/cadastro cria perfil com sucesso e define o cookie auth_token (200)',
   assert.equal(data.ok, true);
 
   assert.equal(perfilInserido.email, 'mariana@teste.com');
-  assert.equal(perfilInserido.role, 'corretor');
+  assert.equal(perfilInserido.role, 'lead');
+  assert.equal(perfilInserido.imobiliaria_id,null);
   assert.ok(perfilInserido.senha_hash);
 
   const authCookie = res.cookies.get('auth_token');

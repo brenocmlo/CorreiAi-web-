@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/jwt';
-import { canAccessPage } from '@/lib/auth-policy';
+import { getAuthFromRequest } from '@/lib/api-auth';
+import { canAccessPage, homeForRole } from '@/lib/auth-policy';
 
 export const config = {
   matcher: [
@@ -14,7 +14,7 @@ export const config = {
   ],
 };
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value;
 
   if (!token) {
@@ -22,10 +22,11 @@ export function proxy(request: NextRequest) {
   }
 
   try {
-    const payload = verifyToken(token);
+    const payload = await getAuthFromRequest(request);
+    if (!payload) throw new Error('Sessão indisponível.');
 
     if (!canAccessPage(payload.role, request.nextUrl.pathname)) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      return NextResponse.redirect(new URL(homeForRole(payload.role), request.url));
     }
 
     return NextResponse.next();

@@ -7,6 +7,7 @@ const { signToken } = await import('../src/lib/jwt.ts');
 let authCookie = '';
 const { POST, GET, DELETE } = await import('../src/app/api/assistente/route.ts');
 const { setServerSupabaseClientOverride } = await import('../src/lib/supabase.ts');
+const fixtureOrg='33333333-3333-4333-8333-333333333333';
 const originalFetch = globalThis.fetch;
 const originalKey = process.env.OPENROUTER_API_KEY;
 const originalModel = process.env.OPENROUTER_MODEL;
@@ -28,15 +29,16 @@ function database({ properties = [], unavailable = false } = {}) {
   const db = {
     leads, owner,
     from(table) {
-      let payload; let action = 'read'; const filters = [];
+      let payload; let action = 'read'; const filters = []; let alternatives=[];
       const query = {
-        select(){return this}, eq(key,value){filters.push([key,value]);return this}, order(){return this}, limit(){return this},
+        or(value){alternatives=value.split(',').map(s=>{const [key,,val]=s.split('.');return [key,val]});return this}, select(){return this}, eq(key,value){filters.push([key,value]);return this}, order(){return this}, limit(){return this},
         insert(rows){action='insert';payload=rows[0];return this},
         update(row){action='update';payload=row;return this},
         execute(single) {
           if(unavailable && table==='leads' && action==='insert')return {data:null,error:{code:'500'}};
-          if(table==='perfis')return {data:single?{id:owner,role:'corretor',ativo:true,imobiliaria_id:null}:[{id:owner}],error:null};
-          if(table==='imoveis')return {data:properties.filter(p=>filters.every(([key,value])=>(key==='proprietario_id'?(p[key]??owner):p[key])===value)),error:null};
+          if(table==='imobiliarias')return {data:{id:fixtureOrg,ativo:true},error:null};
+          if(table==='perfis')return {data:single?{id:owner,role:'corretor',ativo:true,imobiliaria_id:fixtureOrg}:[{id:owner}],error:null};
+          if(table==='imoveis')return {data:properties.filter(p=>(!alternatives.length||alternatives.some(([key,value])=>(key==='proprietario_id'?(p[key]??owner):p[key])===value))&&filters.every(([key,value])=>(key==='proprietario_id'?(p[key]??owner):p[key])===value)),error:null};
           let rows=leads.filter(row=>filters.every(([key,value])=>row[key]===value));
           if(action==='insert'){
             const row={id:randomUUID(),...payload};leads.push(row);rows=[row];

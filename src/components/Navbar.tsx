@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { homeForRole } from '@/lib/auth-policy';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function Navbar() {
@@ -39,7 +40,7 @@ export default function Navbar() {
 
   const navLinksLead = [{ href: '/dashboard', label: 'Início' }];
 
-  const navLinks = isLead ? navLinksLead : navLinksCorretor;
+  const navLinks = profile?.role === 'super_admin' ? [{ href: '/admin/imobiliarias', label: 'Imobiliárias' }] : isLead ? navLinksLead : navLinksCorretor;
   const prepareLogout = () => {
     setMenuAberto(false);
     try { sessionStorage.removeItem('correia-assistente'); } catch { /* Armazenamento opcional. */ }
@@ -51,7 +52,7 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo e Links Principais */}
           <div className="flex items-center gap-8">
-            <Link href="/dashboard" className="flex items-center gap-2">
+            <Link href={profile ? homeForRole(profile.role) : "/login"} className="flex items-center gap-2">
               <span className="text-xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                 CorreIA
               </span>

@@ -8,6 +8,7 @@ import { presentImovel, validateImovelImage } from '@/lib/private-images';
 export async function GET(request: NextRequest) {
   const auth = await getAuthFromRequest(request);
   if (!auth) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
+  if (auth.role === 'super_admin') return NextResponse.json({ error: 'Acesse a administração das imobiliárias.' }, { status: 403 });
   const { data, error } = await scopeCatalog(createServerSupabaseClient()
     .from('imoveis')
     .select(COLUNAS_PUBLICAS_IMOVEL), auth)
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const auth = await getAuthFromRequest(request);
   if (!auth) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
-  if (auth.role === 'lead') return NextResponse.json({ error: 'Sem permissão.' }, { status: 403 });
+  if (auth.role === 'lead' || auth.role === 'super_admin') return NextResponse.json({ error: 'Sem permissão.' }, { status: 403 });
 
   let body: unknown;
   try {

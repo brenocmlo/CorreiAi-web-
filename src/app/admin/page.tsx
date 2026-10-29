@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { homeForRole } from '@/lib/auth-policy';
 import { useAuth } from '@/hooks/useAuth';
 import { Shield, UserCheck, Plus } from 'lucide-react';
 import Link from 'next/link';
@@ -15,45 +16,61 @@ interface Usuario {
   role: string;
   total_leads: number;
   criado_em: string;
+  ativo: boolean;
 }
 
 export default function AdminPage() {
-  const { profile, loading: authLoading, isAdmin } = useAuth();
+  const { profile, loading: authLoading } = useAuth();
   const router = useRouter();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState('');
+  const [updating, setUpdating] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && profile) {
-      if (!isAdmin) {
-        router.replace('/dashboard');
+      if (profile.role !== 'admin_corretora') {
+        router.replace(homeForRole(profile.role));
         return;
       }
     }
-  }, [profile, authLoading, isAdmin, router]);
+  }, [profile, authLoading, router]);
 
   useEffect(() => {
+    if (profile?.role !== 'admin_corretora') return;
     fetch('/api/admin')
-      .then((r) => r.json())
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error ?? 'Não foi possível carregar a equipe.');
+        return data;
+      })
       .then((data) => {
         if (Array.isArray(data)) setUsuarios(data);
       })
-      .catch(console.error)
+      .catch(error => setErro(error.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [profile?.role]);
 
-  async function alterarRole(userId: string, novaRole: string) {
+  async function alterarAcesso(userId: string, ativo: boolean) {
+    setUpdating(userId);
+    setErro('');
+    try {
     const res = await fetch('/api/admin', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, role: novaRole }),
+      body: JSON.stringify({ userId, ativo }),
     });
 
     if (res.ok) {
       setUsuarios((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, role: novaRole } : u))
+        prev.map((u) => (u.id === userId ? { ...u, ativo } : u))
       );
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setErro(data.error ?? 'Não foi possível alterar o acesso.');
     }
+    } catch { setErro('Não foi possível alterar o acesso. Tente novamente.'); }
+    finally { setUpdating(null); }
   }
 
   if (authLoading) {
@@ -64,7 +81,7 @@ export default function AdminPage() {
     );
   }
 
-  if (!profile || !isAdmin) {
+  if (!profile || profile.role !== 'admin_corretora') {
     return null;
   }
 
@@ -78,8 +95,8 @@ export default function AdminPage() {
                 <Shield className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="text-2xl font-extrabold text-white">Painel Admin</h2>
-                <p className="text-sm text-slate-400">Gestão de corretores e permissões</p>
+                <h2 className="text-2xl font-extrabold text-white">Equipe da imobiliária</h2>
+                <p className="text-sm text-slate-400">Cadastre corretores e controle o acesso da sua equipe</p>
               </div>
             </div>
             
@@ -92,6 +109,7 @@ export default function AdminPage() {
             </Link>
           </div>
 
+          {erro && <p role="alert" className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-200">{erro}</p>}
           {loading ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
@@ -107,7 +125,7 @@ export default function AdminPage() {
                     <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase">E-mail</th>
                     <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase hidden md:table-cell">CRECI</th>
                     <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase">Leads</th>
-                    <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase">Permissão</th>
+                    <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase">Acesso</th>
                     <th className="px-6 py-4 text-xs font-medium text-slate-500 uppercase">Ação</th>
                   </tr>
                 </thead>
@@ -130,25 +148,23 @@ export default function AdminPage() {
                       <td className="px-6 py-4">
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                            u.role === 'admin_corretora'
+                            u.ativo
                               ? 'bg-purple-500/10 text-purple-400'
                               : 'bg-slate-700/50 text-slate-400'
                           }`}
                         >
-                          {u.role === 'admin_corretora' ? 'Admin' : 'Corretor'}
+                          {u.ativo ? 'Ativo' : 'Suspenso'}
                         </span>
                       </td>
                       <td className="px-6 py-4">
                         <button
+                          disabled={updating === u.id}
                           onClick={() =>
-                            alterarRole(
-                              u.id,
-                              u.role === 'admin_corretora' ? 'corretor' : 'admin_corretora'
-                            )
+                            alterarAcesso(u.id, !u.ativo)
                           }
                           className="text-xs px-3 py-1 rounded-lg border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
                         >
-                          {u.role === 'admin_corretora' ? 'Rebaixar' : 'Promover'}
+                          {updating === u.id ? 'Salvando...' : u.ativo ? 'Suspender acesso' : 'Reativar acesso'}
                         </button>
                       </td>
                     </tr>

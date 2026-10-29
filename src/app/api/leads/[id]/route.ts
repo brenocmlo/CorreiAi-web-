@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
-  if (auth.role === 'lead') return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
+  if (auth.role === 'lead' || auth.role === 'super_admin') return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
 
   const { id } = await context.params;
   if (!isUuid(id)) return NextResponse.json({ error: 'ID inválido.' }, { status: 400 });
@@ -37,7 +37,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
-  if (auth.role === 'lead') return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
+  if (auth.role === 'lead' || auth.role === 'super_admin') return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
 
   const { id } = await context.params;
   if (!isUuid(id)) return NextResponse.json({ error: 'ID inválido.' }, { status: 400 });
@@ -94,7 +94,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
-  if (auth.role === 'lead') return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
+  if (auth.role === 'lead' || auth.role === 'super_admin') return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
 
   const { id } = await context.params;
   if (!isUuid(id)) return NextResponse.json({ error: 'ID inválido.' }, { status: 400 });

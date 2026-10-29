@@ -6,10 +6,12 @@ import { parseRegistration } from '../../../../lib/auth-input.ts';
 
 export async function POST(request: NextRequest) {
   try {
-    const input = parseRegistration(await request.json());
+    const body = await request.json();
+    if (body?.role !== undefined && body.role !== 'lead') return NextResponse.json({ error: 'O cadastro público é exclusivo para clientes. Corretores recebem acesso pela imobiliária.' }, { status: 403 });
+    const input = parseRegistration(body);
     if (!input) {
       return NextResponse.json(
-        { error: 'Dados inválidos. Informe nome, e-mail, CPF, perfil e senha de pelo menos 6 caracteres; corretores precisam informar CRECI.' },
+        { error: 'Dados inválidos. Informe nome, e-mail, CPF e senha de pelo menos 6 caracteres.' },
         { status: 400 }
       );
     }
@@ -53,6 +55,8 @@ export async function POST(request: NextRequest) {
           creci,
           senha_hash,
           role,
+          imobiliaria_id: null,
+          ativo: true,
         },
       ])
       .select()

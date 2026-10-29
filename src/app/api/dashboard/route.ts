@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   if (!auth) {
     return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
   }
-  if (auth.role === 'lead') {
+  if (auth.role === 'lead' || auth.role === 'super_admin') {
     return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
   }
 

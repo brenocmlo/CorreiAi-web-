@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     try { extracted = JSON.parse(raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')); } catch { /* Não aproveitar fatos não comprovados. */ }
     const q = qualificationFrom(body.messages, extracted, existing?.qualificacao);
     // Visitante pode conversar, mas o portfólio e o funil exigem contexto autenticado.
-    const catalog = auth ? await scopeCatalog(createServerSupabaseClient().from('imoveis').select('id,tipo,endereco,bairro,valor,metragem,quartos,vagas,descricao,imagem_url,status'), auth).eq('status', 'disponivel').order('valor', { ascending: true }).limit(500) : { data: [], error: null };
+    const catalog = auth && auth.role !== 'super_admin' ? await scopeCatalog(createServerSupabaseClient().from('imoveis').select('id,tipo,endereco,bairro,valor,metragem,quartos,vagas,descricao,imagem_url,status'), auth).eq('status', 'disponivel').order('valor', { ascending: true }).limit(500) : { data: [], error: null };
     const properties = (catalog.data ?? []) as AssistantProperty[];
     if (body.imovelId) {
       if (!properties.some((p) => p.id === body.imovelId && p.status === 'disponivel')) return withSession(NextResponse.json({ error: 'Esse imóvel não está disponível. Escolha outro imóvel do catálogo.' }, { status: 409 }), session.token);

@@ -8,6 +8,7 @@ import { IMOVEIS_STORAGE_BUCKET } from '@/lib/supabase-config';
 export async function GET(request: NextRequest) {
   const auth = await getAuthFromRequest(request);
   if (!auth) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
+  if (auth.role === 'super_admin') return NextResponse.json({ error: 'Acesse a administração das imobiliárias.' }, { status: 403 });
   const path = imageObjectPath(`${request.nextUrl.pathname}${request.nextUrl.search}`);
   if (!path) return NextResponse.json({ error: 'Imagem inválida.' }, { status: 400 });
   const db = createServerSupabaseClient();

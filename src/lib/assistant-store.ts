@@ -17,6 +17,7 @@ export async function getAssistantLead(hash: string, ownerId: string) {
 }
 
 export async function assistantOwner(access: CatalogAccess): Promise<string | null> {
+  if (access.role === 'super_admin') return null;
   if (access.role !== 'lead') return access.uid;
   if (!access.imobiliariaId) return null;
   const result = await createServerSupabaseClient().from('perfis').select('id').eq('role', 'corretor')

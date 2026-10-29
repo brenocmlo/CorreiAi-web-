@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeEmail, parseRegistration } from '../src/lib/auth-input.ts';
 
-test('registration accepts public roles and normalizes email', () => {
-  assert.deepEqual(parseRegistration({ nome_completo: ' Gabriel ', email: ' GABRIEL@Example.com ', cpf: '123', creci: 'ABC', senha: '123456', role: 'corretor' }), {
-    nome_completo: 'Gabriel', email: 'gabriel@example.com', cpf: '123', creci: 'ABC', senha: '123456', role: 'corretor',
+test('registration accepts only client role and normalizes email', () => {
+  assert.deepEqual(parseRegistration({ nome_completo: ' Gabriel ', email: ' GABRIEL@Example.com ', cpf: '123', creci: null, senha: '123456', role: 'lead' }), {
+    nome_completo: 'Gabriel', email: 'gabriel@example.com', cpf: '123', creci: null, senha: '123456', role: 'lead',
   });
   assert.equal(normalizeEmail(' A@B.COM '), 'a@b.com');
 });
